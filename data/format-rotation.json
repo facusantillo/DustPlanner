@@ -1,0 +1,18 @@
+{
+  "$comment": "Standard-legal sets per Hearthstone year. Copied from python-hearthstone (hearthstone/utils/__init__.py: STANDARD_SETS + ZODIAC_ROTATION_DATES, v9.22.0, 2026-10-13) and validated against it by tools/check_format_rotation.py in CI. Set names are the CardSet enum names used by HearthstoneJSON. Sets that rotate at the next rotation are derived: sets present in both the current and the previous year, minus 'always_standard'.",
+  "source": "python-hearthstone v9.22.0 (HearthSim/python-hearthstone@master, 2026-10-13)",
+  "always_standard": ["CORE", "EVENT"],
+  "years": [
+    { "name": "GRYPHON", "starts": "2021-03-30", "sets": ["CORE", "BLACK_TEMPLE", "SCHOLOMANCE", "DARKMOON_FAIRE", "THE_BARRENS", "WAILING_CAVERNS", "STORMWIND", "ALTERAC_VALLEY"] },
+    { "name": "HYDRA", "starts": "2022-04-12", "sets": ["CORE", "THE_BARRENS", "WAILING_CAVERNS", "STORMWIND", "ALTERAC_VALLEY", "THE_SUNKEN_CITY", "REVENDRETH", "RETURN_OF_THE_LICH_KING", "PATH_OF_ARTHAS", "BATTLE_OF_THE_BANDS"] },
+    { "name": "WOLF", "starts": "2023-04-11", "sets": ["CORE", "THE_SUNKEN_CITY", "REVENDRETH", "RETURN_OF_THE_LICH_KING", "PATH_OF_ARTHAS", "BATTLE_OF_THE_BANDS", "TITANS", "WILD_WEST", "WHIZBANGS_WORKSHOP", "EVENT"] },
+    { "name": "PEGASUS", "starts": "2024-03-19", "sets": ["CORE", "BATTLE_OF_THE_BANDS", "TITANS", "WILD_WEST", "EVENT", "WHIZBANGS_WORKSHOP", "ISLAND_VACATION", "SPACE"] },
+    { "name": "RAPTOR", "starts": "2025-03-25", "sets": ["CORE", "EVENT", "WHIZBANGS_WORKSHOP", "ISLAND_VACATION", "SPACE", "EMERALD_DREAM", "THE_LOST_CITY", "TIME_TRAVEL", "CATACLYSM"] },
+    { "name": "SCARAB", "starts": "2026-03-17", "sets": ["CORE", "EVENT", "EMERALD_DREAM", "THE_LOST_CITY", "TIME_TRAVEL", "CATACLYSM", "ESCAPEFROM_VIOLET_HOLD", "BE"] }
+  ],
+  "next_rotation": {
+    "date": null,
+    "estimate": "2027-03",
+    "note": "Not announced. Blizzard rotates with the first expansion of the year, late March or early April. Set 'date' when the patch date is known; until then the estimate is shown with an 'estimated' label."
+  }
+}

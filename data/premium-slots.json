@@ -1,0 +1,11 @@
+{
+  "$comment": "Meaning of each index of HDT's per-card count array ([p0, p1, p2, p3, trial_p0..trial_p3]). Indexes 0 and 1 are confirmed by HDT's source (PremiumType 0 = regular, 1 = golden). Indexes 2 and 3 are NOT confirmed: run the exporter's 'Export diagnostics' and record the observed mapping here, then set 'confirmed' to true. While a slot is 'unknown' its copies have unknown dust value and are never recommended for disenchanting.",
+  "confirmed": false,
+  "slots": {
+    "0": "normal",
+    "1": "golden",
+    "2": "unknown",
+    "3": "unknown"
+  },
+  "allowed_kinds": ["normal", "golden", "signature", "diamond", "unknown"]
+}

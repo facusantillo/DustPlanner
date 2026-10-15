@@ -1,0 +1,1278 @@
+{
+  "vectors": [
+    {
+      "name": "minimal x2 only",
+      "deckstring": "AAECAQcABAECAwQAAA==",
+      "format": 2,
+      "heroes": [
+        7
+      ],
+      "cards": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "x1 only, multi-byte varints",
+      "deckstring": "AAECAQcDCLMB2Q8AAAA=",
+      "format": 2,
+      "heroes": [
+        7
+      ],
+      "cards": [
+        [
+          8,
+          1
+        ],
+        [
+          179,
+          1
+        ],
+        [
+          2009,
+          1
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "xN section with 3 and 4 copies",
+      "deckstring": "AAEBAR8BHgEoAgoDFAQA",
+      "format": 1,
+      "heroes": [
+        31
+      ],
+      "cards": [
+        [
+          10,
+          3
+        ],
+        [
+          20,
+          4
+        ],
+        [
+          30,
+          1
+        ],
+        [
+          40,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "large dbfIds (3 and 4 byte varints)",
+      "deckstring": "AAECAaIHAYCAgAECgIABlZrvOgAA",
+      "format": 2,
+      "heroes": [
+        930
+      ],
+      "cards": [
+        [
+          16384,
+          2
+        ],
+        [
+          2097152,
+          1
+        ],
+        [
+          123456789,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "classic format",
+      "deckstring": "AAEDAf0EAAJkZQAA",
+      "format": 3,
+      "heroes": [
+        637
+      ],
+      "cards": [
+        [
+          100,
+          2
+        ],
+        [
+          101,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "twist format",
+      "deckstring": "AAEEAf0EAWUBZAAA",
+      "format": 4,
+      "heroes": [
+        637
+      ],
+      "cards": [
+        [
+          100,
+          2
+        ],
+        [
+          101,
+          1
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "E.T.C. sideboard with three x1 entries",
+      "deckstring": "AAECAaIHAuWwBP3EBQK+nwTPngYAAQPwnwT9xAW42QT9xAX/4QT9xAUAAA==",
+      "format": 2,
+      "heroes": [
+        930
+      ],
+      "cards": [
+        [
+          69566,
+          2
+        ],
+        [
+          71781,
+          1
+        ],
+        [
+          90749,
+          1
+        ],
+        [
+          102223,
+          2
+        ]
+      ],
+      "sideboards": [
+        [
+          69616,
+          1,
+          90749
+        ],
+        [
+          76984,
+          1,
+          90749
+        ],
+        [
+          78079,
+          1,
+          90749
+        ]
+      ],
+      "note": "shape of the python-hearthstone TEST_SIDEBOARD_DECKSTRING"
+    },
+    {
+      "name": "Zilliax modules plus E.T.C. band, mixed counts",
+      "deckstring": "AAECAQcC/cQFx6QGAvQD9QMAAQLYBMekBtkEx6QGAbwF/cQFAb0FA/3EBQ==",
+      "format": 2,
+      "heroes": [
+        7
+      ],
+      "cards": [
+        [
+          500,
+          2
+        ],
+        [
+          501,
+          2
+        ],
+        [
+          90749,
+          1
+        ],
+        [
+          102983,
+          1
+        ]
+      ],
+      "sideboards": [
+        [
+          700,
+          2,
+          90749
+        ],
+        [
+          701,
+          3,
+          90749
+        ],
+        [
+          600,
+          1,
+          102983
+        ],
+        [
+          601,
+          1,
+          102983
+        ]
+      ],
+      "note": "two owners, x1/x2/xN sideboard sections"
+    },
+    {
+      "name": "random 0",
+      "deckstring": "AAECAa6GBQG0lgMEuhXGUtWFB4fZBwKZPQOv4QkDAA==",
+      "format": 2,
+      "heroes": [
+        82734
+      ],
+      "cards": [
+        [
+          2746,
+          2
+        ],
+        [
+          7833,
+          3
+        ],
+        [
+          10566,
+          2
+        ],
+        [
+          52020,
+          1
+        ],
+        [
+          115413,
+          2
+        ],
+        [
+          126087,
+          2
+        ],
+        [
+          159919,
+          3
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "random 1",
+      "deckstring": "AAEBAeDiBQKF6gid/goF+nbffcvwApv7B7DECgHJ3wMDAQTS3A+b+weGwRCb+wf94g+wxArDvhGwxAoAAoycDAOb+weeixEDsMQK",
+      "format": 1,
+      "heroes": [
+        94560
+      ],
+      "cards": [
+        [
+          15226,
+          2
+        ],
+        [
+          16095,
+          2
+        ],
+        [
+          47179,
+          2
+        ],
+        [
+          61385,
+          3
+        ],
+        [
+          130459,
+          2
+        ],
+        [
+          144645,
+          1
+        ],
+        [
+          172592,
+          2
+        ],
+        [
+          179997,
+          1
+        ]
+      ],
+      "sideboards": [
+        [
+          200204,
+          3,
+          130459
+        ],
+        [
+          257618,
+          1,
+          130459
+        ],
+        [
+          270470,
+          1,
+          130459
+        ],
+        [
+          258429,
+          1,
+          172592
+        ],
+        [
+          279966,
+          3,
+          172592
+        ],
+        [
+          286531,
+          1,
+          172592
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 2",
+      "deckstring": "AAECAdb9AQLRxAi79wgEkUzPoQOJhwfamQwBvMkHAwA=",
+      "format": 2,
+      "heroes": [
+        32470
+      ],
+      "cards": [
+        [
+          9745,
+          2
+        ],
+        [
+          53455,
+          2
+        ],
+        [
+          115593,
+          2
+        ],
+        [
+          124092,
+          3
+        ],
+        [
+          139857,
+          1
+        ],
+        [
+          146363,
+          1
+        ],
+        [
+          199898,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "random 3",
+      "deckstring": "AAECAbCJBAKJQoi6CwOXyAHwkAL+8AQAAQL2pQz+8ATT7Q3+8AQB58gO/vAEAd3/DwOJQg==",
+      "format": 2,
+      "heroes": [
+        66736
+      ],
+      "cards": [
+        [
+          8457,
+          1
+        ],
+        [
+          25623,
+          2
+        ],
+        [
+          34928,
+          2
+        ],
+        [
+          79998,
+          2
+        ],
+        [
+          187656,
+          1
+        ]
+      ],
+      "sideboards": [
+        [
+          262109,
+          3,
+          8457
+        ],
+        [
+          201462,
+          1,
+          79998
+        ],
+        [
+          227027,
+          1,
+          79998
+        ],
+        [
+          238695,
+          2,
+          79998
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 4",
+      "deckstring": "AAEBAfhTA/Uar8wK/OYLBdP9ApP1A9jZBoabCZb7CwHjkAwDAQTpyg71Gsq9DNP9ApzLDNP9At3yDNP9AgLRzw31Gs6aEPUaAA==",
+      "format": 1,
+      "heroes": [
+        10744
+      ],
+      "cards": [
+        [
+          3445,
+          1
+        ],
+        [
+          48851,
+          2
+        ],
+        [
+          64147,
+          2
+        ],
+        [
+          109784,
+          2
+        ],
+        [
+          150918,
+          2
+        ],
+        [
+          173615,
+          1
+        ],
+        [
+          193404,
+          1
+        ],
+        [
+          195990,
+          2
+        ],
+        [
+          198755,
+          3
+        ]
+      ],
+      "sideboards": [
+        [
+          223185,
+          2,
+          3445
+        ],
+        [
+          238953,
+          1,
+          3445
+        ],
+        [
+          265550,
+          2,
+          3445
+        ],
+        [
+          204490,
+          1,
+          48851
+        ],
+        [
+          206236,
+          1,
+          48851
+        ],
+        [
+          211293,
+          1,
+          48851
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 5",
+      "deckstring": "AAEBAb9OA6XxAcyVBdWACQWU/wT7uAmr1wnD3gqC2gsCgYkEA/mlBgMA",
+      "format": 1,
+      "heroes": [
+        10047
+      ],
+      "cards": [
+        [
+          30885,
+          1
+        ],
+        [
+          66689,
+          3
+        ],
+        [
+          81812,
+          2
+        ],
+        [
+          84684,
+          1
+        ],
+        [
+          103161,
+          3
+        ],
+        [
+          147541,
+          1
+        ],
+        [
+          154747,
+          2
+        ],
+        [
+          158635,
+          2
+        ],
+        [
+          175939,
+          2
+        ],
+        [
+          191746,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "random 6",
+      "deckstring": "AAECAfvSBQOCbr6JBsTmCQKlxQKh2QIAAA==",
+      "format": 2,
+      "heroes": [
+        92539
+      ],
+      "cards": [
+        [
+          14082,
+          1
+        ],
+        [
+          41637,
+          2
+        ],
+        [
+          44193,
+          2
+        ],
+        [
+          99518,
+          1
+        ],
+        [
+          160580,
+          1
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "random 7",
+      "deckstring": "AAECAZJABOHbAd7uBYjeCYfbCgWXuQKs5gLH2Qa6sAeOjAkDsnUDm+wCA5qOBgMBA5ypEOHbAYTYDKzmApHpDazmAgAA",
+      "format": 2,
+      "heroes": [
+        8210
+      ],
+      "cards": [
+        [
+          15026,
+          3
+        ],
+        [
+          28129,
+          1
+        ],
+        [
+          40087,
+          2
+        ],
+        [
+          45868,
+          2
+        ],
+        [
+          46619,
+          3
+        ],
+        [
+          96094,
+          1
+        ],
+        [
+          100122,
+          3
+        ],
+        [
+          109767,
+          2
+        ],
+        [
+          120890,
+          2
+        ],
+        [
+          149006,
+          2
+        ],
+        [
+          159496,
+          1
+        ],
+        [
+          175495,
+          1
+        ]
+      ],
+      "sideboards": [
+        [
+          267420,
+          1,
+          28129
+        ],
+        [
+          207876,
+          1,
+          45868
+        ],
+        [
+          226449,
+          1,
+          45868
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 8",
+      "deckstring": "AAEBAaenBAb1+gHNxgOE3wTM8QeGyQj12ggG3m3bpAK32wKHjQSIhgncoQkEltgBA7iLAgOakwMDjOEKAwA=",
+      "format": 1,
+      "heroes": [
+        70567
+      ],
+      "cards": [
+        [
+          14046,
+          2
+        ],
+        [
+          27670,
+          3
+        ],
+        [
+          32117,
+          1
+        ],
+        [
+          34232,
+          3
+        ],
+        [
+          37467,
+          2
+        ],
+        [
+          44471,
+          2
+        ],
+        [
+          51610,
+          3
+        ],
+        [
+          58189,
+          1
+        ],
+        [
+          67207,
+          2
+        ],
+        [
+          77700,
+          1
+        ],
+        [
+          129228,
+          1
+        ],
+        [
+          140422,
+          1
+        ],
+        [
+          142709,
+          1
+        ],
+        [
+          148232,
+          2
+        ],
+        [
+          151772,
+          2
+        ],
+        [
+          176268,
+          3
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "random 9",
+      "deckstring": "AAEBAbvkAgGK0QcH/4gBjY8Dk60D1/0FtMQHpucHwZgJAfWFAQMBA+qcDdf9BcW/DbTEB779EbTEBwAB5P0OA7TEBw==",
+      "format": 1,
+      "heroes": [
+        45627
+      ],
+      "cards": [
+        [
+          17141,
+          3
+        ],
+        [
+          17535,
+          2
+        ],
+        [
+          51085,
+          2
+        ],
+        [
+          54931,
+          2
+        ],
+        [
+          98007,
+          2
+        ],
+        [
+          123444,
+          2
+        ],
+        [
+          125066,
+          1
+        ],
+        [
+          127910,
+          2
+        ],
+        [
+          150593,
+          2
+        ]
+      ],
+      "sideboards": [
+        [
+          216682,
+          1,
+          98007
+        ],
+        [
+          221125,
+          1,
+          123444
+        ],
+        [
+          245476,
+          3,
+          123444
+        ],
+        [
+          294590,
+          1,
+          123444
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 10",
+      "deckstring": "AAECAb/5BAaGxwHH8QLl5gOUgQXDpwmt6QoIzmWpmwKV8ALr8ATEnwWd0wXz2AfJygoDulsDm/sCA/eXDAMBAuHxDbpbyuoQulsB+M4OulsB4ZEOA8nKCg==",
+      "format": 2,
+      "heroes": [
+        81087
+      ],
+      "cards": [
+        [
+          11706,
+          3
+        ],
+        [
+          13006,
+          2
+        ],
+        [
+          25478,
+          1
+        ],
+        [
+          36265,
+          2
+        ],
+        [
+          47125,
+          2
+        ],
+        [
+          47303,
+          1
+        ],
+        [
+          48539,
+          3
+        ],
+        [
+          62309,
+          1
+        ],
+        [
+          79979,
+          2
+        ],
+        [
+          82068,
+          1
+        ],
+        [
+          85956,
+          2
+        ],
+        [
+          92573,
+          2
+        ],
+        [
+          126067,
+          2
+        ],
+        [
+          152515,
+          1
+        ],
+        [
+          173385,
+          2
+        ],
+        [
+          177325,
+          1
+        ],
+        [
+          199671,
+          3
+        ]
+      ],
+      "sideboards": [
+        [
+          227553,
+          1,
+          11706
+        ],
+        [
+          239480,
+          2,
+          11706
+        ],
+        [
+          275786,
+          1,
+          11706
+        ],
+        [
+          231649,
+          3,
+          173385
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "name": "random 11",
+      "deckstring": "AAEBAdnjAwAChJED7+UIAep+AwA=",
+      "format": 1,
+      "heroes": [
+        61913
+      ],
+      "cards": [
+        [
+          16234,
+          3
+        ],
+        [
+          51332,
+          2
+        ],
+        [
+          144111,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": ""
+    },
+    {
+      "name": "python-hearthstone TEST_DECKSTRING (hunter, no sideboard marker)",
+      "deckstring": "AAEBAR8GhwS7BfixAqHCAtnCAubCAgyoArUD6wftCf4Mzq4CubQC6rsC7LsCicMCjsMCk8MCAAA=",
+      "format": 1,
+      "heroes": [
+        31
+      ],
+      "cards": [
+        [
+          296,
+          2
+        ],
+        [
+          437,
+          2
+        ],
+        [
+          519,
+          1
+        ],
+        [
+          699,
+          1
+        ],
+        [
+          1003,
+          2
+        ],
+        [
+          1261,
+          2
+        ],
+        [
+          1662,
+          2
+        ],
+        [
+          38734,
+          2
+        ],
+        [
+          39160,
+          1
+        ],
+        [
+          39481,
+          2
+        ],
+        [
+          40426,
+          2
+        ],
+        [
+          40428,
+          2
+        ],
+        [
+          41249,
+          1
+        ],
+        [
+          41305,
+          1
+        ],
+        [
+          41318,
+          1
+        ],
+        [
+          41353,
+          2
+        ],
+        [
+          41358,
+          2
+        ],
+        [
+          41363,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": "trailing 00 00 bytes: xN=0 then no-sideboard marker"
+    },
+    {
+      "name": "python-hearthstone TEST_DECKSTRING_PRE_SIDEBOARD (legacy, ends after xN)",
+      "deckstring": "AAEBAR8G+LEChwTmwgKhwgLZwgK7BQzquwKJwwKOwwKTwwK5tAK1A/4MqALsuwLrB86uAu0JAA==",
+      "format": 1,
+      "heroes": [
+        31
+      ],
+      "cards": [
+        [
+          296,
+          2
+        ],
+        [
+          437,
+          2
+        ],
+        [
+          519,
+          1
+        ],
+        [
+          699,
+          1
+        ],
+        [
+          1003,
+          2
+        ],
+        [
+          1261,
+          2
+        ],
+        [
+          1662,
+          2
+        ],
+        [
+          38734,
+          2
+        ],
+        [
+          39160,
+          1
+        ],
+        [
+          39481,
+          2
+        ],
+        [
+          40426,
+          2
+        ],
+        [
+          40428,
+          2
+        ],
+        [
+          41249,
+          1
+        ],
+        [
+          41305,
+          1
+        ],
+        [
+          41318,
+          1
+        ],
+        [
+          41353,
+          2
+        ],
+        [
+          41358,
+          2
+        ],
+        [
+          41363,
+          2
+        ]
+      ],
+      "sideboards": [],
+      "note": "pre-sideboard client output; not canonical (unsorted), so only decode is compared",
+      "canonical": false
+    },
+    {
+      "name": "python-hearthstone TEST_SIDEBOARD_DECKSTRING (priest with E.T.C.)",
+      "deckstring": "AAEBAZCaBgjlsASotgSX7wTvkQXipAX9xAXPxgXGxwUQvp8EobYElrcE+dsEuNwEutwE9vAEhoMFopkF4KQFlMQFu8QFu8cFuJ4Gz54G0Z4GAAED8J8E/cQFuNkE/cQF/+EE/cQFAAA=",
+      "format": 1,
+      "heroes": [
+        101648
+      ],
+      "cards": [
+        [
+          69566,
+          2
+        ],
+        [
+          71781,
+          1
+        ],
+        [
+          72481,
+          2
+        ],
+        [
+          72488,
+          1
+        ],
+        [
+          72598,
+          2
+        ],
+        [
+          77305,
+          2
+        ],
+        [
+          77368,
+          2
+        ],
+        [
+          77370,
+          2
+        ],
+        [
+          79767,
+          1
+        ],
+        [
+          79990,
+          2
+        ],
+        [
+          82310,
+          2
+        ],
+        [
+          84207,
+          1
+        ],
+        [
+          85154,
+          2
+        ],
+        [
+          86624,
+          2
+        ],
+        [
+          86626,
+          1
+        ],
+        [
+          90644,
+          2
+        ],
+        [
+          90683,
+          2
+        ],
+        [
+          90749,
+          1
+        ],
+        [
+          90959,
+          1
+        ],
+        [
+          91067,
+          2
+        ],
+        [
+          91078,
+          1
+        ],
+        [
+          102200,
+          2
+        ],
+        [
+          102223,
+          2
+        ],
+        [
+          102225,
+          2
+        ]
+      ],
+      "sideboards": [
+        [
+          69616,
+          1,
+          90749
+        ],
+        [
+          76984,
+          1,
+          90749
+        ],
+        [
+          78079,
+          1,
+          90749
+        ]
+      ],
+      "note": "hero dbfId and format (Wild) taken from the string itself with python-hearthstone"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "empty",
+      "deckstring": "",
+      "reason": "empty"
+    },
+    {
+      "name": "not base64",
+      "deckstring": "###not-base64###",
+      "reason": "base64"
+    },
+    {
+      "name": "bad reserved byte",
+      "deckstring": "AQEBAQABAgAAAA==",
+      "reason": "reserved byte"
+    },
+    {
+      "name": "unsupported version",
+      "deckstring": "AAICAQABAgAAAA==",
+      "reason": "version"
+    },
+    {
+      "name": "truncated",
+      "deckstring": "AAECAQcA",
+      "reason": "truncated"
+    }
+  ]
+}

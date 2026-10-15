@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DustPlanner.Core</RootNamespace>
+    <Description>DustPlanner core: card catalog (HearthstoneJSON), format rotation and dust rules, deckstrings, collection model, planner and meta signals.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1303;CA1724</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DustPlanner.Contracts/DustPlanner.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Game-rule data files live in /data so they can be edited and validated without touching code; they are embedded as defaults. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../data/format-rotation.json" LogicalName="DustPlanner.Core.Data.format-rotation.json" />
+    <EmbeddedResource Include="../../data/dust-rules.json" LogicalName="DustPlanner.Core.Data.dust-rules.json" />
+    <EmbeddedResource Include="../../data/premium-slots.json" LogicalName="DustPlanner.Core.Data.premium-slots.json" />
+    <EmbeddedResource Include="../../data/non-craftable.json" LogicalName="DustPlanner.Core.Data.non-craftable.json" />
+  </ItemGroup>
+
+</Project>

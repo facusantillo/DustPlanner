@@ -35,6 +35,17 @@ jobs:
         if: steps.hdt-cache.outputs.cache-hit != 'true'
         run: tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate game-rule data against python-hearthstone
+        run: |
+          python -m pip install --quiet -r tools/requirements.txt
+          python tools/check_format_rotation.py
+          python tools/gen_deckstring_vectors.py
+          git diff --exit-code -- tests/DustPlanner.Core.Tests/Fixtures/deckstrings.json
+
       - name: Restore
         run: dotnet restore
 

@@ -27,4 +27,15 @@
     <HdtLibDir Condition="'$(HdtLibDir)' == ''">$(MSBuildThisFileDirectory)lib/hdt/</HdtLibDir>
   </PropertyGroup>
 
+  <!--
+    Optional: redirect bin/obj to a separate root (e.g. artifacts/linux) so two toolchains sharing the same checkout
+    (Visual Studio on Windows and a Linux shell on a mounted folder) never overwrite each other's restore output.
+  -->
+  <PropertyGroup Condition="'$(DUSTPLANNER_BUILD_ROOT)' != ''">
+    <BaseIntermediateOutputPath>$(DUSTPLANNER_BUILD_ROOT)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(DUSTPLANNER_BUILD_ROOT)/bin/$(MSBuildProjectName)/</BaseOutputPath>
+    <!-- The default bin/obj folders may still exist from the other toolchain; keep them out of the compile globs. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+
 </Project>

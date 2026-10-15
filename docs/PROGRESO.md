@@ -41,3 +41,41 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 against the installed HDT version.
 
 **Environment decisions** — see `docs/PROPUESTA.md` §10.4.
+
+---
+
+## Stage 1 — Base data: card catalog, rule tables, deckstrings
+
+**Done**
+
+- `src/DustPlanner.Core` (net10.0) created with:
+  - `Cards/`: `CardDef`, `CardCatalog`, `HearthstoneJsonParser` (reads `cards.collectible.json`, keeps collectible cards,
+    multi-class `classes`), `HearthstoneJsonCatalogProvider` (download from `api.hearthstonejson.com`, build number taken
+    from the `/v1/latest/` redirect, cache per build under `%LocalAppData%\DustPlanner\catalog\<build>\`, daily re-check,
+    offline fallback to the newest cached build), `FileCatalogProvider` for tests/offline.
+  - `Rules/`: `FormatRotation` (year table, `IsStandard`, `RotatingSets` = sets shared with the previous year minus
+    CORE/EVENT, next-rotation date or estimate), `DustRules` (craft/disenchant per rarity and premium kind; signature and
+    diamond = unknown), `PremiumSlotMap` (HDT array index → kind; 2 and 3 unknown until confirmed), `Craftability`
+    (craftable / not craftable / unknown set), `GameDataFiles` (embedded `/data/*.json` with per-directory override).
+  - `Deckstrings/`: own varint codec with sideboards (E.T.C., Zilliax), legacy strings without the trailing marker,
+    canonical encode; `DeckBlockParser` for pasted blocks (`### name`, `#` comments) and multi-deck files (`meta.txt`).
+- `/data`: `format-rotation.json` (copied from python-hearthstone 9.22.0, GRYPHON..SCARAB), `dust-rules.json`,
+  `premium-slots.json`, `non-craftable.json`.
+- `tools/check_format_rotation.py`: fails CI when a year's sets or rotation date differ from python-hearthstone
+  `STANDARD_SETS` / `ZODIAC_ROTATION_DATES`, or when a set listed as non-craftable is craftable upstream; warns for sets
+  upstream does not know yet (today: `BE`). `tools/gen_deckstring_vectors.py`: regenerates the deckstring fixtures with
+  python-hearthstone's reference codec; CI fails if the committed fixture drifts.
+- Tests (`DustPlanner.Core.Tests`, 42): 23 deckstring vectors (incl. the python-hearthstone suite strings, sideboards
+  with two owners and x1/x2/xN sections, legacy string), 5 invalid strings, FsCheck round-trip property, rotation,
+  dust, premium slots, craftability, override directory, catalog provider with a fake HTTP handler (redirect → build,
+  cache hit, offline fallback, new build).
+
+**Pending**
+
+- Real download from `api.hearthstonejson.com` could not be exercised from the build environment (host blocked);
+  verification item C1. The parser was written against the documented field names (`dbfId`, `id`, `name`, `set`,
+  `rarity`, `cardClass`, `classes`, `type`, `cost`, `collectible`).
+- `next_rotation.date` is null until Blizzard announces the 2027 rotation; the CLI shows the estimate with a label.
+
+**Needs user verification** — VERIFICACION C1 (catalog download on Windows), and a glance at which `set` names
+appear in your real collection that `data/non-craftable.json` does not know (the CLI will list them in stage 2).

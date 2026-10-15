@@ -1,0 +1,2 @@
+# Python tooling (validation scripts under tools/). Pin to the python-hearthstone release the data files were checked against.
+hearthstone==9.22.0

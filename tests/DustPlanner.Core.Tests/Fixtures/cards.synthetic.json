@@ -1,0 +1,15 @@
+[
+  { "id": "SYN_001", "dbfId": 1001, "name": "Holy Smite (synthetic)", "set": "CORE", "rarity": "FREE", "cardClass": "PRIEST", "type": "SPELL", "cost": 1, "collectible": true },
+  { "id": "SYN_002", "dbfId": 1002, "name": "Shadow Word: Pain (synthetic)", "set": "CORE", "rarity": "COMMON", "cardClass": "PRIEST", "type": "SPELL", "cost": 2, "collectible": true },
+  { "id": "SYN_003", "dbfId": 1003, "name": "Dream Keeper (synthetic)", "set": "EMERALD_DREAM", "rarity": "LEGENDARY", "cardClass": "PRIEST", "type": "MINION", "cost": 7, "collectible": true },
+  { "id": "SYN_004", "dbfId": 1004, "name": "Lost City Scout (synthetic)", "set": "THE_LOST_CITY", "rarity": "EPIC", "cardClass": "NEUTRAL", "type": "MINION", "cost": 3, "collectible": true },
+  { "id": "SYN_005", "dbfId": 1005, "name": "Violet Warden (synthetic)", "set": "ESCAPEFROM_VIOLET_HOLD", "rarity": "RARE", "cardClass": "MAGE", "type": "MINION", "cost": 4, "collectible": true },
+  { "id": "SYN_006", "dbfId": 1006, "name": "Titan Relic (synthetic)", "set": "TITANS", "rarity": "LEGENDARY", "cardClass": "NEUTRAL", "type": "MINION", "cost": 8, "collectible": true },
+  { "id": "SYN_007", "dbfId": 1007, "name": "Workshop Gadget (synthetic)", "set": "WHIZBANGS_WORKSHOP", "rarity": "COMMON", "cardClass": "ROGUE", "type": "SPELL", "cost": 1, "collectible": true },
+  { "id": "SYN_008", "dbfId": 1008, "name": "Dual Caster (synthetic)", "set": "BE", "rarity": "EPIC", "cardClass": "PRIEST", "classes": ["PRIEST", "MAGE"], "type": "MINION", "cost": 5, "collectible": true },
+  { "id": "SYN_009", "dbfId": 1009, "name": "Old Hero (synthetic)", "set": "LEGACY", "rarity": "FREE", "cardClass": "WARRIOR", "type": "HERO", "cost": 0, "collectible": true },
+  { "id": "SYN_010", "dbfId": 1010, "name": "Mystery Set Card (synthetic)", "set": "FUTURE_SET", "rarity": "RARE", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true },
+  { "id": "SYN_011", "dbfId": 1011, "name": "Hero Power (synthetic, non-collectible)", "set": "CORE", "rarity": "FREE", "cardClass": "PRIEST", "type": "HERO_POWER", "cost": 2, "collectible": false },
+  { "id": "SYN_012", "dbfId": 1012, "name": "Cataclysm Bomb (synthetic)", "set": "CATACLYSM", "rarity": "RARE", "cardClass": "WARLOCK", "type": "SPELL", "cost": 3, "collectible": true },
+  { "id": "SYN_013", "dbfId": 1013, "name": "Timeways Walker (synthetic)", "set": "TIME_TRAVEL", "rarity": "COMMON", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true }
+]

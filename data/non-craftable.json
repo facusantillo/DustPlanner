@@ -1,0 +1,17 @@
+{
+  "$comment": "Craftability rules. A card is craftable (and therefore has dust value) only when its set is in 'craftable_sets', its rarity is in 'craftable_rarities' and its type is in 'craftable_types', and it is not listed in 'uncraftable_card_ids'. A set that appears in neither list has UNKNOWN craftability: the core treats it as not craftable for dust purposes and reports it, rather than guessing.",
+  "source": "python-hearthstone v9.22.0 enums.CardSet.craftable / Rarity.craftable / CardType.craftable; hearthstone.wiki.gg/wiki/Crafting (Core set and free cards are uncraftable). 'BE' (Reign of the Black Empire) added by hand because python-hearthstone had not listed it yet — validated in CI as a warning, not an error.",
+  "craftable_sets": [
+    "NAXX", "GVG", "BRM", "TGT", "LOE", "OG", "KARA", "GANGS", "UNGORO", "ICECROWN", "LOOTAPALOOZA", "GILNEAS",
+    "BOOMSDAY", "TROLL", "DALARAN", "ULDUM", "DRAGONS", "BLACK_TEMPLE", "DEMON_HUNTER_INITIATE", "SCHOLOMANCE",
+    "DARKMOON_FAIRE", "THE_BARRENS", "ALTERAC_VALLEY", "LEGACY", "THE_SUNKEN_CITY", "RETURN_OF_THE_LICH_KING",
+    "PATH_OF_ARTHAS", "BATTLE_OF_THE_BANDS", "TITANS", "WILD_WEST", "WONDERS", "WHIZBANGS_WORKSHOP",
+    "ISLAND_VACATION", "SPACE", "EMERALD_DREAM", "THE_LOST_CITY", "TIME_TRAVEL", "CATACLYSM",
+    "ESCAPEFROM_VIOLET_HOLD", "BE"
+  ],
+  "non_craftable_sets": ["CORE", "VANILLA", "EVENT", "HOF", "PROMO", "REWARD"],
+  "craftable_rarities": ["COMMON", "RARE", "EPIC", "LEGENDARY"],
+  "craftable_types": ["HERO", "MINION", "SPELL", "WEAPON", "LOCATION"],
+  "uncraftable_card_ids": [],
+  "uncraftable_golden_card_ids": []
+}

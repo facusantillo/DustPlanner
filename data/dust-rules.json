@@ -1,0 +1,21 @@
+{
+  "$comment": "Arcane dust values. 'normal' and 'golden' are the long-standing in-game values (hearthstone.wiki.gg/wiki/Crafting; python-hearthstone CRAFTING_COSTS / DISENCHANT_COSTS). 'signature' and 'diamond' are null = UNKNOWN: copies of those kinds are excluded from every recommendation until a verified value is entered here (docs/VERIFICACION.md C2).",
+  "source": "hearthstone.wiki.gg/wiki/Crafting; python-hearthstone v9.22.0 utils.CRAFTING_COSTS and DISENCHANT_COSTS",
+  "craft": {
+    "COMMON":    { "normal": 40,   "golden": 400,  "signature": null, "diamond": null },
+    "RARE":      { "normal": 100,  "golden": 800,  "signature": null, "diamond": null },
+    "EPIC":      { "normal": 400,  "golden": 1600, "signature": null, "diamond": null },
+    "LEGENDARY": { "normal": 1600, "golden": 3200, "signature": null, "diamond": null }
+  },
+  "disenchant": {
+    "COMMON":    { "normal": 5,   "golden": 50,   "signature": null, "diamond": null },
+    "RARE":      { "normal": 20,  "golden": 100,  "signature": null, "diamond": null },
+    "EPIC":      { "normal": 100, "golden": 400,  "signature": null, "diamond": null },
+    "LEGENDARY": { "normal": 400, "golden": 1600, "signature": null, "diamond": null }
+  },
+  "refund": {
+    "$comment": "A card with an active refund window (data/refunds.json) disenchants for its CRAFT value of the same premium kind. The golden amount (= golden craft cost) is an assumption marked 'to verify' in docs/VERIFICACION.md C3.",
+    "mode": "craft_value_of_same_premium"
+  },
+  "playable_limit": { "default": 2, "LEGENDARY": 1 }
+}

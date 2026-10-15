@@ -1,0 +1,57 @@
+namespace DustPlanner.Core.Cards;
+
+/// <summary>A collectible card as the planner sees it. Built from HearthstoneJSON; strings are the enum names it uses.</summary>
+public sealed record CardDef
+{
+    public required int DbfId { get; init; }
+
+    public required string CardId { get; init; }
+
+    public required string Name { get; init; }
+
+    /// <summary>HearthstoneJSON <c>set</c> (CardSet enum name, e.g. <c>CORE</c>, <c>TITANS</c>).</summary>
+    public required string Set { get; init; }
+
+    /// <summary>HearthstoneJSON <c>rarity</c> (e.g. <c>LEGENDARY</c>, <c>FREE</c>). Empty when absent.</summary>
+    public required string Rarity { get; init; }
+
+    /// <summary>HearthstoneJSON <c>cardClass</c> (e.g. <c>PRIEST</c>, <c>NEUTRAL</c>).</summary>
+    public required string CardClass { get; init; }
+
+    /// <summary>All classes for multi-class cards (HearthstoneJSON <c>classes</c>); contains <see cref="CardClass"/> otherwise.</summary>
+    public required IReadOnlyList<string> Classes { get; init; }
+
+    /// <summary>HearthstoneJSON <c>type</c> (e.g. <c>MINION</c>, <c>SPELL</c>, <c>HERO</c>).</summary>
+    public required string Type { get; init; }
+
+    public int Cost { get; init; }
+
+    public bool Collectible { get; init; } = true;
+
+    public bool IsLegendary => string.Equals(Rarity, Rarities.Legendary, StringComparison.Ordinal);
+
+    public bool IsNeutral => string.Equals(CardClass, CardClasses.Neutral, StringComparison.Ordinal);
+
+    /// <summary>True when the card can be played by <paramref name="cardClass"/> (its own class, neutral, or multi-class).</summary>
+    public bool IsPlayableBy(string cardClass) =>
+        IsNeutral || Classes.Contains(cardClass, StringComparer.Ordinal);
+}
+
+public static class Rarities
+{
+    public const string Free = "FREE";
+    public const string Common = "COMMON";
+    public const string Rare = "RARE";
+    public const string Epic = "EPIC";
+    public const string Legendary = "LEGENDARY";
+}
+
+public static class CardClasses
+{
+    public const string Neutral = "NEUTRAL";
+}
+
+public static class CardSets
+{
+    public const string Core = "CORE";
+}

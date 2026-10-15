@@ -67,6 +67,9 @@ internal sealed class HdtGateway : IHdtGateway
     public CardInfo? ResolveCard(int dbfId) =>
         Guard(() => ReadCard(dbfId), "HearthDb.Cards.GetFromDbfId", _ => { });
 
+    public ActiveDeckInfo? GetActiveDeck() =>
+        Guard(() => ReadActiveDeck(), "DeckList.Instance.ActiveDeck / HearthDbConverter.ToHearthDbDeck", _ => { });
+
     public bool SubscribeCollectionChanged(Action handler) =>
         GuardValue(() => { HookCollectionChanged(handler); return true; }, "CollectionHelpers.Hearthstone.OnCollectionChanged", c => c.Collection = false) ?? false;
 
@@ -276,6 +279,29 @@ internal sealed class HdtGateway : IHdtGateway
         Count = card.Count,
         PremiumType = card.PremiumType,
     };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ActiveDeckInfo? ReadActiveDeck()
+    {
+        var deck = DeckList.Instance.ActiveDeck;
+        if (deck is null || deck.IsArenaDeck)
+        {
+            return null;
+        }
+
+        var version = deck.GetSelectedDeckVersion() ?? deck;
+        var hearthDbDeck = HearthDbConverter.ToHearthDbDeck(version);
+        if (hearthDbDeck is null)
+        {
+            return null;
+        }
+
+        return new ActiveDeckInfo
+        {
+            Name = deck.Name ?? string.Empty,
+            Deckstring = HearthDb.Deckstrings.DeckSerializer.Serialize(hearthDbDeck, false),
+        };
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static List<DeckExport>? ReadHdtDecks()

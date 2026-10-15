@@ -139,6 +139,12 @@ loading and the status line says which feature is off.
       Note: with HDT running, finished sessions hold `Power_old.log` (HDT renames the file when its watcher starts);
       both names are read, rotated file first. First real run (2026-10-15): 5 ranked games from 2 files, all with
       result, classes, opponent, first player and turns — the comparison with HDT's Stats window is still yours to do.
+- [ ] C6. **Panel from HDT** (stage 9/10): install the zip from `tools\package-exporter.ps1 -Install` (HDT closed),
+      start HDT, enable the plugin. Check: the *Service:* line in the plugin menu says *running at http://127.0.0.1:8765*
+      within a minute; *Open DustPlanner* opens the panel with your account on Home; *What am I missing for the selected
+      deck?* opens the Deck page already analysed; after a disenchant and leaving the Collection, Home shows a new
+      *Last sync* and History marks the plan without pressing anything; closing HDT ends `dustplanner-host.exe`
+      (Task Manager). Anything that differs → paste `%LocalAppData%\DustPlanner\exporter.log`.
 - [ ] C5. **OBS overlay** (stage 8): run `dotnet run --project src\DustPlanner.Host -c Release`, add a Browser Source
       with `http://127.0.0.1:8765/overlay` at 1920×1080 (docs/overlay.md) and confirm: transparent background (only
       the bar is visible), legible at 1080p, the *Session* cell changes within ~5 s after a game ends, *Rank* and

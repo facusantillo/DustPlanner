@@ -10,17 +10,21 @@ the game client: no hooks, no memory reads, no input. Completed games are stored
 
 ## Run it
 
+With the HDT plugin installed, nothing: the plugin starts the service when HDT loads it and stops it with HDT (the
+address is in `%LocalAppData%\DustPlanner\service.json`, normally `http://127.0.0.1:8765`). From source:
+
 ```powershell
-dotnet run --project src\DustPlanner.Host -c Release
+dotnet run --project src\DustPlanner.Host -c Release -- --open
 # or, after dotnet build: src\DustPlanner.Host\bin\Release\net10.0\dustplanner-host.exe
 ```
 
-Options: `--port 8765`, `--home <folder>` (same data folder as the CLI), `--logs <Hearthstone\Logs>` when the folder
-is not found through HDT's config, `--account <key|BattleTag>` when several accounts were exported,
-`--poll-seconds 2`.
+Options: `--port 8765` (the next free port of ten is used when it is busy), `--home <folder>` (same data folder as the
+CLI), `--logs <Hearthstone\Logs>` when the folder is not found through HDT's config, `--account <key|BattleTag>` when
+several accounts were exported, `--poll-seconds 2`, `--open` (open the panel in the browser).
 
-Open `http://127.0.0.1:8765/` once: the status page shows what was found (warnings when the logs folder or an export
-is missing), the live state as JSON and a preview of the overlay.
+`http://127.0.0.1:8765/` is the panel ([`panel.md`](panel.md)); `http://127.0.0.1:8765/status` is the host status page:
+what was found (warnings when the logs folder or an export is missing), the live state as JSON and a preview of the
+overlay.
 
 ## OBS
 

@@ -72,9 +72,20 @@ internal interface IHdtGateway
 
     CardInfo? ResolveCard(int dbfId);
 
+    /// <summary>The deck selected in HDT's deck list as a deck code, or null when none is selected.</summary>
+    ActiveDeckInfo? GetActiveDeck();
+
     /// <summary>Subscribes to HDT's collection-changed event. Returns false when the event is unavailable.</summary>
     bool SubscribeCollectionChanged(Action handler);
 
     /// <summary>Subscribes to HDT's mode-changed event; the handler receives the mode name (e.g. <c>HUB</c>).</summary>
     bool SubscribeModeChanged(Action<string> handler);
+}
+
+/// <summary>HDT's selected deck, serialised the way the game would.</summary>
+internal sealed class ActiveDeckInfo
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string Deckstring { get; set; } = string.Empty;
 }

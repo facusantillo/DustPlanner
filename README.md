@@ -4,9 +4,9 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: all eight stages built; awaiting validation on a real machine** (see [`docs/VERIFICACION.md`](docs/VERIFICACION.md)
-> for what still needs a human with the game open). Progress log: [`docs/PROGRESO.md`](docs/PROGRESO.md); latest QA
-> round: [`docs/QA-2026-10-15.md`](docs/QA-2026-10-15.md).
+> **Status: all stages built, including the panel; being validated on a real machine** (see
+> [`docs/VERIFICACION.md`](docs/VERIFICACION.md) for what still needs a human with the game open). Progress log:
+> [`docs/PROGRESO.md`](docs/PROGRESO.md); latest QA round: [`docs/QA-2026-10-15.md`](docs/QA-2026-10-15.md).
 
 ## What it does — and what it never does
 
@@ -15,6 +15,23 @@ disenchant to get there with the least regret.
 - Reads your match history from the **`Power.log` files Hearthstone writes by itself** (the same files HDT reads).
 - **Never** clicks, types, injects, or reads the game's memory on its own. You disenchant by hand, in the game.
   The full policy is in [`SECURITY.md`](SECURITY.md).
+
+## For players: one plugin, no terminal
+
+Install the plugin zip from GitHub Releases into HDT (instructions in [`docs/exporter-install.md`](docs/exporter-install.md)).
+It exports your collection whenever you leave the game's Collection screen, starts the DustPlanner service in the
+background (stopped with HDT) and gives you a **DustPlanner** entry in HDT's plugin menu:
+
+- **Open DustPlanner** — the panel in your browser: *Home* (dust, rank, today / 7 days, open plans, set-up checklist),
+  *Deck* (pick one of your HDT decks or paste a code → missing cards, the dust gap, the plan with alternatives and what
+  was not proposed, save the plan), *History* (plans with their status, detected changes), *Games* (win rate with
+  filters, recent games), *Settings* (what you play, meta decks, cards the game refuses, card data, language).
+- **What am I missing for the selected deck?** — the Deck page for the deck selected in HDT, in one click.
+- Nothing else to press: when you disenchant in the game and go back to the menu, the new export is imported and the
+  saved plan turns *partial* or *confirmed* on its own.
+
+The panel runs on `http://127.0.0.1:8765` (loopback only) and speaks English or Spanish. CLI and MCP below are for
+people who want a terminal or an AI client; they read and write the same data.
 
 ## Repository layout
 
@@ -29,7 +46,7 @@ disenchant to get there with the least regret.
 | `src/DustPlanner.Cli` | net10.0 | Command-line interface |
 | `src/DustPlanner.LogTracker` | net10.0 | `Power.log` parser, importer, follower and win-rate queries |
 | `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server (stdio) for Claude Desktop / Claude Code |
-| `src/DustPlanner.Host` | net10.0 | Loopback HTTP host: follows Power.log + exports, serves the OBS overlay |
+| `src/DustPlanner.Host` | net10.0 | The DustPlanner service: panel, JSON API, OBS overlay, automatic sync (bundled with the plugin) |
 | `tests/` | net10.0 | One test project per module |
 | `tools/` | — | `HdtApiCheck`, HDT reference fetch scripts, data validation scripts |
 | `data/` | — | Format rotation, dust rules, non-craftable list, example configs |
@@ -71,8 +88,8 @@ Typical workflow:
 4. Disenchant by hand in the game, if you agree, then **go back to the main menu**: HDT re-reads the collection when
    you leave the Collection screen and the plugin exports it. Run `dustplanner sync`: the change is recorded and
    matched against the stored plan; `dustplanner history` shows it.
-5. Optional: `dustplanner games import` for match history, the MCP server to ask an AI client, the host for an OBS
-   overlay.
+5. Optional: `dustplanner games import` for match history, the MCP server to ask an AI client, the service for the
+   panel and the OBS overlay (`dotnet run --project src/DustPlanner.Host -c Release -- --open`).
 
 Example (`need` against a synthetic collection):
 
@@ -177,14 +194,15 @@ list: [`docs/mcp.md`](docs/mcp.md).
 
 ## OBS overlay
 
-`dustplanner-host` follows `Power.log` and the exporter files and serves a transparent 1920×1080 page for an OBS
-Browser Source — rank, session win rate, today's record, dust, last game — on `http://127.0.0.1:8765/overlay`
-(loopback only). Setup, options and what each cell means: [`docs/overlay.md`](docs/overlay.md).
+The service the plugin starts (`dustplanner-host`) also serves a transparent 1920×1080 page for an OBS Browser
+Source — rank, session win rate, today's record, dust, last game — on `http://127.0.0.1:8765/overlay` (loopback only).
+Setup, options and what each cell means: [`docs/overlay.md`](docs/overlay.md).
 
-## Installing the exporter plugin
+## Installing the plugin
 
-Download the latest `DustPlanner.HdtExporter-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into
-`%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install`.
+Download the latest `DustPlanner-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into
+`%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install` (which also
+publishes the service into `DustPlanner\service\`; `-NoService` for a plugin-only developer build).
 Full instructions: [`docs/exporter-install.md`](docs/exporter-install.md).
 
 ## Known limitations

@@ -1,4 +1,4 @@
-name: Release exporter plugin
+name: Release HDT plugin
 
 on:
   push:
@@ -47,5 +47,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" artifacts/release/*.zip artifacts/release/*.sha256 \
-            --title "DustPlanner Exporter ${GITHUB_REF_NAME#exporter-}" \
-            --notes "HDT plugin built against HDT ${HDT_REF_VERSION} references. Install: unzip and copy the DustPlanner folder into %AppData%\\HearthstoneDeckTracker\\Plugins\\. See docs/exporter-install.md."
+            --title "DustPlanner ${GITHUB_REF_NAME#exporter-}" \
+            --notes "HDT plugin (built against HDT ${HDT_REF_VERSION} references) with the DustPlanner service bundled (win-x64, no runtime to install). Install: unzip and copy the DustPlanner folder into %AppData%\\HearthstoneDeckTracker\\Plugins\\. See docs/exporter-install.md."

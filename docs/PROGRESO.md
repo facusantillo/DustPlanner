@@ -16,8 +16,10 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | 6 | Power.log tracker, `games` commands | done | **C4** — 20 real games vs HDT stats |
 | 7 | Read-only MCP server | done | connect Claude Desktop / Claude Code once |
 | 8 | OBS overlay host | done | **C5** — check in OBS |
+| 9 | Panel (web UI) + JSON API in the service, automatic sync, plugin launches the service | done | **C6** — panel from HDT on the real machine |
+| 10 | One zip: plugin + bundled service, release workflow, docs | done | install the zip, open the panel from HDT |
 
-113 tests, all green on Windows (maintainer's machine, via the Linux VM) and in CI (ubuntu). No remote configured;
+124 tests, all green on Windows (maintainer's machine, via the Linux VM) and in the container. No remote configured;
 the maintainer publishes.
 
 ---
@@ -293,6 +295,53 @@ events: report them if they appear without you having touched the collection).
 - VERIFICACION C5: confirm in OBS on the real machine (transparency, legibility, update latency).
 - Rank comes only from the exporter (decision Q8); it refreshes when HDT next exports, not the instant a game ends.
 - The session resets when the host restarts; "today" does not (it is read from the database).
+
+---
+
+## Stage 9 — Panel: a UI for people who will never open a terminal
+
+Decision (2026-10-15, after the uncraftable-cards round): the CLI, the MCP server and the overlay are all for
+technical users; the product a streamer installs has to be **one HDT plugin, used from HDT, no terminal**. The
+proposal's Q9 ("MVP in CLI, the local web comes with the overlay host") only delivered a status page. Three options
+were compared — a browser panel started by hand, a native WPF view inside HDT (needs the net10 core ported to net472
+and brings the plugin DLL conflicts back with every HDT update), and a panel served by the service with the plugin
+starting the service and opening it — and the third one was chosen: same web UI, the plugin owns the service.
+
+**Done**
+
+- `DustPlanner.App`: the operations the CLI had kept to itself are now shared — `SyncInbox` (what `sync` does),
+  `SavePlan`, `ListDecks` / deck keys (`hdt:<id>`, `ingame:<id>` accepted wherever a deck code is), `ImportGames` /
+  `GamesOverview`, prefs and meta read-write with validation, card search and per-card craftability overrides (with
+  `Craftability.ReadOverrides` / `ClearOverride`), an in-memory catalog cache for long-running hosts. The CLI calls them.
+- `DustPlanner.Host`: JSON API under `/api/*` (`docs/panel.md`), the panel at `/` (plain HTML/CSS/JS embedded in the
+  assembly, English and Spanish), the old status page at `/status`, port fallback (8765..8774), `service.json` with
+  the real URL and pid, `--open`. **Automatic sync**: when the exporter writes a new `collection.json` the state service
+  imports it (one parser per request, serialised) and publishes `last_sync`; the panel listens to `/events`.
+- Plugin (`DustPlanner.HdtExporter`): `ServiceLauncher` starts `service\dustplanner-host.exe` next to the plugin with
+  HDT's data folder, bound to a Windows Job Object (`KILL_ON_JOB_CLOSE`) so it ends with HDT, reuses a service already
+  answering for the same folder, and reports its state in the menu. Menu: *Open DustPlanner*, *What am I missing for the
+  selected deck?* (`DeckList.Instance.ActiveDeck` → HearthDb deckstring → `/#/deck?code=`), export now, diagnostics,
+  export folder, service and export status. The plugin's button opens the panel. Settings: `start_service`,
+  `service_port`, `service_path`.
+- Shared messages no longer name CLI commands; a `meta.txt` with a bad line is refused on save and explained on load.
+- Tests: panel API (overview / decks / need by key / plan save / history, automatic sync matched against a plan,
+  settings round trips: prefs validation, meta validation, overrides and their effect on the plan). 124 tests.
+
+**Pending / caveats**
+
+- The plugin side (launcher, Job Object, active deck) compiles against the HDT references but can only be exercised
+  with HDT running: VERIFICACION C6.
+- The panel opens in the default browser. A window inside HDT (WebView2) was deferred until the panel has been used
+  for real; the menu would then open that window instead of the browser, nothing else changes.
+- Default language follows the browser (`es` → Spanish); switchable in Settings.
+
+## Stage 10 — One zip
+
+- `tools/package-exporter.ps1` / `.sh` publish the service self-contained for win-x64 (single file, compressed,
+  ~50 MB) into `DustPlanner\service\` and zip the plugin as `DustPlanner-v<version>.zip` (`-NoService` /
+  `--no-service` for plugin-only developer builds). `-Install` copies the whole folder into HDT's Plugins folder.
+- `release.yml` publishes that zip on `exporter-v*` tags; `INSTALL.txt`, README, `docs/exporter-install.md`,
+  `docs/overlay.md` and the new `docs/panel.md` describe the single-plugin flow.
 
 ---
 

@@ -30,6 +30,8 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
+    <!-- Health check of the service over loopback (framework assembly, present in HDT's process). -->
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
   <!--

@@ -24,6 +24,15 @@ public sealed class ExporterSettings
     /// <summary>Also export HDT's own saved decks (PlayerDecks.xml) alongside the in-game ones.</summary>
     public bool IncludeHdtDecks { get; set; } = true;
 
+    /// <summary>Start the DustPlanner service (panel, overlay, automatic sync) when HDT loads the plugin, and stop it with HDT.</summary>
+    public bool StartService { get; set; } = true;
+
+    /// <summary>Port the service listens on (loopback only); the next free ports are tried when it is busy.</summary>
+    public int ServicePort { get; set; } = 8765;
+
+    /// <summary>Path of <c>dustplanner-host.exe</c>; default: the <c>service</c> folder next to the plugin.</summary>
+    public string? ServicePath { get; set; }
+
     public static string DefaultRootDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DustPlanner");
 

@@ -58,7 +58,7 @@ try {
 
     if ($knownSha256.ContainsKey($Version)) {
         $actual = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($actual -ne $knownSha256[$Version]) { throw "SHA-256 mismatch for $Version: expected $($knownSha256[$Version]), got $actual" }
+        if ($actual -ne $knownSha256[$Version]) { throw "SHA-256 mismatch for ${Version}: expected $($knownSha256[$Version]), got $actual" }
     } else {
         Write-Warning "No known checksum for $Version; skipping verification"
     }

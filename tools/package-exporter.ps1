@@ -30,7 +30,7 @@ foreach ($f in @("DustPlanner.HdtExporter.dll", "DustPlanner.HdtExporter.Logic.d
     Copy-Item (Join-Path $bin $f) (Join-Path $pluginDir $f)
 }
 @"
-DustPlanner Exporter v$version — Hearthstone Deck Tracker plugin
+DustPlanner Exporter v$version - Hearthstone Deck Tracker plugin
 ================================================================
 
 1. Close Hearthstone Deck Tracker.
@@ -51,9 +51,9 @@ Write-Host "Packaged $zip"
 
 if ($Install) {
     $target = Join-Path $env:APPDATA "HearthstoneDeckTracker\Plugins\DustPlanner"
-    if (Get-Process -Name "HearthstoneDeckTracker" -ErrorAction SilentlyContinue) { throw "Close Hearthstone Deck Tracker before installing." }
+    if (Get-Process -Name "HearthstoneDeckTracker", "Hearthstone Deck Tracker" -ErrorAction SilentlyContinue) { throw "Close Hearthstone Deck Tracker before installing." }
     New-Item -ItemType Directory -Path $target -Force | Out-Null
     Copy-Item (Join-Path $pluginDir "*") $target -Force
-    Write-Host "Installed to $target — start HDT and enable the plugin under Options > Tracker > Plugins."
+    Write-Host "Installed to $target - start HDT and enable the plugin under Options > Tracker > Plugins."
 }
 Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue

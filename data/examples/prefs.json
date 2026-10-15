@@ -1,0 +1,23 @@
+{
+  "$comment": "Copy to %LocalAppData%\\DustPlanner\\prefs.json (or pass --prefs). Every value shown is the default.",
+  "format": "standard",
+  "classes_played": ["PRIEST"],
+  "plays_wild": false,
+  "golden_policy": "keep_golden",
+  "meta_protection": { "legendary_share": 0.10, "epic_share": 0.20, "protect_played_class_decks": true },
+  "pain": {
+    "surplus": 0, "refund": 0, "redundant": 1,
+    "premium_unused_wild": 3, "premium_unused_standard": 10,
+    "wild_only": 2, "wild_only_legendary_bonus": 3,
+    "standard_no_signal": 25, "standard_signal_weight": 50,
+    "class_not_played_wild": 5, "class_not_played_standard": 12,
+    "rotating_discount": 3, "blacklisted": 0
+  },
+  "optimizer": { "surplus_penalty_per_dust": 0.01, "per_copy_penalty": 0.1, "alternatives": 2 },
+  "whitelist": [],
+  "blacklist": [],
+  "excluded_decks": [],
+  "ignore_archived_decks": true,
+  "max_snapshot_age_days": 30,
+  "require_known_decks": true
+}

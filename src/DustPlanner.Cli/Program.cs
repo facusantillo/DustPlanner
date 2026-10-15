@@ -18,6 +18,7 @@ CliContext Context(ParseResult result)
 }
 
 root.Subcommands.Add(NeedCommand.Build(Context));
+root.Subcommands.Add(PlanCommand.Build(Context));
 root.Subcommands.Add(CatalogCommand.Build(Context));
 root.Subcommands.Add(CollectionCommand.Build(Context));
 

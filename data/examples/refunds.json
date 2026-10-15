@@ -1,0 +1,10 @@
+[
+  {
+    "$comment": "Active full-dust refund windows after a balance patch. Find them in game by searching 'Refund' in your collection. premium: normal | golden | signature | diamond | all. Dates inclusive.",
+    "dbf_id": 1003,
+    "premium": "all",
+    "starts_at": "2026-10-10",
+    "ends_at": "2026-10-24",
+    "note": "patch 36.0.3 nerf (example)"
+  }
+]

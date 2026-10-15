@@ -1,0 +1,5 @@
+# meta.txt — paste competitive deck codes here, one per line. Lines starting with # are ignored;
+# a line starting with ### names the deck that follows (the game's clipboard format works as is).
+# DustPlanner never scrapes sites: this file is the only meta signal. Example entries (synthetic ids):
+### Example Priest
+AAECAcwIA+sH8gePTgXqB+wH7QfwB/UHAAEB7wfrBwAA

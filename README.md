@@ -4,9 +4,9 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–3 of 8: the HDT exporter plugin (with release packaging), the card catalog and
-> rule tables, and the `need` command (missing cards, dust, rotation) exist; the disenchant recommender is next.
-> See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–4 of 8: the HDT exporter plugin (with release packaging), the card catalog and
+> rule tables, `need` (missing cards, dust, rotation) and `plan` (disenchant recommender) exist; persistence, the
+> Power.log tracker, the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -51,6 +51,7 @@ dotnet run --project src/DustPlanner.Cli -- catalog update          # fetch the 
 dotnet run --project src/DustPlanner.Cli -- collection list         # accounts exported by the HDT plugin
 dotnet run --project src/DustPlanner.Cli -- need "AAECAa0GBPj..."    # missing cards for a deck code
 dotnet run --project src/DustPlanner.Cli -- need deck.txt --json     # or a pasted deck block, machine-readable
+dotnet run --project src/DustPlanner.Cli -- plan "AAECAa0GBPj..."    # + the least painful disenchant plan
 ```
 
 Example (`need` against a synthetic collection):
@@ -76,6 +77,26 @@ ROTATES AT NEXT ROTATION (2027-03 (estimated)) · craft dust at risk: 2,000
   Lost City Scout (synthetic) ×2 — THE_LOST_CITY — craft 400
   Dream Keeper (synthetic) ×1 — EMERALD_DREAM — craft 1,600
 ```
+
+`plan` adds the disenchant recommendation:
+
+```
+DISENCHANT PLAN · need 1,600 · gives 1,600 (surplus 0) · pain 3 · 1 copies · 0 saved deck(s) protected
+  #  card                                          kind    copies   dust  pain  why
+  -  --------------------------------------------  ------  ------  -----  ----  ---------------------------------------
+  1  Titan Relic (synthetic) (Legendary, Neutral)  golden       1  1,600     3  golden copy not used in any deck (Wild)
+
+NOT PROPOSED (protected or without a known value)
+  Dual Caster (synthetic) · golden ×1 · 400 dust — in use (2 in "target deck")
+  ...
+```
+
+How the recommendation works, in one paragraph: copies in your saved decks (and the target deck) are never proposed;
+copies above the playable limit are always free; every other copy gets a *pain* score (refund 0, redundant 1, unused
+golden 3/10, Wild-only 2, Standard 25 + meta signal, +class you don't play, −rotating soon) and an exact optimizer picks
+the set of copies that reaches the dust you need with the least total pain, preferring exact totals and fewer cards.
+Standard legendaries and epics that show up in your `meta.txt` decks are protected. Everything configurable lives in
+`prefs.json` (see `data/examples/`).
 
 Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPLANNER_HOME`): `inbox/` (exporter
 output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`).

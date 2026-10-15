@@ -13,6 +13,10 @@
     <ProjectReference Include="../DustPlanner.Contracts/DustPlanner.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DustPlanner.Core.Tests" />
+  </ItemGroup>
+
   <!-- Game-rule data files live in /data so they can be edited and validated without touching code; they are embedded as defaults. -->
   <ItemGroup>
     <EmbeddedResource Include="../../data/format-rotation.json" LogicalName="DustPlanner.Core.Data.format-rotation.json" />

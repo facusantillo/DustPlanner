@@ -130,3 +130,40 @@ screen (A2.3–A2.4 cover dust and counts).
 
 **Needs user verification** — none beyond stage 0's items; the zip produced locally (`tools\package-exporter.ps1 -Install`)
 is the easiest way to run A1.
+
+---
+
+## Stage 4 — Disenchant recommender (CLI `plan`)
+
+**Done**
+
+- `Core/Planner`:
+  - `UserPrefs` (`prefs.json`): format, classes played, Wild, golden policy, meta thresholds per rarity, all pain
+    weights, optimizer penalties, whitelist/blacklist, excluded decks, snapshot age limit, require-known-decks.
+  - `MetaSignal` from `meta.txt` (share of decks containing each card + classes of those decks). No scraping.
+  - `Refunds` (`refunds.json`): per-card windows; an active window pays the **craft** value of the same premium kind.
+  - `ProtectedDecks`: from the exporter's `decks.json` (archived HDT decks skipped, `excluded_decks` honoured),
+    `--protect-deck` codes, and always the target deck.
+  - `CandidateBuilder`: hard protections first (copies in use = max over decks incl. target, capped at the playable
+    limit; meta-protected Standard legendaries **and epics**; whitelist), **surplus per premium kind always first with
+    pain 0** (correction 4, with the 4-golden-commons test), then pain categories: refund 0, blacklisted 0, redundant 1,
+    premium unused 3/10, Wild-only 2 (+3 legendary), Standard 25 (+50×meta share), modifiers class-not-played +5/+12 and
+    rotating −3. Golden policy decides which kind is kept. Unknown-kind (slots 2/3), Core/free, unknown-set and
+    unknown-value copies are excluded with a reason.
+  - `DustOptimizer`: exact DP over 5-dust units minimising pain + λ·surplus + μ·copies; `Greedy` reference.
+  - `DisenchantPlanner`: packs warning always first, blockers (nothing needed, stale snapshot, no saved decks unless
+    `--allow-no-decks`, infeasible), main plan, up to two alternatives (without the most painful pick; regular copies
+    only), notable exclusions.
+- CLI `plan <deck>`: everything `need` prints plus the plan, alternatives and exclusions; `--json`; exit 1 when no plan.
+- `data/examples/{prefs.json, meta.txt, refunds.json}`.
+- Tests: candidate scoring (8 scenarios), optimizer (exact cases + FsCheck: feasible iff reachable, meets target,
+  respects copies, never worse than greedy, equals brute force on small inputs), planner (blockers, exact shortfall,
+  alternatives, FsCheck: never proposes protected copies, meets need or explains, packs warning first, alternatives
+  differ and are feasible). 92 tests total.
+
+**Pending**
+
+- Persisting plans and matching them against later snapshots is stage 5.
+
+**Needs user verification** — VERIFICACION C2 (signature/diamond values) and C3 (golden refund amount) still open; run
+`dustplanner plan <deck>` on your real export and sanity-check the "NOT PROPOSED" block before touching anything.

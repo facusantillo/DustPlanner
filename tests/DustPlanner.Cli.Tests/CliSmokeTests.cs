@@ -65,6 +65,36 @@ public sealed class CliSmokeTests : IDisposable
     }
 
     [Fact]
+    public async Task Plan_json_proposes_the_least_painful_cover_and_warns_about_packs()
+    {
+        var (code, stdout, stderr) = await Run("--json", "plan", SyntheticDeck, "--as-of", "2026-10-15", "--allow-no-decks");
+
+        Assert.True(code == 0, stderr + stdout);
+        using var doc = JsonDocument.Parse(stdout);
+        var root = doc.RootElement;
+        Assert.True(root.GetProperty("has_plan").GetBoolean());
+        Assert.Equal(1600, root.GetProperty("need").GetInt32());
+        var main = root.GetProperty("main");
+        Assert.Equal(1600, main.GetProperty("total_dust").GetInt32());
+        Assert.Equal(3, main.GetProperty("total_pain").GetInt32());
+        var pick = main.GetProperty("picks")[0];
+        Assert.Equal("golden", pick.GetProperty("kind").GetString());
+        Assert.Equal(1006, pick.GetProperty("dbf_id").GetInt32());
+        Assert.StartsWith("Open your pending packs", root.GetProperty("warnings")[0].GetString(), StringComparison.Ordinal);
+        Assert.Equal(1600, root.GetProperty("missing").GetProperty("shortfall").GetInt32());
+    }
+
+    [Fact]
+    public async Task Plan_without_saved_decks_is_blocked_with_exit_code_1()
+    {
+        var (code, stdout, _) = await Run("plan", SyntheticDeck, "--as-of", "2026-10-15");
+
+        Assert.Equal(1, code);
+        Assert.Contains("NO DISENCHANT PLAN", stdout, StringComparison.Ordinal);
+        Assert.Contains("No saved decks are known", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Collection_list_and_show_read_the_inbox()
     {
         var (code, stdout, _) = await Run("collection", "list");

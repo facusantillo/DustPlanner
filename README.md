@@ -4,9 +4,8 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–7 of 8: the HDT exporter plugin (with release packaging), the card catalog and
-> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender), the local history database, the
-> `Power.log` match tracker and the read-only MCP server exist; the OBS overlay follows. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: all eight stages built; awaiting validation on a real machine** (see [`docs/VERIFICACION.md`](docs/VERIFICACION.md)
+> for what still needs a human with the game open). Progress log: [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -29,7 +28,7 @@ disenchant to get there with the least regret.
 | `src/DustPlanner.Cli` | net10.0 | Command-line interface |
 | `src/DustPlanner.LogTracker` | net10.0 | `Power.log` parser, importer, follower and win-rate queries |
 | `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server (stdio) for Claude Desktop / Claude Code |
-| `src/DustPlanner.Host` | net10.0 | Local HTTP host + OBS overlay *(stage 8)* |
+| `src/DustPlanner.Host` | net10.0 | Loopback HTTP host: follows Power.log + exports, serves the OBS overlay |
 | `tests/` | net10.0 | One test project per module |
 | `tools/` | — | `HdtApiCheck`, HDT reference fetch scripts, data validation scripts |
 | `data/` | — | Format rotation, dust rules, non-craftable list, example configs |
@@ -120,6 +119,12 @@ output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the 
 disenchant proposal, history, win rate — so Claude Desktop or Claude Code can answer *"what am I missing for this deck
 and what would you disenchant?"* from your own data. It never stores a plan, never touches the game. Setup and the tool
 list: [`docs/mcp.md`](docs/mcp.md).
+
+## OBS overlay
+
+`dustplanner-host` follows `Power.log` and the exporter files and serves a transparent 1920×1080 page for an OBS
+Browser Source — rank, session win rate, today's record, dust, last game — on `http://127.0.0.1:8765/overlay`
+(loopback only). Setup, options and what each cell means: [`docs/overlay.md`](docs/overlay.md).
 
 ## Installing the exporter plugin
 

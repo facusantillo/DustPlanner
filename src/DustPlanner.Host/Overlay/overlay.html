@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DustPlanner overlay</title>
+<meta name="viewport" content="width=1920, height=1080">
+<style>
+  /* Designed for an OBS Browser Source of 1920x1080 with a transparent background.
+     Query options: ?scale=1.25  ?align=right  ?hide=rank,dust,today,streak,last  ?theme=light */
+  :root {
+    --bg: rgba(12, 14, 18, 0.72);
+    --fg: #f4f4f2;
+    --muted: rgba(244, 244, 242, 0.62);
+    --win: #7dd87d;
+    --loss: #e86f6f;
+    --accent: #9fc5ff;
+    --dust: #b8a1ff;
+    --radius: 18px;
+    --pad: 18px 26px;
+    --font: "Segoe UI", "Inter", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  }
+  html, body { margin: 0; padding: 0; background: transparent; width: 1920px; height: 1080px; overflow: hidden; }
+  body { font-family: var(--font); color: var(--fg); }
+  body[data-theme="light"] { --bg: rgba(250, 250, 248, 0.86); --fg: #16181d; --muted: rgba(22, 24, 29, 0.6); --win: #1f8f3a; --loss: #c43c3c; --accent: #2b63b8; --dust: #6a4fd8; }
+  #bar {
+    position: absolute; top: 24px; left: 24px;
+    display: inline-flex; align-items: stretch; gap: 0;
+    background: var(--bg); border-radius: var(--radius);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    transform-origin: top left;
+    backdrop-filter: blur(6px);
+  }
+  body[data-align="right"] #bar { left: auto; right: 24px; transform-origin: top right; }
+  .cell { display: flex; flex-direction: column; justify-content: center; padding: var(--pad); min-width: 150px; }
+  .cell + .cell { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+  body[data-theme="light"] .cell + .cell { border-left-color: rgba(0, 0, 0, 0.12); }
+  .label { font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .value { font-size: 34px; font-weight: 600; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sub { font-size: 16px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
+  .win { color: var(--win); } .loss { color: var(--loss); } .accent { color: var(--accent); } .dust { color: var(--dust); }
+  .hidden { display: none !important; }
+  #last { transition: opacity 0.6s; }
+  #offline { position: absolute; top: 120px; left: 24px; font-size: 16px; color: var(--muted); display: none; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="cell" id="cell-rank"><div class="label">Rank</div><div class="value accent" id="rank">—</div><div class="sub" id="rank-sub"></div></div>
+  <div class="cell" id="cell-session"><div class="label">Session</div><div class="value" id="session">0 – 0</div><div class="sub" id="session-sub">no games yet</div></div>
+  <div class="cell" id="cell-today"><div class="label">Today</div><div class="value" id="today">0 – 0</div><div class="sub" id="today-sub"></div></div>
+  <div class="cell" id="cell-dust"><div class="label">Dust</div><div class="value dust" id="dust">—</div><div class="sub" id="dust-sub"></div></div>
+  <div class="cell hidden" id="cell-last"><div class="label">Last game</div><div class="value" id="last">—</div><div class="sub" id="last-sub"></div></div>
+</div>
+<div id="offline">overlay disconnected — is dustplanner-host running?</div>
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const scale = parseFloat(params.get("scale") || "1");
+  if (scale !== 1) document.getElementById("bar").style.transform = "scale(" + scale + ")";
+  if (params.get("align") === "right") document.body.dataset.align = "right";
+  if (params.get("theme") === "light") document.body.dataset.theme = "light";
+  const hidden = new Set((params.get("hide") || "").split(",").map(s => s.trim()).filter(Boolean));
+  for (const name of hidden) { const el = document.getElementById("cell-" + name); if (el) el.classList.add("hidden"); }
+
+  const fmt = n => n.toLocaleString("en-US");
+  const pct = r => r.win_rate == null ? "—" : Math.round(r.win_rate * 100) + "%";
+  const cls = s => s ? s.charAt(0) + s.slice(1).toLowerCase() : "?";
+
+  function render(state) {
+    const rank = state.rank;
+    document.getElementById("rank").textContent = rank ? rank.label : "—";
+    document.getElementById("rank-sub").textContent = rank ? cls(rank.format) : "no export yet";
+
+    const record = r => '<span class="win">' + r.wins + '</span> – <span class="loss">' + r.losses + '</span>';
+    const detail = (r, empty) => {
+      if (!r.games) return empty;
+      const parts = [];
+      if (r.win_rate != null) parts.push(pct(r) + " win rate");
+      if (r.ties) parts.push(r.ties + (r.ties === 1 ? " draw" : " draws"));
+      if (!parts.length) parts.push(r.games + (r.games === 1 ? " game" : " games"));
+      return parts.join(" · ");
+    };
+
+    const s = state.session;
+    document.getElementById("session").innerHTML = record(s);
+    let sub = detail(s, "no games yet");
+    if (!hidden.has("streak") && Math.abs(s.streak) >= 2) sub += (s.streak > 0 ? " · " + s.streak + " in a row" : " · " + (-s.streak) + " lost in a row");
+    document.getElementById("session-sub").textContent = sub;
+
+    const t = state.today;
+    document.getElementById("today").innerHTML = record(t);
+    document.getElementById("today-sub").textContent = detail(t, "");
+
+    const d = state.dust;
+    document.getElementById("dust").textContent = d ? fmt(d.value) : "—";
+    document.getElementById("dust-sub").textContent = d ? "arcane dust" : "no export yet";
+
+    const last = state.last_game;
+    const lastCell = document.getElementById("cell-last");
+    if (last && !hidden.has("last")) {
+      lastCell.classList.remove("hidden");
+      const el = document.getElementById("last");
+      el.textContent = last.result === "win" ? "Victory" : last.result === "loss" ? "Defeat" : last.result === "tie" ? "Draw" : "—";
+      el.className = "value " + (last.result === "win" ? "win" : last.result === "loss" ? "loss" : "");
+      document.getElementById("last-sub").textContent = cls(last.player_class) + " vs " + cls(last.opponent_class) + " · " + last.turns + " turns";
+    } else {
+      lastCell.classList.add("hidden");
+    }
+  }
+
+  function connect() {
+    const source = new EventSource("/events");
+    source.addEventListener("state", e => { document.getElementById("offline").style.display = "none"; render(JSON.parse(e.data)); });
+    source.onerror = () => { document.getElementById("offline").style.display = "block"; };
+  }
+  fetch("/api/state").then(r => r.json()).then(render).catch(() => {});
+  connect();
+})();
+</script>
+</body>
+</html>

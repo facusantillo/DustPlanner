@@ -27,8 +27,32 @@ public sealed partial class PowerLogParser
 
     public IReadOnlyList<GameRecord> Games => _games;
 
-    /// <summary>The game currently being played, if a CREATE_GAME was seen without a matching COMPLETE.</summary>
-    public GameRecord? Current => _game?.ToRecord(completed: false);
+    /// <summary>
+    /// The game currently being played, if a CREATE_GAME was seen without a matching COMPLETE. When no revealed hand has
+    /// settled the local player yet, the fallback rules are applied tentatively so the overlay can show the opponent.
+    /// </summary>
+    public GameRecord? Current
+    {
+        get
+        {
+            if (_game is null)
+            {
+                return null;
+            }
+
+            var record = _game.ToRecord(completed: false);
+            if (record.Friendly is null)
+            {
+                var guess = FallbackFriendly(_game);
+                if (guess is not null)
+                {
+                    record = _game.ToRecord(completed: false, tentativeFriendlyId: guess.PlayerId);
+                }
+            }
+
+            return record;
+        }
+    }
 
     public void Feed(IEnumerable<string> lines)
     {
@@ -423,16 +447,23 @@ public sealed partial class PowerLogParser
             return;
         }
 
+        var guess = FallbackFriendly(game);
+        if (guess is not null)
+        {
+            SetFriendly(game, guess.PlayerId);
+        }
+    }
+
+    private static ParsedPlayer? FallbackFriendly(GameState game)
+    {
         var human = game.Players.Values.Where(p => !p.IsAi).ToList();
-        var named = game.Players.Values.Where(p => p.Name is not null && p.Name != UnknownHumanPlayer).ToList();
         if (human.Count == 1)
         {
-            SetFriendly(game, human[0].PlayerId);
+            return human[0];
         }
-        else if (named.Count == 1)
-        {
-            SetFriendly(game, named[0].PlayerId);
-        }
+
+        var named = game.Players.Values.Where(p => p.Name is not null && p.Name != UnknownHumanPlayer).ToList();
+        return named.Count == 1 ? named[0] : null;
     }
 
     private static int ParseEntityRef(string value)
@@ -503,7 +534,7 @@ public sealed partial class PowerLogParser
 
         public int? ScenarioId { get; set; }
 
-        public GameRecord ToRecord(bool completed) => new()
+        public GameRecord ToRecord(bool completed, int? tentativeFriendlyId = null) => new()
         {
             StartedAt = StartedAt,
             EndedAt = EndedAt,
@@ -512,7 +543,7 @@ public sealed partial class PowerLogParser
             FormatType = FormatType,
             ScenarioId = ScenarioId,
             Turns = Turns,
-            Players = Players.Values.OrderBy(p => p.PlayerId).ToList(),
+            Players = Players.Values.OrderBy(p => p.PlayerId).Select(p => tentativeFriendlyId is null ? p : p.Copy(isFriendly: p.PlayerId == tentativeFriendlyId)).ToList(),
             Completed = completed,
         };
     }

@@ -136,4 +136,8 @@ loading and the status line says which feature is off.
       Anything that differs → paste the `Hearthstone_<date>/Power.log` session folder name and the row; the
       inference of the *local* player (revealed hand → controller) is the most likely culprit and is isolated in
       `PowerLogParser.EndBlock`.
-- [ ] C5. OBS Browser Source renders the overlay with a transparent background at 1080p (stage 8).
+- [ ] C5. **OBS overlay** (stage 8): run `dotnet run --project src\DustPlanner.Host -c Release`, add a Browser Source
+      with `http://127.0.0.1:8765/overlay` at 1920×1080 (docs/overlay.md) and confirm: transparent background (only
+      the bar is visible), legible at 1080p, the *Session* cell changes within ~5 s after a game ends, *Rank* and
+      *Dust* change after HDT's next export (leave and re-enter the collection / Play screen). Checked here only with
+      headless Chromium (transparent PNG, alpha 0 outside the bar), never with OBS itself.

@@ -28,6 +28,20 @@ public sealed class ParsedPlayer
     public bool IsAi => AccountLo == 0;
 
     public string AccountKey => Contracts.AccountKeys.Format(AccountHi, AccountLo);
+
+    /// <summary>A detached copy (used for tentative views of a game in progress).</summary>
+    public ParsedPlayer Copy(bool isFriendly) => new()
+    {
+        PlayerId = PlayerId,
+        EntityId = EntityId,
+        AccountHi = AccountHi,
+        AccountLo = AccountLo,
+        Name = Name,
+        HeroCardId = HeroCardId,
+        PlayState = PlayState,
+        IsFirst = IsFirst,
+        IsFriendly = isFriendly,
+    };
 }
 
 /// <summary>A complete game reconstructed from Power.log.</summary>
@@ -55,7 +69,8 @@ public sealed class GameRecord
 
     public ParsedPlayer? Friendly => Players.FirstOrDefault(p => p.IsFriendly);
 
-    public ParsedPlayer? Opponent => Players.FirstOrDefault(p => !p.IsFriendly);
+    /// <summary>The other player; null until the friendly player is known (otherwise it could name the local player).</summary>
+    public ParsedPlayer? Opponent => Friendly is null ? null : Players.FirstOrDefault(p => !p.IsFriendly);
 
     /// <summary><c>win</c>, <c>loss</c>, <c>tie</c> or <c>unknown</c> from the friendly player's point of view.</summary>
     public string Result => Friendly?.PlayState switch

@@ -250,3 +250,29 @@ events: report them if they appear without you having touched the collection).
 - The catalog is cached in memory for 10 minutes per server process; after `dustplanner catalog update` restart the
   client (or wait) to see a new build.
 - No HTTP transport: stdio only, by design (local, single user, nothing listening on a port).
+
+---
+
+## Stage 8 — OBS overlay host
+
+**Done**
+
+- `src/DustPlanner.Host` (ASP.NET Core minimal API, Kestrel bound to `127.0.0.1` only): `OverlayStateService` polls
+  Power.log through `PowerLogFollower` (games completed after start → session record, stored in the database like
+  `games import`), the exporter's `collection.json` (dust) and `rank.json` (rank, also imported into `rank_sample`)
+  by modification time; publishes an immutable `OverlayState` on change. Endpoints: `/` status page with OBS
+  instructions and a live preview, `/overlay` (transparent 1920×1080, SSE-driven, `scale`/`align`/`theme`/`hide`
+  options), `/api/state`, `/events` (Server-Sent Events with keep-alives).
+- Parser: a game in progress now exposes a tentative local player (same fallbacks as at completion) so the overlay
+  never names the local player as the opponent.
+- `docs/overlay.md`: run, OBS setup, options, cell semantics, C5 verification note.
+- Tests: `tests/DustPlanner.Host.Tests` starts the real host on a random loopback port with a synthetic home, logs
+  folder and rank export; checks the pages, the state (rank label, dust, account), the SSE stream, that games appended
+  after start update session/last game/current game and land in the database, and that pre-existing games are not
+  replayed into the session. Visual check done with headless Chromium (transparent PNG). 113 tests total.
+
+**Pending / caveats**
+
+- VERIFICACION C5: confirm in OBS on the real machine (transparency, legibility, update latency).
+- Rank comes only from the exporter (decision Q8); it refreshes when HDT next exports, not the instant a game ends.
+- The session resets when the host restarts; "today" does not (it is read from the database).

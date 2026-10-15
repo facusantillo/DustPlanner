@@ -8,7 +8,7 @@ public class PowerLogParserTests
 
     private static PowerLogParser ParseFile(string name, DateOnly baseDate)
     {
-        var parser = new PowerLogParser(baseDate);
+        var parser = new PowerLogParser(baseDate, TimeZoneInfo.Utc); // fixtures assert absolute instants; the default is the local zone
         parser.Feed(File.ReadLines(Fixture(name)));
         return parser;
     }
@@ -120,9 +120,21 @@ public class PowerLogParserTests
     }
 
     [Fact]
+    public void Timestamps_are_local_time_by_default()
+    {
+        var madrid = TimeZoneInfo.FindSystemTimeZoneById("Europe/Madrid");
+        var parser = new PowerLogParser(new DateOnly(2026, 10, 15), madrid);
+        parser.Feed(File.ReadLines(Fixture("synthetic_edge_cases.power.log")));
+        var first = parser.Games[0];
+        Assert.Equal(new DateTimeOffset(2026, 10, 15, 23, 58, 10, TimeSpan.FromHours(2)), first.StartedAt);
+        Assert.Equal(new DateTimeOffset(2026, 10, 15, 21, 58, 10, TimeSpan.Zero), first.StartedAt.ToUniversalTime());
+        Assert.Equal(new DateTimeOffset(2026, 10, 16, 0, 1, 0, TimeSpan.FromHours(2)), first.EndedAt);
+    }
+
+    [Fact]
     public void Lines_from_other_loggers_and_garbage_are_ignored()
     {
-        var parser = new PowerLogParser(new DateOnly(2026, 1, 1));
+        var parser = new PowerLogParser(new DateOnly(2026, 1, 1), TimeZoneInfo.Utc);
         parser.Feed("D 10:00:00.0000000 PowerTaskList.DebugPrintPower() - CREATE_GAME");
         parser.Feed("garbage");
         parser.Feed(string.Empty);

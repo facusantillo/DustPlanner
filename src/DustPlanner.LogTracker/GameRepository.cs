@@ -108,15 +108,15 @@ public sealed class GameRepository
     }
 
     /// <summary>Win rate per player class since <paramref name="since"/>.</summary>
-    public IReadOnlyList<(string PlayerClass, WinRate Rate)> StatsByClass(string? accountKey, DateTimeOffset? since, string? gameType = null)
+    public IReadOnlyList<(string PlayerClass, WinRate Rate)> StatsByClass(string? accountKey, DateTimeOffset? since, string? gameType = null, string? format = null)
     {
         using var cmd = _store.Command(
             """
             SELECT COALESCE(player_class, '?'), result, COUNT(*) FROM game
-            WHERE ($k IS NULL OR account_key = $k) AND ($since IS NULL OR started_at >= $since) AND ($type IS NULL OR game_type = $type)
+            WHERE ($k IS NULL OR account_key = $k) AND ($since IS NULL OR started_at >= $since) AND ($type IS NULL OR game_type = $type) AND ($fmt IS NULL OR format = $fmt)
             GROUP BY player_class, result
             """,
-            ("$k", accountKey), ("$since", since is { } s ? DustStore.Iso(s) : null), ("$type", gameType));
+            ("$k", accountKey), ("$since", since is { } s ? DustStore.Iso(s) : null), ("$type", gameType), ("$fmt", format));
         using var reader = cmd.ExecuteReader();
         var counts = new Dictionary<string, int[]>(StringComparer.Ordinal);
         while (reader.Read())

@@ -111,7 +111,8 @@ public static class CandidateBuilder
                 var reason = whitelist.Contains(card.DbfId) ? "whitelisted"
                     : usedInDecks >= keep ? $"in use ({usedInDecks} in \"{usingDeck!.Name}\")"
                     : "protected by meta signal";
-                excluded.Add(new ExcludedCopies(card, card.DbfId, kind, keep, reason, DustValue(card, kind, rules, refunds, asOf)));
+                var protectedValue = rules.Craftability.IsCraftable(card, kind) ? DustValue(card, kind, rules, refunds, asOf) : null; // DustValue is already null for unknown kinds
+                excluded.Add(new ExcludedCopies(card, card.DbfId, kind, keep, reason, protectedValue));
             }
 
             // 3. Score what is left.

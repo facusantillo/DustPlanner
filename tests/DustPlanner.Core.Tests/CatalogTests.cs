@@ -69,6 +69,37 @@ public class CatalogTests
         }
     }
 
+    [Fact]
+    public async Task Provider_resolves_build_from_the_latest_index_when_there_is_no_redirect()
+    {
+        // Since 2026 HearthstoneJSON serves /v1/latest/... directly; the build is only visible in the /v1/latest/ directory index.
+        var dir = Path.Combine(Path.GetTempPath(), "dustplanner-catalog-" + Guid.NewGuid().ToString("N"));
+        var handler = new FakeHandler(TestData.Fixture("cards.synthetic.json"), build: "255026") { Redirects = false };
+        var options = new HearthstoneJsonOptions { CacheDirectory = dir, MaxAge = TimeSpan.FromHours(1) };
+        try
+        {
+            using var http = new HttpClient(handler);
+            var provider = new HearthstoneJsonCatalogProvider(http, options);
+
+            var first = await provider.GetAsync();
+            Assert.Equal("255026", first.Catalog.Build);
+            Assert.True(File.Exists(Path.Combine(dir, "255026", "cards.collectible.enUS.json")));
+            Assert.Equal(1, handler.Downloads);
+
+            handler.Build = "255100";
+            var second = await provider.GetAsync(forceRefresh: true);
+            Assert.Equal("255100", second.Catalog.Build);
+            Assert.Equal(2, handler.Downloads);
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+    }
+
     private sealed class FakeTime(DateTimeOffset now) : TimeProvider
     {
         private DateTimeOffset _now = now;
@@ -84,6 +115,9 @@ public class CatalogTests
 
         public bool Offline { get; set; }
 
+        /// <summary>True: the old behaviour (302 to /v1/{build}/). False: today's behaviour (200 on /latest/, build only in the index page).</summary>
+        public bool Redirects { get; set; } = true;
+
         public int Downloads { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -94,8 +128,20 @@ public class CatalogTests
             }
 
             var path = request.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/latest/", StringComparison.Ordinal))
+            {
+                var html = $"<html><body><a href=\"/v1/{Build}\">..</a><a href=\"/v1/{Build}/all/cards.json\">cards.json</a></body></html>";
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(html) });
+            }
+
             if (path.Contains("/latest/", StringComparison.Ordinal))
             {
+                if (!Redirects)
+                {
+                    // Served directly; the caller discards the body (headers-only read) and must look at the index instead.
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) });
+                }
+
                 var redirect = new HttpResponseMessage(HttpStatusCode.Found);
                 redirect.Headers.Location = new Uri(request.RequestUri, path.Replace("/latest/", "/" + Build + "/", StringComparison.Ordinal));
                 return Task.FromResult(redirect);

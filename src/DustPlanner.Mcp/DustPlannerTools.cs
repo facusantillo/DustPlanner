@@ -43,7 +43,7 @@ internal sealed class DustPlannerTools(ReadOnlyGateway gateway)
             var collection = app.LoadCollection(null, account, null, catalog.Catalog);
             return new
             {
-                accounts = accounts.Select(a => new { account = a.BattleTag ?? a.AccountKey, account_key = a.AccountKey, region = a.Region, collection_exported_at = a.CollectionExportedAt, has_decks = a.HasDecks, has_rank = a.HasRank }),
+                accounts = accounts.Select(a => new { account = a.BattleTag ?? a.AccountKey, account_key = a.AccountKey, region = a.Region, collection_exported_at = a.CollectionExportedAt, has_decks = a.HasDecks, has_rank = a.HasRank }).ToList(),
                 collection = CollectionSummaryJson.From(collection, catalog.Catalog, app.Rules),
                 catalog_warning = catalog.Warning,
                 notes = SummaryNotes,
@@ -106,14 +106,15 @@ internal sealed class DustPlannerTools(ReadOnlyGateway gateway)
             var accountKey = account ?? (known.Count > 0 ? known[0] : null)
                 ?? throw new AppException("The database holds no collection snapshot yet. Run 'dustplanner sync' first.");
             var ranks = new RankRepository(store);
-            var rank = RankFormats.Select(f => ranks.Latest(accountKey, f)).Where(r => r is not null).Select(r => new { r!.Format, r.TakenAt, label = RankRepository.Describe(r), r.LeagueId, r.StarLevel, r.Stars, r.LegendRank });
+            // Everything is materialised here: the payload is serialised after the connection is disposed.
+            var rank = RankFormats.Select(f => ranks.Latest(accountKey, f)).Where(r => r is not null).Select(r => new { r!.Format, r.TakenAt, label = RankRepository.Describe(r), r.LeagueId, r.StarLevel, r.Stars, r.LegendRank }).ToList();
             return new
             {
                 account_key = accountKey,
                 known_accounts = known,
                 snapshots = snapshots.List(accountKey, 10),
                 plans = new PlanRepository(store).List(accountKey),
-                events = new HistoryService(store).Events(accountKey, Math.Clamp(limit, 1, 500)).Select(e => EventJson.From(e, catalog.Catalog)),
+                events = new HistoryService(store).Events(accountKey, Math.Clamp(limit, 1, 500)).Select(e => EventJson.From(e, catalog.Catalog)).ToList(),
                 rank,
             };
         });
@@ -136,7 +137,7 @@ internal sealed class DustPlannerTools(ReadOnlyGateway gateway)
             var accountKey = account ?? games.LatestAccount() ?? throw new AppException("No games stored yet. Run 'dustplanner games import' first.");
             var from = ParseSince(since, days);
             var overall = games.Stats(accountKey, from, gameType, format);
-            var byClass = games.StatsByClass(accountKey, from, gameType);
+            var byClass = games.StatsByClass(accountKey, from, gameType, format);
             return Task.FromResult<object>(new
             {
                 account_key = accountKey,
@@ -145,7 +146,7 @@ internal sealed class DustPlannerTools(ReadOnlyGateway gateway)
                 game_type = gameType,
                 format,
                 overall = StatsJson.From(overall),
-                by_class = byClass.Select(c => new { player_class = c.PlayerClass, stats = StatsJson.From(c.Rate) }),
+                by_class = byClass.Select(c => new { player_class = c.PlayerClass, stats = StatsJson.From(c.Rate) }).ToList(),
                 recent_games = games.List(accountKey, Math.Clamp(recent, 0, 100)),
                 note = "win_rate = wins / (wins + losses); ties and games without a result count in 'games' only. recent_games ignores the filters.",
             });

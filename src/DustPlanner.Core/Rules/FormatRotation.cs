@@ -111,4 +111,23 @@ public sealed record RotationYear(string Name, DateOnly Starts, IReadOnlyList<st
 public sealed record NextRotation(DateOnly? Date = null, string? Estimate = null, string? Note = null)
 {
     public string Display => Date is { } d ? d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : (Estimate is null ? "unknown" : Estimate + " (estimated)");
+
+    /// <summary>
+    /// True when <paramref name="date"/> is on or after the announced date, or after the month of the estimate
+    /// (<c>2027-03</c> → from 2027-04-01): the data file then lacks the year in force and Standard legality is stale.
+    /// </summary>
+    public bool IsPast(DateOnly date)
+    {
+        if (Date is { } announced)
+        {
+            return date >= announced;
+        }
+
+        if (Estimate is not null && DateOnly.TryParseExact(Estimate + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
+        {
+            return date >= month.AddMonths(1);
+        }
+
+        return false;
+    }
 }

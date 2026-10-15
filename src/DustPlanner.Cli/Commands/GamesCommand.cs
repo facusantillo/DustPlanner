@@ -128,7 +128,7 @@ internal static class GamesCommand
             var format = result.GetValue(formatOpt);
 
             var overall = games.Stats(accountKey, since, gameType, format);
-            var byClass = games.StatsByClass(accountKey, since, gameType);
+            var byClass = games.StatsByClass(accountKey, since, gameType, format);
 
             if (ctx.Json)
             {

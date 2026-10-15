@@ -67,6 +67,21 @@ public static class InboxLocator
         {
             var match = accounts.FirstOrDefault(a => string.Equals(a.AccountKey, requestedKey, StringComparison.Ordinal)
                                                      || string.Equals(a.BattleTag, requestedKey, StringComparison.OrdinalIgnoreCase));
+            if (match is null)
+            {
+                // "Facu" for "Facu#1234", or the first digits of a key: accepted when it identifies exactly one account.
+                var partial = accounts.Where(a => (a.BattleTag is not null && a.BattleTag.StartsWith(requestedKey, StringComparison.OrdinalIgnoreCase))
+                                                  || a.AccountKey.StartsWith(requestedKey, StringComparison.Ordinal)).ToList();
+                if (partial.Count == 1)
+                {
+                    match = partial[0];
+                }
+                else if (partial.Count > 1)
+                {
+                    return (null, $"Account '{requestedKey}' is ambiguous: {string.Join(", ", partial.Select(a => a.BattleTag ?? a.AccountKey))}.");
+                }
+            }
+
             return match is null
                 ? (null, $"Account '{requestedKey}' not found. Known: {string.Join(", ", accounts.Select(a => a.BattleTag ?? a.AccountKey))}.")
                 : (match, null);

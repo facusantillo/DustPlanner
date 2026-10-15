@@ -129,6 +129,12 @@ public static class MissingCards
             warnings.Add("Craftability unknown for set(s) " + string.Join(", ", unknownSets) + "; add them to data/non-craftable.json.");
         }
 
+        if (rules.Rotation.Next.IsPast(asOf) && rules.Rotation.YearOn(asOf) == rules.Rotation.Years[^1])
+        {
+            warnings.Add($"data/format-rotation.json knows no Standard year after {rules.Rotation.Years[^1].Name} ({rules.Rotation.Years[^1].Starts:yyyy-MM-dd}) " +
+                         $"but the next rotation ({rules.Rotation.Next.Display}) is already past on {asOf:yyyy-MM-dd}: Standard legality and rotation risk may be stale; update the data file.");
+        }
+
         var age = DateTimeOffset.UtcNow - collection.TakenAt;
         if (age > TimeSpan.FromDays(7))
         {

@@ -7,9 +7,11 @@
     "DARKMOON_FAIRE", "THE_BARRENS", "ALTERAC_VALLEY", "LEGACY", "THE_SUNKEN_CITY", "RETURN_OF_THE_LICH_KING",
     "PATH_OF_ARTHAS", "BATTLE_OF_THE_BANDS", "TITANS", "WILD_WEST", "WONDERS", "WHIZBANGS_WORKSHOP",
     "ISLAND_VACATION", "SPACE", "EMERALD_DREAM", "THE_LOST_CITY", "TIME_TRAVEL", "CATACLYSM",
-    "ESCAPEFROM_VIOLET_HOLD", "BE"
+    "ESCAPEFROM_VIOLET_HOLD", "BE",
+    "STORMWIND", "REVENDRETH", "EXPERT1", "YEAR_OF_THE_DRAGON"
   ],
-  "non_craftable_sets": ["CORE", "VANILLA", "EVENT", "HOF", "PROMO", "REWARD"],
+  "$comment_hand_added": "STORMWIND (United in Stormwind) and REVENDRETH (Murder at Castle Nathria) are ordinary expansions missing from python-hearthstone's CardSet.craftable list (an upstream omission, 9.22.0); EXPERT1 is the Classic set, still 245 collectible cards in HearthstoneJSON and craftable in Wild (hearthstone.wiki.gg/wiki/Crafting: only FREE-rarity Legacy cards cannot be crafted); YEAR_OF_THE_DRAGON holds the Galakrond's Awakening adventure cards, craftable per hearthstone.wiki.gg/wiki/Galakrond's_Awakening ('both regular and golden versions can be crafted and disenchanted for the usual amounts'). HERO_SKINS (collectible hero portraits) and CORE_HIDDEN (Core cards of past years, kept as entities) are never craftable. Found by QA 2026-10-15 against the live catalog (build 255026).",
+  "non_craftable_sets": ["CORE", "CORE_HIDDEN", "VANILLA", "EVENT", "HOF", "PROMO", "REWARD", "HERO_SKINS"],
   "craftable_rarities": ["COMMON", "RARE", "EPIC", "LEGENDARY"],
   "craftable_types": ["HERO", "MINION", "SPELL", "WEAPON", "LOCATION"],
   "uncraftable_card_ids": [],

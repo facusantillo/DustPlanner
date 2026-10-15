@@ -9,11 +9,16 @@ public sealed class LogImporter
 {
     private readonly GameRepository _games;
     private readonly CardCatalog? _catalog;
+    private readonly TimeZoneInfo? _timeZone;
 
-    public LogImporter(GameRepository games, CardCatalog? catalog)
+    /// <param name="games">Where parsed games are stored.</param>
+    /// <param name="catalog">Card catalog used to resolve hero classes (null: built-in hero table only).</param>
+    /// <param name="timeZone">Zone of the log's clock times (default: this machine's local zone, which is what the game writes).</param>
+    public LogImporter(GameRepository games, CardCatalog? catalog, TimeZoneInfo? timeZone = null)
     {
         _games = games ?? throw new ArgumentNullException(nameof(games));
         _catalog = catalog;
+        _timeZone = timeZone;
     }
 
     public ImportSummary ImportDirectory(string logsDirectory)
@@ -35,7 +40,7 @@ public sealed class LogImporter
     public (int Parsed, int Inserted, int Incomplete) ImportFile(PowerLogFile file, List<string>? warnings = null)
     {
         ArgumentNullException.ThrowIfNull(file);
-        var parser = new PowerLogParser(file.BaseDate);
+        var parser = new PowerLogParser(file.BaseDate, _timeZone);
         using (var reader = new StreamReader(new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete)))
         {
             while (reader.ReadLine() is { } line)

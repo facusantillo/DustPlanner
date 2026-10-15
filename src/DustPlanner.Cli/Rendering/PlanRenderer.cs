@@ -80,10 +80,26 @@ internal static class PlanRenderer
             sb.AppendLine(CultureInfo.InvariantCulture, $"  {e.Card!.Name} · {CandidateBuilder.KindName(e.Kind)} ×{e.Copies} · {value} — {e.Reason}");
         }
 
-        var byReason = plan.Pool.Excluded.GroupBy(e => e.Reason).Select(g => $"{g.Sum(x => x.Copies)} copies {g.Key}").ToList();
+        var byReason = plan.Pool.Excluded
+            .GroupBy(e => ExclusionCategory(e.Reason), StringComparer.Ordinal)
+            .OrderByDescending(g => g.Sum(x => x.Copies))
+            .Select(g => $"{g.Sum(x => x.Copies)} copies {g.Key}")
+            .ToList();
         if (byReason.Count > 0)
         {
             sb.AppendLine("  Excluded in total: " + string.Join("; ", byReason));
         }
+    }
+
+    /// <summary>"in use (2 in "X")" → "in use (saved decks)"; "unknown craftability (set S)" → "unknown craftability"; others unchanged.</summary>
+    private static string ExclusionCategory(string reason)
+    {
+        if (reason.StartsWith("in use", StringComparison.Ordinal))
+        {
+            return reason.Contains("\"target deck\"", StringComparison.Ordinal) ? "in use (target deck)" : "in use (saved decks)";
+        }
+
+        var paren = reason.IndexOf(" (", StringComparison.Ordinal);
+        return reason.StartsWith("unknown craftability", StringComparison.Ordinal) && paren > 0 ? reason[..paren] : reason;
     }
 }

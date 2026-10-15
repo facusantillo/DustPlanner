@@ -5,7 +5,8 @@ cards you are missing, how much Arcane Dust you need, and which cards in your co
 disenchant to get there with the least regret.
 
 > **Status: all eight stages built; awaiting validation on a real machine** (see [`docs/VERIFICACION.md`](docs/VERIFICACION.md)
-> for what still needs a human with the game open). Progress log: [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> for what still needs a human with the game open). Progress log: [`docs/PROGRESO.md`](docs/PROGRESO.md); latest QA
+> round: [`docs/QA-2026-10-15.md`](docs/QA-2026-10-15.md).
 
 ## What it does — and what it never does
 

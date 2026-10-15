@@ -12,15 +12,18 @@ public sealed partial class PowerLogParser
 {
     private readonly List<GameRecord> _games = new();
     private readonly DateOnly _baseDate;
+    private readonly TimeZoneInfo _timeZone;
     private DateOnly _currentDate;
     private TimeOnly? _lastTime;
     private GameState? _game;
 
     /// <param name="baseDate">Date of the first line (Power.log only carries times); later lines roll over midnight automatically.</param>
-    public PowerLogParser(DateOnly baseDate)
+    /// <param name="timeZone">Zone the log's clock times belong to: the game writes local time, so the machine's zone by default.</param>
+    public PowerLogParser(DateOnly baseDate, TimeZoneInfo? timeZone = null)
     {
         _baseDate = baseDate;
         _currentDate = baseDate;
+        _timeZone = timeZone ?? TimeZoneInfo.Local;
     }
 
     public event Action<GameRecord>? GameCompleted;
@@ -79,7 +82,8 @@ public sealed partial class PowerLogParser
         }
 
         _lastTime = time;
-        var timestamp = new DateTimeOffset(_currentDate.ToDateTime(time), TimeSpan.Zero);
+        var wallClock = _currentDate.ToDateTime(time);
+        var timestamp = new DateTimeOffset(wallClock, _timeZone.GetUtcOffset(wallClock));
         var method = match.Groups["method"].Value;
         var body = match.Groups["body"].Value;
 

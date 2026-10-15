@@ -293,3 +293,14 @@ events: report them if they appear without you having touched the collection).
 - VERIFICACION C5: confirm in OBS on the real machine (transparency, legibility, update latency).
 - Rank comes only from the exporter (decision Q8); it refreshes when HDT next exports, not the instant a game ends.
 - The session resets when the host restarts; "today" does not (it is read from the database).
+
+---
+
+## QA round 1 — 2026-10-15
+
+Full report: [`QA-2026-10-15.md`](QA-2026-10-15.md). Run against the live HearthstoneJSON catalog (build 255026) and a
+realistic generated export with real card ids. Ten findings, nine fixed in this round (two high: four whole card sets
+were "unknown craftability" because python-hearthstone's craftable list is incomplete; the MCP `get_history` tool
+crashed on a populated database), plus Power.log times now parsed as local time, catalog build resolved from the
+HearthstoneJSON index (no redirect any more), per-class stats honour `--format`, rotation-data staleness warning,
+account prefix matching and two cosmetic fixes. 115 tests.

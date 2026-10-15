@@ -10,14 +10,18 @@ namespace DustPlanner.LogTracker;
 public sealed class PowerLogFollower
 {
     private readonly string _logsDirectory;
+    private readonly TimeZoneInfo? _timeZone;
     private string? _currentPath;
     private long _offset;
     private PowerLogParser? _parser;
     private readonly StringBuilder _partial = new();
 
-    public PowerLogFollower(string logsDirectory)
+    /// <param name="logsDirectory">Hearthstone's <c>Logs</c> folder.</param>
+    /// <param name="timeZone">Zone of the log's clock times (default: this machine's local zone, which is what the game writes).</param>
+    public PowerLogFollower(string logsDirectory, TimeZoneInfo? timeZone = null)
     {
         _logsDirectory = logsDirectory ?? throw new ArgumentNullException(nameof(logsDirectory));
+        _timeZone = timeZone;
     }
 
     /// <summary>Raised for each game completed since the follower started.</summary>
@@ -46,7 +50,7 @@ public sealed class PowerLogFollower
         {
             var first = _currentPath is null;
             _currentPath = newest.Path;
-            _parser = new PowerLogParser(newest.BaseDate);
+            _parser = new PowerLogParser(newest.BaseDate, _timeZone);
             _parser.GameCompleted += g => GameCompleted?.Invoke(g);
             _partial.Clear();
             _offset = first && skipExisting ? new FileInfo(newest.Path).Length : 0;

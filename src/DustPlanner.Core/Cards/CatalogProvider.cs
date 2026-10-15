@@ -74,7 +74,8 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
         {
             var build = await ResolveLatestBuildAsync(cancellationToken).ConfigureAwait(false);
             var file = CardFile(build);
-            if (forceRefresh || !File.Exists(file))
+            var unknownBuildStale = build == "latest" && File.Exists(file) && now - File.GetLastWriteTimeUtc(file) > _options.MaxAge;
+            if (forceRefresh || !File.Exists(file) || unknownBuildStale)
             {
                 await DownloadAsync(build, file, cancellationToken).ConfigureAwait(false);
             }
@@ -131,7 +132,38 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
             response.EnsureSuccessStatusCode();
         }
 
+        // HearthstoneJSON now serves /v1/latest/ directly (no redirect); its directory index links to /v1/{build}/...
+        var index = await ReadIndexAsync(cancellationToken).ConfigureAwait(false);
+        if (index is not null)
+        {
+            var match = BuildRegex().Match(index);
+            if (match.Success)
+            {
+                return match.Groups["build"].Value;
+            }
+        }
+
         return "latest";
+    }
+
+    private async Task<string?> ReadIndexAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await _http.GetAsync(new Uri(_options.BaseAddress, "latest/"), cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            // The index is a few KB of HTML; cap the read defensively.
+            var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return text.Length > 1_000_000 ? text[..1_000_000] : text;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 
     private async Task DownloadAsync(string build, string file, CancellationToken cancellationToken)

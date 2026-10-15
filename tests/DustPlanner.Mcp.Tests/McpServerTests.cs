@@ -1,4 +1,9 @@
 using System.Text.Json;
+using DustPlanner.Contracts;
+using DustPlanner.Core.Cards;
+using DustPlanner.Core.Collection;
+using DustPlanner.Core.Planner;
+using DustPlanner.Core.Rules;
 using DustPlanner.LogTracker;
 using DustPlanner.Store;
 using ModelContextProtocol.Client;
@@ -121,9 +126,30 @@ public sealed class McpServerTests : IAsyncLifetime
         Assert.Equal(1, winrate.GetProperty("overall").GetProperty("losses").GetInt32());
         Assert.Equal(3, winrate.GetProperty("recent_games").GetArrayLength()); // recent games are not filtered
 
-        var history = await CallRaw("get_history", new Dictionary<string, object?>());
-        Assert.True(history.IsError); // games only: no collection snapshot synced yet
-        Assert.Contains("sync", history.Content.OfType<TextContentBlock>().Single().Text, StringComparison.Ordinal);
+        var noSnapshot = await CallRaw("get_history", new Dictionary<string, object?>());
+        Assert.True(noSnapshot.IsError); // games only: no collection snapshot synced yet
+        Assert.Contains("sync", noSnapshot.Content.OfType<TextContentBlock>().Single().Text, StringComparison.Ordinal);
+
+        // Now what 'dustplanner sync' does: a snapshot, a rank sample, an open plan — the tool must read them all
+        // (the result is serialised after the connection is closed, so nothing may stay lazy).
+        using (var store = DustStore.Open(dbPath))
+        {
+            var catalog = HearthstoneJsonParser.Parse(File.ReadAllText(Fixture("cards.synthetic.json")), "synthetic", "enUS");
+            var rules = GameDataFiles.LoadRules(null);
+            var collection = HdtExportImporter.ImportFile(Path.Combine(_home, "inbox", "8589934592-42", "collection.json"), rules.PremiumSlots);
+            new HistoryService(store).Sync(collection, catalog, rules, Refunds.Empty, new DateOnly(2026, 10, 15), DateTimeOffset.UtcNow);
+            new RankRepository(store).Import(new RankExport
+            {
+                Meta = new ExportMeta { Kind = "rank", ExportedAt = DateTimeOffset.UtcNow, Account = new AccountRef { Hi = 8589934592, Lo = 42 } },
+                Formats = { ["standard"] = new RankInfo { LeagueId = 5, StarLevel = 6, Stars = 3 } },
+            });
+        }
+
+        var history = await Call("get_history", new Dictionary<string, object?>());
+        Assert.Equal("8589934592-42", history.GetProperty("account_key").GetString());
+        Assert.Equal(1, history.GetProperty("snapshots").GetArrayLength());
+        Assert.Equal("Diamond 5 (3 stars)", history.GetProperty("rank")[0].GetProperty("label").GetString());
+        Assert.Equal(0, history.GetProperty("events").GetArrayLength());
     }
 
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);

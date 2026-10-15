@@ -27,7 +27,7 @@ public class TrackerIntegrationTests
             using var store = DustStore.OpenInMemory();
             var games = new GameRepository(store);
             var catalog = HearthstoneJsonParser.Parse(File.ReadAllText(PowerLogParserTests.Fixture("cards.synthetic.json")), "synthetic", "enUS");
-            var importer = new LogImporter(games, catalog);
+            var importer = new LogImporter(games, catalog, TimeZoneInfo.Utc);
 
             var first = importer.ImportDirectory(logs);
             Assert.Equal(2, first.FilesRead);
@@ -58,6 +58,8 @@ public class TrackerIntegrationTests
 
             var byClass = games.StatsByClass("8589934592-42", null);
             Assert.Contains(byClass, c => c.PlayerClass == "PRIEST" && c.Rate.Games == 2);
+            var standardOnly = games.StatsByClass("8589934592-42", null, format: "FT_STANDARD");
+            Assert.Equal(1, standardOnly.Single(c => c.PlayerClass == "PRIEST").Rate.Games); // the AI tie is Wild
 
             Assert.Equal(["144115193835963207-66765537", "8589934592-42"], games.Accounts());
         }
@@ -80,7 +82,7 @@ public class TrackerIntegrationTests
             var firstGameEnd = Array.FindIndex(lines, l => l.Contains("tag=STATE value=COMPLETE", StringComparison.Ordinal)) + 1;
             File.WriteAllLines(path, lines.Take(firstGameEnd));
 
-            var follower = new PowerLogFollower(logs);
+            var follower = new PowerLogFollower(logs, TimeZoneInfo.Utc);
             var completed = new List<GameRecord>();
             follower.GameCompleted += completed.Add;
 

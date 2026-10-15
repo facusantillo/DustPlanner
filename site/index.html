@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DustPlanner — know what to dust before you dust it</title>
+<meta name="description" content="A read-only dust planner for Hearthstone, inside Hearthstone Deck Tracker: which cards you are missing for a deck, how much dust you need, and which copies to disenchant with the least regret.">
+<link rel="stylesheet" href="site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23a98cff'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#"><span class="mark"></span>DustPlanner</a>
+  <nav class="nav">
+    <a href="#how">How it works</a>
+    <a href="#panel">The panel</a>
+    <a href="#install">Install</a>
+    <a href="#safety">Safety</a>
+    <a href="#faq">FAQ</a>
+    <a class="repo" href="https://github.com/">GitHub</a>
+    <a class="lang" href="es/" lang="es" hreflang="es">Español</a>
+  </nav>
+</header>
+
+<section class="hero" style="border-top:0">
+  <div>
+    <h1>Know what to dust before you dust it.</h1>
+    <p class="lead">DustPlanner lives inside Hearthstone Deck Tracker. Pick a deck, see exactly which cards you are missing and how much dust that is, and get the least painful list of copies to disenchant to get there — without touching your decks, the meta staples or the cards the game refuses to craft.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/" data-release>Download the plugin</a>
+      <a class="btn" href="#install">Install in two minutes</a>
+    </div>
+    <p class="fine">Windows · needs Hearthstone Deck Tracker · free, MIT licensed · nothing else to install.</p>
+  </div>
+  <img class="shot" src="img/deck-hero.png" alt="The Deck page: missing cards with their dust cost, the dust gap bar, and the disenchant plan proposing one golden copy" width="1770" height="1250">
+</section>
+
+<section id="how">
+  <h2>How it works</h2>
+  <p>Three pieces, and none of them ever touches the game client. DustPlanner reads what Hearthstone Deck Tracker already knows and what the game writes on its own; you do the disenchanting, by hand, in the game.</p>
+  <div class="diagram" role="img" aria-label="Diagram: the game and HDT on the left; the DustPlanner plugin exports your collection, decks and rank to JSON files; the DustPlanner service reads them together with Power.log and the card data from HearthstoneJSON, and serves the panel in your browser and the OBS overlay. The service never sends anything back to the game.">
+    <svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif" font-size="14">
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a39c90"/></marker></defs>
+      <rect x="10" y="30" width="200" height="240" rx="10" fill="#25222d" stroke="#3a3546"/>
+      <text x="110" y="58" fill="#ece6da" text-anchor="middle" font-weight="600">Your PC, as it is today</text>
+      <rect x="30" y="80" width="160" height="56" rx="6" fill="#2f2b3a"/><text x="110" y="104" fill="#ece6da" text-anchor="middle">Hearthstone</text><text x="110" y="124" fill="#a39c90" text-anchor="middle" font-size="12">writes Power.log</text>
+      <rect x="30" y="156" width="160" height="94" rx="6" fill="#2f2b3a"/><text x="110" y="180" fill="#ece6da" text-anchor="middle">Hearthstone Deck Tracker</text><text x="110" y="200" fill="#a39c90" text-anchor="middle" font-size="12">holds your collection,</text><text x="110" y="216" fill="#a39c90" text-anchor="middle" font-size="12">decks and rank</text>
+      <rect x="38" y="222" width="144" height="22" rx="4" fill="#5c4a9e"/><text x="110" y="238" fill="#fff" text-anchor="middle" font-size="12" font-weight="600">DustPlanner plugin</text>
+      <path d="M190 233 H 300" stroke="#a39c90" stroke-width="1.5" marker-end="url(#arrow)"/><text x="245" y="226" fill="#a39c90" text-anchor="middle" font-size="12">JSON exports</text>
+      <path d="M190 108 H 300" stroke="#a39c90" stroke-width="1.5" marker-end="url(#arrow)"/><text x="245" y="101" fill="#a39c90" text-anchor="middle" font-size="12">Power.log</text>
+      <rect x="305" y="30" width="270" height="240" rx="10" fill="#25222d" stroke="#a98cff"/>
+      <text x="440" y="58" fill="#ece6da" text-anchor="middle" font-weight="600">DustPlanner service</text>
+      <text x="440" y="78" fill="#a39c90" text-anchor="middle" font-size="12">started by the plugin, stopped with HDT</text>
+      <text x="325" y="112" fill="#ece6da">• missing cards and dust gap</text>
+      <text x="325" y="136" fill="#ece6da">• least painful disenchant plan</text>
+      <text x="325" y="160" fill="#ece6da">• plans matched when you dust</text>
+      <text x="325" y="184" fill="#ece6da">• match history and win rate</text>
+      <text x="325" y="208" fill="#ece6da">• loopback only: 127.0.0.1</text>
+      <text x="325" y="246" fill="#a39c90" font-size="12">card data from HearthstoneJSON, cached per patch</text>
+      <path d="M575 110 H 690" stroke="#a39c90" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <path d="M575 200 H 690" stroke="#a39c90" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="695" y="80" width="195" height="60" rx="8" fill="#2f2b3a" stroke="#3a3546"/><text x="792" y="105" fill="#ece6da" text-anchor="middle">The panel</text><text x="792" y="125" fill="#a39c90" text-anchor="middle" font-size="12">in your browser</text>
+      <rect x="695" y="170" width="195" height="60" rx="8" fill="#2f2b3a" stroke="#3a3546"/><text x="792" y="195" fill="#ece6da" text-anchor="middle">OBS overlay</text><text x="792" y="215" fill="#a39c90" text-anchor="middle" font-size="12">rank · session · dust</text>
+      <text x="450" y="290" fill="#7dd87d" text-anchor="middle" font-size="13">Nothing goes back to the game: no clicks, no keys, no memory reads of its own.</text>
+    </svg>
+  </div>
+  <ol class="steps">
+    <li><b>HDT exports</b>Every time you leave the game's Collection screen, the plugin writes your collection, decks and rank to JSON files. Nothing else to press.</li>
+    <li><b>The service computes</b>Missing cards, craft costs, Standard legality, the cards the game will not craft, and a plan that reaches the dust you need with the least regret.</li>
+    <li><b>You disenchant, by hand</b>In the game, if you agree. Go back to the menu: the new export is picked up and your plan is ticked off automatically.</li>
+  </ol>
+</section>
+
+<section id="panel">
+  <h2>The panel</h2>
+  <p>Opened from HDT's plugin menu (<i>Plugins → DustPlanner → Open DustPlanner</i>), or straight to the deck selected in HDT with <i>What am I missing for the selected deck?</i>. English and Spanish.</p>
+
+  <div class="feature split">
+    <div>
+      <h3>Deck — the whole answer on one page</h3>
+      <p>Pick one of your HDT decks from the list or paste a deck code. You get the missing cards with their cost, the dust gap (what you have, what the plan gives, what is still missing), the cards the game will <em>not</em> craft and why, cards that come bundled with another one, and what leaves Standard at the next rotation.</p>
+      <p>Below it, the plan: each copy with its dust and a <em>why</em> — "golden copy not used in any deck", "Wild-only card and you play Standard" — plus alternatives (without the most painful pick, regular copies only) and the list of what was deliberately not proposed. Save the plan and it is matched against what you actually dust.</p>
+    </div>
+    <img class="shot" src="img/deck-plan.png" alt="Top of the Deck page after saving a plan" width="1770" height="538">
+  </div>
+
+  <div class="feature split flip">
+    <div>
+      <h3>Home — where you stand</h3>
+      <p>Dust and how fresh the export is, your rank, today's and the week's record, the plans waiting for you to disenchant, and a set-up checklist that tells you what is still missing (meta decks, an export, card data).</p>
+    </div>
+    <img class="shot" src="img/home.png" alt="The Home page with dust, rank, records and the set-up checklist" width="1770" height="1200">
+  </div>
+
+  <div class="feature split">
+    <div>
+      <h3>History — plans that close themselves</h3>
+      <p>A saved plan is <em>proposed</em>. When you disenchant one of its copies and leave the Collection, the next export is imported on its own, the change is detected and matched: the plan becomes <em>partial</em>, then <em>confirmed</em>. Every detected change keeps the dust estimate and the plan it belonged to.</p>
+    </div>
+    <img class="shot" src="img/history.png" alt="The History page: a confirmed plan and the detected disenchant that closed it" width="1770" height="1200">
+  </div>
+
+  <div class="feature split flip">
+    <div>
+      <h3>Games — from the game's own logs</h3>
+      <p>Win rate overall and per class for today, the last 7 or 30 days or all time, by mode and format, with the recent games: opponent, result, who went first, turns. Read from the <code>Power.log</code> files Hearthstone writes by itself — the same ones HDT reads.</p>
+    </div>
+    <img class="shot" src="img/games.png" alt="The Games page with win rate per class and recent games" width="1770" height="1200">
+  </div>
+
+  <div class="feature split">
+    <div>
+      <h3>Settings — your rules, in buttons</h3>
+      <p>What you play (format, classes, Wild), whether golden copies are kept, the guards (no plan without saved decks, no plan on a stale export). Paste a few competitive deck codes as <em>meta decks</em>: cards that appear in many of them are protected — nothing is scraped from the web. And the escape hatch: when the game shows a copy as <em>Uncraftable</em> but the plan still proposes it, block it here and it is never proposed again.</p>
+    </div>
+    <img class="shot" src="img/settings.png" alt="The Settings page: what you play, meta decks, cards the game refuses, card data" width="1770" height="1407">
+  </div>
+
+  <div class="feature">
+    <h3>And for streamers: an OBS overlay</h3>
+    <p>The same service serves a transparent 1920×1080 page for an OBS Browser Source: rank, session record, today's record, dust, last game — updated within seconds of a game ending. Options for size, side and a light theme.</p>
+    <img class="shot" src="img/overlay.png" alt="The OBS overlay bar: rank, session, today, dust" width="1548" height="251" style="max-width:780px">
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <ol class="steps">
+    <li><b>Download</b><a href="https://github.com/" data-release>The latest <code>DustPlanner-v….zip</code></a> from GitHub Releases. About 50 MB: the service is bundled, so there is no runtime to install.</li>
+    <li><b>Copy</b>Close HDT. Unzip and copy the <code>DustPlanner</code> folder into <code>%AppData%\HearthstoneDeckTracker\Plugins\</code>.</li>
+    <li><b>Enable</b>Start HDT → <i>Options → Tracker → Plugins</i> → tick <b>DustPlanner</b>.</li>
+    <li><b>Export once</b>With the game running, open <i>My Collection</i> and go back to the menu. Visit <i>Play</i> once so your decks are known. Then <i>Plugins → DustPlanner → Open DustPlanner</i>.</li>
+  </ol>
+  <p class="fine">Requires Windows and <a href="https://hsreplay.net/downloads/">Hearthstone Deck Tracker</a>. The service listens on <code>127.0.0.1:8765</code> only (the next free port if that one is taken). Your data stays in <code>%LocalAppData%\DustPlanner</code>. The executable is not code-signed: Windows may ask once whether to run it.</p>
+</section>
+
+<section id="safety">
+  <h2>What it never does</h2>
+  <div class="never">
+    <p><b>DustPlanner never disenchants or crafts anything.</b> It never clicks, types, injects or reads the game's memory on its own. It only consumes what Hearthstone Deck Tracker already holds through HDT's public plugin API, and the log files the game writes by itself. The plan is a recommendation; every disenchant is yours, by hand, in the game.</p>
+  </div>
+  <div class="never warn">
+    <p><b>Conservative by default.</b> Any game fact the tool cannot verify keeps a card <em>out</em> of the plan and says why: reward copies the game marks as <em>Uncraftable</em>, cards in sets the rule data does not know, premium slots whose dust value is unconfirmed. The plan always opens with the one thing no HDT API can tell it: open your pending packs first.</p>
+  </div>
+  <p>The full policy is in the repository's <a href="https://github.com/" data-repo="blob/main/SECURITY.md">SECURITY.md</a>. The code is MIT licensed and open: you can read exactly what it reads.</p>
+</section>
+
+<section id="faq">
+  <h2>Questions</h2>
+  <dl>
+    <dt>Why does the plan not propose the golden card I was going to dust?</dt>
+    <dd>Three usual reasons, all shown next to the card: it is used in one of your saved decks; the game marks that copy as <em>Uncraftable</em> (event and login rewards, Core, free cards, the golden you got from an adventure) — those cannot be disenchanted at all; or its dust value is not confirmed (signature and diamond copies). If the game does let you disenchant a copy the tool refuses, <i>Settings → Allow</i> overrides it.</dd>
+    <dt>The plan proposes a card the game says is Uncraftable.</dt>
+    <dd>The rule comes from the game's own card data, which has no formal "uncraftable" flag, so a gap is possible. Block the copy in <i>Settings → Cards the game refuses</i>: it is never proposed again, and an issue with the card name helps everyone else.</dd>
+    <dt>I disenchanted, and nothing happened.</dt>
+    <dd>HDT re-reads your collection only when you enter or leave the Collection screen. Go back to the main menu; the plugin exports and the service imports within seconds. <i>Plugins → DustPlanner → Export now</i> forces a write.</dd>
+    <dt>Where do the "meta decks" come from?</dt>
+    <dd>From you. Paste competitive deck codes in <i>Settings → Meta decks</i>, one per line. Cards that appear in many of them get protected. DustPlanner never scrapes deck sites.</dd>
+    <dt>Does it need the internet?</dt>
+    <dd>Once per game patch, to download the card data from HearthstoneJSON (about 10 MB, cached). Everything else is local. Nothing is uploaded anywhere.</dd>
+    <dt>Several accounts?</dt>
+    <dd>Each exported account has its own folder and database rows; the panel shows the most recently exported one and lets you pick another.</dd>
+    <dt>What about Battlegrounds, Arena, Mercenaries?</dt>
+    <dd>Constructed only. Games from other modes are recorded in the history with their mode, nothing more.</dd>
+  </dl>
+</section>
+
+<section id="dev">
+  <h2>For developers</h2>
+  <div class="dev">
+    <div><h3>CLI</h3><p><code>dustplanner need</code>, <code>plan</code>, <code>sync</code>, <code>history</code>, <code>games</code>, <code>collection block</code> — everything the panel does, with <code>--json</code> for scripts.</p></div>
+    <div><h3>JSON API</h3><p>The panel is a client of <code>http://127.0.0.1:8765/api/*</code>: overview, decks, need, plan, sync, history, games, prefs, meta, card overrides. Same payloads as the CLI.</p></div>
+    <div><h3>MCP server</h3><p>A read-only Model Context Protocol server over stdio, so Claude Desktop or Claude Code can ask "what am I missing for this deck and what would you disenchant?" from your own data.</p></div>
+  </div>
+  <p>Source, docs and issues on <a href="https://github.com/" data-repo="">GitHub</a>.</p>
+</section>
+
+<footer>
+  <p>DustPlanner is MIT licensed. Not affiliated with or endorsed by Blizzard Entertainment. Hearthstone is a trademark of Blizzard Entertainment. Hearthstone Deck Tracker is a HearthSim project.</p>
+</footer>
+
+<script>
+  // On GitHub Pages (owner.github.io/repo/) every repository link can be derived from the address; elsewhere the
+  // links fall back to the repository configured here.
+  (function () {
+    var fallback = "https://github.com/OWNER/DustPlanner";
+    var repo = fallback;
+    var m = location.hostname.match(/^([^.]+)\.github\.io$/);
+    var seg = location.pathname.split("/").filter(Boolean)[0];
+    if (m && seg && seg !== "es") repo = "https://github.com/" + m[1] + "/" + seg;
+    document.querySelectorAll("a.repo, a[data-repo]").forEach(function (a) { a.href = repo + "/" + (a.dataset.repo || ""); });
+    document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest"; });
+  })();
+</script>
+</body>
+</html>

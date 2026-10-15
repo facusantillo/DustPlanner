@@ -18,6 +18,9 @@ disenchant to get there with the least regret.
 
 ## For players: one plugin, no terminal
 
+The project site (`site/`, published with GitHub Pages at `https://<owner>.github.io/DustPlanner/`) explains all of this
+with screenshots, in English and Spanish.
+
 Install the plugin zip from GitHub Releases into HDT (instructions in [`docs/exporter-install.md`](docs/exporter-install.md)).
 It exports your collection whenever you leave the game's Collection screen, starts the DustPlanner service in the
 background (stopped with HDT) and gives you a **DustPlanner** entry in HDT's plugin menu:
@@ -51,6 +54,7 @@ people who want a terminal or an AI client; they read and write the same data.
 | `tools/` | — | `HdtApiCheck`, HDT reference fetch scripts, data validation scripts |
 | `data/` | — | Format rotation, dust rules, non-craftable list, example configs |
 | `docs/` | — | Proposal, progress log, verification checklist |
+| `site/` | — | Project site (GitHub Pages): what it does, screenshots, install, FAQ — English and Spanish |
 
 ## Building
 

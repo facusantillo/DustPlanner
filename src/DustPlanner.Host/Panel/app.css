@@ -44,6 +44,8 @@ code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; bac
 .brand-mark { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #d9ccff, var(--dust) 55%, var(--dust-dim)); box-shadow: 0 0 12px rgba(169, 140, 255, 0.55); align-self: center; }
 .brand-name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .brand-account { color: var(--muted); }
+.account-select { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 3px 8px; color: var(--muted); font-size: 14px; }
+.stat .value.text { font-size: 19px; line-height: 1.25; margin-top: 6px; }
 .top-actions { display: flex; align-items: center; gap: 14px; }
 .live { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
 .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }

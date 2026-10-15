@@ -41,6 +41,10 @@
   const modeName = g => { if (!g) return "?"; const m = g.replace(/^GT_/, "").toLowerCase().replace(/_/g, " "); return ({ "vs ai": t("type_ai") }[m] || m); };
   const formatName = f => ({ FT_STANDARD: "Standard", FT_WILD: "Wild", FT_CLASSIC: "Classic", FT_TWIST: "Twist" }[f] || (f ? f : "?"));
 
+  // The account shown: the most recently exported one unless the user picked another in the header.
+  let account = (function () { try { return localStorage.getItem("dp.account") || ""; } catch (e) { return ""; } })();
+  const withAccount = path => (account ? path + (path.includes("?") ? "&" : "?") + "account=" + encodeURIComponent(account) : path);
+
   async function api(path, options) {
     const res = await fetch(path, Object.assign({ headers: { "Content-Type": "application/json" } }, options || {}));
     let body = null;
@@ -106,14 +110,14 @@
     const page = $("#page-home");
     page.innerHTML = '<p class="muted">' + t("loading") + "</p>";
     let o;
-    try { o = await api("/api/overview"); } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
+    try { o = await api(withAccount("/api/overview")); } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
 
-    $("#hdr-account").textContent = o.account ? (o.account.battle_tag || o.account.account_key) : "";
+    renderAccountPicker(o);
     const rate = s => (s && s.win_rate != null ? t("home_winrate_fmt", { pct: pct(s.win_rate) }) : t("home_no_games"));
     const rec = s => (s ? t("home_games_fmt", { wins: s.wins, losses: s.losses }) : "—");
     let html = '<div class="stats">';
     html += stat(t("home_dust"), o.collection ? '<span class="dust">' + n(o.collection.dust) + "</span>" : "—", o.export ? t("home_export_age", { age: ago(o.export.exported_at) }) : t("home_export_none"));
-    html += stat(t("home_rank"), o.rank ? esc(o.rank.label) : "—", o.rank ? formatName("FT_" + o.rank.format.toUpperCase()) : t("home_no_rank"));
+    html += stat(t("home_rank"), o.rank ? '<span class="text">' + esc(o.rank.label) + "</span>" : "—", o.rank ? formatName("FT_" + o.rank.format.toUpperCase()) : t("home_no_rank"), true);
     html += stat(t("home_today"), rec(o.today), rate(o.today));
     html += stat(t("home_week"), rec(o.week), rate(o.week));
     html += stat(t("home_session"), rec(o.session), rate(o.session));
@@ -135,7 +139,7 @@
     html += todo.map(x => '<li class="' + (x.ok ? "done" : "") + '">' + esc(x.text) + "</li>").join("") + "</ul>";
     page.innerHTML = html;
   }
-  function stat(label, value, sub) { return '<div class="stat"><div class="label">' + esc(label) + '</div><div class="value">' + value + '</div><div class="sub">' + esc(sub || "") + "</div></div>"; }
+  function stat(label, value, sub, text) { return '<div class="stat"><div class="label">' + esc(label) + '</div><div class="value' + (text ? " text" : "") + '">' + value + '</div><div class="sub">' + esc(sub || "") + "</div></div>"; }
 
   // ---------- deck ---------------------------------------------------------------------------------------------------
   const deckState = { decks: null, code: "", key: "", need: null, plan: null };
@@ -159,7 +163,7 @@
     }
     if (!deckState.decks) {
       try {
-        const d = await api("/api/decks");
+        const d = await api(withAccount("/api/decks"));
         deckState.decks = d.decks;
         const sel = $("#deck-select");
         d.decks.forEach(deck => {
@@ -189,13 +193,13 @@
     try {
       if (withPlan) {
         const needOverride = $("#deck-need").value ? Number($("#deck-need").value) : null;
-        const r = await post("/api/plan", { deck, need: needOverride, allow_no_decks: $("#deck-nodecks").checked, save: false });
+        const r = await post("/api/plan", { deck, account: account || null, need: needOverride, allow_no_decks: $("#deck-nodecks").checked, save: false });
         deckState.plan = r.plan; deckState.need = r.plan.missing; deckState.lastDeck = deck;
         out.innerHTML = renderReport(r.plan.missing, r.catalog_warning) + renderPlan(r.plan);
         const save = $("#btn-save-plan");
         if (save) save.addEventListener("click", savePlan);
       } else {
-        const r = await post("/api/need", { deck });
+        const r = await post("/api/need", { deck, account: account || null });
         deckState.need = r.report; deckState.plan = null;
         out.innerHTML = renderReport(r.report, r.catalog_warning);
       }
@@ -210,7 +214,7 @@
     busy(button, true);
     try {
       const needOverride = $("#deck-need").value ? Number($("#deck-need").value) : null;
-      const r = await post("/api/plan", { deck: deckState.lastDeck, need: needOverride, allow_no_decks: $("#deck-nodecks").checked, save: true });
+      const r = await post("/api/plan", { deck: deckState.lastDeck, account: account || null, need: needOverride, allow_no_decks: $("#deck-nodecks").checked, save: true });
       const id = r.plan.saved_plan_id;
       $("#plan-saved").innerHTML = id ? notice(t("plan_saved", { id }), "ok") : "";
       if (id) toast(t("plan_saved", { id }), "ok");
@@ -297,7 +301,7 @@
     const page = $("#page-history");
     page.innerHTML = '<p class="muted">' + t("loading") + "</p>";
     let h;
-    try { h = await api("/api/history"); } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
+    try { h = await api(withAccount("/api/history")); } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
     let html = "";
     if (h.snapshots.length) html += '<p class="muted">' + esc(t("hist_snapshots", { n: h.snapshots.length, when: when(h.snapshots[0].taken_at), dust: n(h.snapshots[0].dust) })) + "</p>";
     html += "<h2>" + t("hist_plans") + "</h2>";
@@ -350,7 +354,7 @@
     if (format) q.set("format", format);
     q.set("recent", "30");
     let g;
-    try { g = await api("/api/games?" + q.toString()); } catch (e) { out.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
+    try { g = await api(withAccount("/api/games?" + q.toString())); } catch (e) { out.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
     if (!g.account_key) { out.innerHTML = '<p class="empty">' + t("games_none") + "</p>"; return; }
     const o = g.overall;
     let html = "<p><b>" + esc(t("games_overall", { games: o.games, wins: o.wins, losses: o.losses, ties: o.ties, unknown: o.unknown })) + "</b> · " + (o.win_rate != null ? t("games_winrate", { pct: pct(o.win_rate) }) : t("games_no_rate")) + "</p>";
@@ -478,7 +482,7 @@
   $("#btn-sync").addEventListener("click", async () => {
     const b = $("#btn-sync"); busy(b, true, t("syncing"));
     try {
-      const r = await post("/api/sync", {});
+      const r = await post("/api/sync", { account: account || null });
       const s = r.sync;
       toast(t("home_sync_fmt", { when: s.new_snapshot ? t("home_sync_new") : t("home_sync_known"), events: s.events }), "ok");
       lastSyncAt = s.at;
@@ -489,8 +493,30 @@
   });
 
   async function loadHeader() {
-    try { const o = await api("/api/overview"); $("#hdr-account").textContent = o.account ? (o.account.battle_tag || o.account.account_key) : ""; }
-    catch (e) { /* the page shows the error itself */ }
+    try {
+      const o = await api(withAccount("/api/overview"));
+      renderAccountPicker(o);
+    } catch (e) { /* the page shows the error itself */ }
+  }
+  function renderAccountPicker(o) {
+    const box = $("#hdr-account");
+    const current = o.account ? (o.account.battle_tag || o.account.account_key) : "";
+    if (!o.accounts || o.accounts.length < 2) { box.textContent = current; return; }
+    const sel = document.createElement("select");
+    sel.className = "account-select";
+    o.accounts.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a.account_key; opt.textContent = a.battle_tag || a.account_key;
+      opt.selected = o.account && a.account_key === o.account.account_key;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", () => {
+      account = sel.value;
+      try { localStorage.setItem("dp.account", account); } catch (e) { /* ignore */ }
+      deckState.decks = null; $("#page-deck").innerHTML = "";
+      route();
+    });
+    box.textContent = ""; box.appendChild(sel);
   }
 
   applyStaticStrings();

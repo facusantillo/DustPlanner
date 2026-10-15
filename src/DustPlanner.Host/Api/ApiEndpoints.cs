@@ -90,12 +90,13 @@ internal static class ApiEndpoints
         api.MapGet("/games", (AppServices services, string? account, string? since, int? days, string? type, string? format, int? recent) =>
             Guard(() => Task.FromResult<object>(services.GamesOverview(account, AppServices.ParseSince(since, days), type, format, recent ?? 20))));
 
-        api.MapPost("/games/import", async (HttpContext http, AppServices services, CancellationToken ct) =>
+        api.MapPost("/games/import", async (HttpContext http, AppServices services, OverlayHostOptions options, CancellationToken ct) =>
             await Guard(async () =>
             {
                 var request = http.Request.ContentLength > 0 ? await Body<GamesImportRequest>(http, ct).ConfigureAwait(false) : new GamesImportRequest(null);
                 var catalog = await services.CachedCatalogAsync("enUS", ct).ConfigureAwait(false);
-                return (object)services.ImportGames(request.Logs, catalog.Catalog);
+                // The service's own --logs folder is the default, then HDT's config / the usual install paths.
+                return (object)services.ImportGames(request.Logs ?? options.LogsDirectory, catalog.Catalog);
             }).ConfigureAwait(false));
 
         api.MapGet("/prefs", (AppServices services) => Guard(() => Task.FromResult<object>(new { path = services.PrefsPath, exists = File.Exists(services.PrefsPath), prefs = services.ReadPrefs() })));

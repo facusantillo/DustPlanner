@@ -16,16 +16,16 @@ env:
 
 jobs:
   package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Fetch HDT reference assemblies
-        run: tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
+        run: bash tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
 
       - name: Build and test
         run: |
@@ -33,10 +33,10 @@ jobs:
           dotnet test -c Release --no-build
 
       - name: Package the plugin
-        run: tools/package-exporter.sh artifacts/release
+        run: bash tools/package-exporter.sh artifacts/release
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: exporter-plugin
           path: artifacts/release/*

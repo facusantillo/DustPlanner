@@ -60,6 +60,29 @@ git push origin exporter-v0.1.0
 `release.yml` builds the plugin, publishes the service self-contained (win-x64), packs `DustPlanner-v0.1.0.zip` with
 its `.sha256`, and creates the GitHub Release. The site's download button and the README link to `releases/latest`.
 
+### If a release tag has to move
+
+The `release tags` ruleset blocks deleting or moving `exporter-v*` tags, maintainers included, so a tag pushed at a
+commit whose workflow failed cannot simply be re-pointed. Either release the next patch version, or lift the ruleset
+for the one operation and put it back:
+
+```powershell
+$id = gh api repos/<owner>/DustPlanner/rulesets --jq '.[] | select(.name == "release tags") | .id'
+gh api -X PUT repos/<owner>/DustPlanner/rulesets/$id -f enforcement=disabled
+git push origin --delete exporter-v0.1.0
+git tag -d exporter-v0.1.0
+git tag exporter-v0.1.0 && git push origin exporter-v0.1.0
+tools\github-setup.ps1 -Owner <owner>          # re-activates the ruleset (idempotent)
+```
+
+### Notes for the workflows
+
+- The shell scripts under `tools/` are run as `bash tools/<script>.sh` in the workflows: commits made from Windows
+  do not carry the executable bit, and a bare `tools/<script>.sh` fails with exit code 126 ("Permission denied").
+- Jobs run on `ubuntu-24.04` (named image, not `ubuntu-latest`) so a runner-image migration cannot change a build.
+- Action majors are the Node 24 ones (`checkout@v5`, `setup-dotnet@v5`, `cache@v5`, `upload-artifact@v5`,
+  `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`); older majors print a Node 20 deprecation.
+
 ## 4. Afterwards
 
 - **Signing**: the service executable is not code-signed; SmartScreen may warn on first run. The site says so. A

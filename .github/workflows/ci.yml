@@ -16,24 +16,24 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
       - name: Cache HDT reference assemblies
         id: hdt-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: lib/hdt
           key: hdt-refs-${{ env.HDT_REF_VERSION }}
 
       - name: Fetch HDT reference assemblies
         if: steps.hdt-cache.outputs.cache-hit != 'true'
-        run: tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
+        run: bash tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
 
       - uses: actions/setup-python@v5
         with:
@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: reports
           path: |

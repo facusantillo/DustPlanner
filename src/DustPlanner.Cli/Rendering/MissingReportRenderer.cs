@@ -42,10 +42,10 @@ internal static class MissingReportRenderer
             if (notCraftable.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("NOT CRAFTABLE (unlock in game: Core set / free cards / rewards)");
+                sb.AppendLine("NOT CRAFTABLE (the game will not craft these: Core set, free cards, event / login rewards)");
                 foreach (var line in notCraftable)
                 {
-                    sb.AppendLine(CultureInfo.InvariantCulture, $"  {Name(line)} ×{line.Missing} — {line.Card.Set}");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"  {Name(line)} ×{line.Missing} — {line.Card.Set}{(line.CraftabilityReason is null ? string.Empty : " — " + line.CraftabilityReason)}");
                 }
             }
 

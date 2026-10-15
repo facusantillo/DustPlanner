@@ -91,12 +91,25 @@ internal static class PlanRenderer
         }
     }
 
-    /// <summary>"in use (2 in "X")" → "in use (saved decks)"; "unknown craftability (set S)" → "unknown craftability"; others unchanged.</summary>
+    /// <summary>
+    /// "in use (2 in "X")" → "in use (saved decks)"; "unknown craftability (set S)" → "unknown craftability";
+    /// "not craftable: reward copy, cannot be disenchanted or crafted (unlock text)" → "not craftable: reward copy"; others unchanged.
+    /// </summary>
     private static string ExclusionCategory(string reason)
     {
         if (reason.StartsWith("in use", StringComparison.Ordinal))
         {
             return reason.Contains("\"target deck\"", StringComparison.Ordinal) ? "in use (target deck)" : "in use (saved decks)";
+        }
+
+        if (reason.StartsWith("not craftable", StringComparison.Ordinal))
+        {
+            var open = reason.EndsWith(')') ? reason.LastIndexOf(" (", StringComparison.Ordinal) : -1;
+            var category = open > 0 ? reason[..open] : reason;
+            return category
+                .Replace(", cannot be disenchanted or crafted", "", StringComparison.Ordinal)
+                .Replace(": cannot be disenchanted or crafted", "", StringComparison.Ordinal)
+                .Replace(" cannot be disenchanted or crafted", "", StringComparison.Ordinal);
         }
 
         var paren = reason.IndexOf(" (", StringComparison.Ordinal);

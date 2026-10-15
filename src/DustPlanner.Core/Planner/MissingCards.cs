@@ -17,6 +17,9 @@ public sealed record DeckCardStatus(
     bool IsStandard,
     bool RotatesNext)
 {
+    /// <summary>Why the card is not craftable (the game's wording, or the reward unlock text); null when craftable.</summary>
+    public string? CraftabilityReason { get; init; }
+
     /// <summary>Dust to craft the missing copies; null when they cannot be crafted (or craftability is unknown).</summary>
     public int? CraftCostMissing => Missing > 0 && Craftability == CraftabilityStatus.Craftable && CraftCostEach is { } each ? Missing * each : null;
 }
@@ -103,7 +106,7 @@ public static class MissingCards
             }
 
             var owned = collection.TotalCopies(dbfId);
-            var craftability = rules.Craftability.StatusOf(card);
+            var (craftability, why) = rules.Craftability.Explain(card);
             statuses.Add(new DeckCardStatus(
                 card,
                 count,
@@ -113,7 +116,7 @@ public static class MissingCards
                 craftability,
                 rules.Dust.CraftCost(card.Rarity, PremiumKind.Normal),
                 rules.Rotation.IsStandard(card.Set, asOf),
-                rotating.Contains(card.Set)));
+                rotating.Contains(card.Set)) { CraftabilityReason = why });
         }
 
         statuses.Sort((a, b) => a.Card.Cost != b.Card.Cost ? a.Card.Cost.CompareTo(b.Card.Cost) : string.CompareOrdinal(a.Card.Name, b.Card.Name));

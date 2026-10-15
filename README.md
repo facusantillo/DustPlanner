@@ -58,6 +58,7 @@ dotnet run --project src/DustPlanner.Cli -- sync                    # store the 
 dotnet run --project src/DustPlanner.Cli -- history                 # plans and the changes matched against them
 dotnet run --project src/DustPlanner.Cli -- games import            # parse Hearthstone's Power.log files into the database
 dotnet run --project src/DustPlanner.Cli -- games stats --days 7    # win rate overall and per class (also: list, log-config)
+dotnet run --project src/DustPlanner.Cli -- collection block "Marin the Fox"   # the game refuses to disenchant it: never propose it (also: --golden, unblock)
 ```
 
 Typical workflow:
@@ -144,7 +145,8 @@ Three optional files in the data folder (examples with every default in [`data/e
   candidates of all; the golden refund amount is assumed equal to the golden craft cost and marked *to verify*.
 
 Rule tables in [`data/`](data/) (`format-rotation.json`, `dust-rules.json`, `premium-slots.json`,
-`non-craftable.json`) can be overridden by files of the same name under `<home>\data\`. CI checks
+`non-craftable.json`) can be overridden by files of the same name under `<home>\data\` (`non-craftable.json` is
+*merged*: a partial file with only the per-card lists is enough, and `collection block` writes it for you). CI checks
 `format-rotation.json` against python-hearthstone's `STANDARD_SETS` so the rotation list cannot silently drift.
 
 ## Conservative by default
@@ -155,9 +157,14 @@ Any game fact the tool cannot verify keeps the item **out** of the recommendatio
 - Cards from sets not listed in `non-craftable.json` → *unknown craftability*, listed separately in `need`.
 - No HDT API exposes unopened packs → every plan opens with "open your packs first" and the count is never guessed.
 - Refund amounts for golden copies → used only when `refunds.json` says so, flagged *to verify*.
-- Reward copies (a golden from a login event, an adventure completion card — HearthstoneJSON's `howToEarn` /
-  `howToEarnGolden`) can never be crafted again and their disenchant value is not published → listed under
-  *NOT PROPOSED* with the unlock text; add the card's dbf id to `blacklist` in `prefs.json` to let the planner use it.
+- Copies the game itself marks **Uncraftable — "This card cannot be disenchanted or crafted"** (Core set cards, free
+  and login-reward copies, a golden from an event, the Demon Hunter Initiate set, …) are never proposed and never
+  counted as craftable. The signal is HearthstoneJSON's `howToEarn` / `howToEarnGolden` text (any unlock text other
+  than "craft it" or "unlocked in the adventure" means a reward copy) plus the set lists in `non-craftable.json`;
+  `need` and `plan` print the reason next to each card. The lists refresh with `catalog update` (new game texts) and
+  can be completed by hand: `dustplanner collection block "<exact card name>" [--golden]` (or a dbf id) writes the
+  copy to `<home>\data\non-craftable.json`, which is merged with the shipped file; `collection unblock` reverts it.
+  If the game refuses a copy the tool still proposes, block it and open an issue with the card name.
 
 ## Asking an AI client (MCP)
 

@@ -12,8 +12,18 @@
   ],
   "$comment_hand_added": "STORMWIND (United in Stormwind) and REVENDRETH (Murder at Castle Nathria) are ordinary expansions missing from python-hearthstone's CardSet.craftable list (an upstream omission, 9.22.0); EXPERT1 is the Classic set, still 245 collectible cards in HearthstoneJSON and craftable in Wild (hearthstone.wiki.gg/wiki/Crafting: only FREE-rarity Legacy cards cannot be crafted); YEAR_OF_THE_DRAGON holds the Galakrond's Awakening adventure cards, craftable per hearthstone.wiki.gg/wiki/Galakrond's_Awakening ('both regular and golden versions can be crafted and disenchanted for the usual amounts'). HERO_SKINS (collectible hero portraits) and CORE_HIDDEN (Core cards of past years, kept as entities) are never craftable. Found by QA 2026-10-15 against the live catalog (build 255026).",
   "non_craftable_sets": ["CORE", "CORE_HIDDEN", "VANILLA", "EVENT", "HOF", "PROMO", "REWARD", "HERO_SKINS"],
+  "$comment_regular_only": "Sets whose REGULAR copies are uncraftable while the golden ones can be crafted (hearthstone.wiki.gg/wiki/Uncraftable: 'All regular Demon Hunter Initiate cards').",
+  "non_craftable_sets_regular": ["DEMON_HUNTER_INITIATE"],
   "craftable_rarities": ["COMMON", "RARE", "EPIC", "LEGENDARY"],
   "craftable_types": ["HERO", "MINION", "SPELL", "WEAPON", "LOCATION"],
+  "$comment_how_to_earn": "HearthstoneJSON's howToEarn / howToEarnGolden (enUS) is set on copies obtained outside packs. The game marks such reward copies 'Uncraftable: this card cannot be disenchanted or crafted' (login events, free launch legendaries 'Earnable after opening a ... card pack', Reward Track / Tavern Pass goldens, achievements, BlizzCon, honor rewards). The texts matching 'how_to_earn_craftable_patterns' are NOT rewards: they describe crafting itself or the old adventure unlocks, which have been craftable since 2020. Verified in game on 2026-10-15 (Marin the Fox regular, golden SN1P-SN4P: 'cannot be disenchanted or crafted'). Any other howToEarn text = uncraftable copy of that premium kind.",
+  "how_to_earn_craftable_patterns": [
+    "craft",
+    "^Unlocked (in|by starting) .*(adventure|Karazhan)\\.$"
+  ],
+  "$comment_overrides": "Explicit per-card overrides win over everything above: dbf ids (as strings or numbers) whose regular / golden copies are blocked in the game, or the opposite. Keep the shipped lists for cards whose game status disagrees with the data; 'dustplanner collection block <card> [--golden]' writes the same keys into <home>/data/non-craftable.json, which is MERGED with this file (a partial file is enough).",
   "uncraftable_card_ids": [],
-  "uncraftable_golden_card_ids": []
+  "uncraftable_golden_card_ids": [],
+  "craftable_card_ids": [],
+  "craftable_golden_card_ids": []
 }

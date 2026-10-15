@@ -27,6 +27,14 @@ public sealed class CardCatalog
         Locale = locale;
     }
 
+    /// <summary>A copy of this catalog with the <c>howToEarn</c> texts taken from <paramref name="reference"/> (the English catalog), matched by dbfId.</summary>
+    public CardCatalog WithHowToEarnFrom(CardCatalog reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        var cards = _byDbfId.Values.Select(c => reference.GetByDbfId(c.DbfId) is { } en ? c with { HowToEarn = en.HowToEarn, HowToEarnGolden = en.HowToEarnGolden } : c);
+        return new CardCatalog(cards, _companions.Values, Build, Locale);
+    }
+
     /// <summary>Non-collectible cards that come with a collectible one (Fabled companions and other tokens), by dbfId.</summary>
     public IReadOnlyDictionary<int, CompanionCard> Companions => _companions;
 

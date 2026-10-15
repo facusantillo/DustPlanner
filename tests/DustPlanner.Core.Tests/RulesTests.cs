@@ -92,6 +92,69 @@ public class RulesTests
     }
 
     [Fact]
+    public void Reward_copies_are_uncraftable_but_crafting_and_adventure_texts_are_not()
+    {
+        var craft = _rules.Craftability;
+        CardDef Card(string set, string? how, string? howGolden) => new()
+        {
+            DbfId = 1, CardId = "T_1", Name = "t", Set = set, Rarity = "LEGENDARY", CardClass = "NEUTRAL", Classes = new[] { "NEUTRAL" }, Type = "MINION", Cost = 1,
+            HowToEarn = how, HowToEarnGolden = howGolden,
+        };
+
+        // What the game showed on 2026-10-15: Marin the Fox (regular) and golden SN1P-SN4P are "Uncraftable".
+        var marin = Card("LOOTAPALOOZA", "Unlocked by opening a Kobolds & Catacombs pack.", "Unlocked with the BlizzCon 2017 virtual ticket.");
+        Assert.Equal(CraftabilityStatus.NotCraftable, craft.StatusOf(marin));
+        Assert.Contains("Kobolds", craft.Explain(marin).Reason, StringComparison.Ordinal);
+        Assert.Equal(CraftabilityStatus.NotCraftable, craft.StatusOf(marin, PremiumKind.Golden));
+
+        var snip = Card("BOOMSDAY", null, "Log in to Hearthstone from June 3, 2019 to July 1, 2019.");
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(snip)); // the regular copy is an ordinary card
+        Assert.Equal(CraftabilityStatus.NotCraftable, craft.StatusOf(snip, PremiumKind.Golden));
+
+        var freeLegendary = Card("EMERALD_DREAM", "Earnable after opening an <i>Into the Emerald Dream</i> card pack.", null);
+        var (status, reason) = craft.Explain(freeLegendary);
+        Assert.Equal(CraftabilityStatus.NotCraftable, status);
+        Assert.DoesNotContain("<i>", reason, StringComparison.Ordinal);
+
+        // Texts that describe crafting itself, or the pre-2020 adventure unlocks (craftable since then), are not rewards.
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(Card("LEGACY", "Not available in packs, must be crafted.", null)));
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(Card("KARA", "Unlocked in the Menagerie, in One Night in Karazhan.", "Crafting unlocked in the Menagerie, in One Night in Karazhan."), PremiumKind.Golden));
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(Card("LOE", "Unlocked by starting the League of Explorers adventure.", null)));
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(Card("NAXX", "Unlocked in The Arachnid Quarter, in the Naxxramas adventure.", null)));
+
+        // Demon Hunter Initiate: regular uncraftable, golden craftable.
+        var initiate = Card("DEMON_HUNTER_INITIATE", "Unlocked with the Demon Hunter class.", "Obtained by crafting.");
+        Assert.Equal(CraftabilityStatus.NotCraftable, craft.StatusOf(initiate));
+        Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(initiate, PremiumKind.Golden));
+    }
+
+    [Fact]
+    public void User_overrides_merge_with_the_shipped_lists_and_block_or_allow_single_copies()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "dustplanner-tests-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var catalog = TestData.SyntheticCatalog();
+            var path = Craftability.WriteOverride(dir, 1003, PremiumKind.Golden, uncraftable: true);   // "the game said Uncraftable"
+            Craftability.WriteOverride(dir, 1950, PremiumKind.Golden, uncraftable: false);            // user disagrees with the reward rule
+            Assert.Contains("uncraftable_golden_card_ids", File.ReadAllText(path), StringComparison.Ordinal);
+
+            var craft = Craftability.Load(dir);
+            Assert.Equal(CraftabilityStatus.NotCraftable, craft.StatusOf(catalog.GetByDbfId(1003)!, PremiumKind.Golden));
+            Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(catalog.GetByDbfId(1003)!)); // regular untouched
+            Assert.Equal(CraftabilityStatus.Craftable, craft.StatusOf(catalog.GetByDbfId(1950)!, PremiumKind.Golden));
+            Assert.True(craft.IsSetKnown("BE")); // shipped lists survive the merge
+
+            Craftability.WriteOverride(dir, 1003, PremiumKind.Golden, uncraftable: false); // flipping removes the other entry
+            Assert.Equal(CraftabilityStatus.Craftable, Craftability.Load(dir).StatusOf(catalog.GetByDbfId(1003)!, PremiumKind.Golden));
+        }
+        finally
+        {
+            TempDir.Delete(dir);
+        }
+    }
+
+    [Fact]
     public void Override_directory_takes_precedence_over_embedded_defaults()
     {
         var dir = Path.Combine(Path.GetTempPath(), "dustplanner-tests-" + Guid.NewGuid().ToString("N"));

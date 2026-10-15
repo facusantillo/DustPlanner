@@ -12,8 +12,8 @@ public class CatalogTests
         var catalog = TestData.SyntheticCatalog();
 
         Assert.Equal(16, catalog.Count); // the hero power, the tokens and the enchantment are not collectible
-        Assert.True(catalog.GetByDbfId(1950)!.IsRewardCopy(PremiumKind.Golden));
-        Assert.False(catalog.GetByDbfId(1950)!.IsRewardCopy(PremiumKind.Normal));
+        Assert.Equal("Log in during the synthetic event.", catalog.GetByDbfId(1950)!.HowToEarnGolden);
+        Assert.Null(catalog.GetByDbfId(1950)!.HowToEarn);
         Assert.Equal(2, catalog.Companions.Count); // SYN_900t / SYN_900t2 belong to SYN_900; SYN_900e is not a token id
         Assert.Null(catalog.GetByDbfId(1011));
         var dual = catalog.GetByDbfId(1008)!;

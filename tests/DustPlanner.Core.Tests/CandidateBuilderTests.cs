@@ -22,21 +22,17 @@ public class CandidateBuilderTests
         new(name, "test", name, cards.ToDictionary(c => c.DbfId, c => c.Count));
 
     [Fact]
-    public void Reward_goldens_are_excluded_until_blacklisted()
+    public void Reward_copies_are_never_candidates_even_when_blacklisted()
     {
-        // SYN_950: the golden copy was a login reward (howToEarnGolden) — never craftable again, value unverified.
-        var pool = Build(Collection((1950, 0, 1, 0)));
+        // SYN_950: the golden copy was a login reward (howToEarnGolden). The game marks such copies "Uncraftable:
+        // cannot be disenchanted or crafted", so they are out whatever prefs say; the regular copy is ordinary.
+        var pool = Build(Collection((1950, 0, 1, 0)), new UserPrefs { Blacklist = { 1950 } });
         Assert.DoesNotContain(pool.Groups, g => g.Card.DbfId == 1950);
         var excluded = Assert.Single(pool.Excluded, e => e.DbfId == 1950);
         Assert.Contains("reward copy", excluded.Reason, StringComparison.Ordinal);
         Assert.Contains("synthetic event", excluded.Reason, StringComparison.Ordinal);
+        Assert.Null(excluded.DustEach);
 
-        var optedIn = Build(Collection((1950, 0, 1, 0)), new UserPrefs { Blacklist = { 1950 } });
-        var group = Assert.Single(optedIn.Groups, g => g.Card.DbfId == 1950);
-        Assert.Equal(PainCategory.Blacklisted, group.Category);
-        Assert.Equal(1600, group.DustEach);
-
-        // A regular copy of the same card is an ordinary candidate.
         var regular = Build(Collection((1950, 1, 0, 0)));
         Assert.Single(regular.Groups, g => g.Card.DbfId == 1950 && g.Kind == PremiumKind.Normal);
     }

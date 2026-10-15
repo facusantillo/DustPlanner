@@ -34,14 +34,6 @@ public sealed record CardDef
     /// <summary>HearthstoneJSON <c>howToEarnGolden</c>: set when the golden copy is an uncraftable reward (login event, adventure completion).</summary>
     public string? HowToEarnGolden { get; init; }
 
-    /// <summary>True when this premium kind of the card is a reward copy that cannot be re-crafted once gone.</summary>
-    public bool IsRewardCopy(Rules.PremiumKind kind) => kind switch
-    {
-        Rules.PremiumKind.Golden => !string.IsNullOrWhiteSpace(HowToEarnGolden),
-        Rules.PremiumKind.Normal => !string.IsNullOrWhiteSpace(HowToEarn),
-        _ => false,
-    };
-
     public bool IsLegendary => string.Equals(Rarity, Rarities.Legendary, StringComparison.Ordinal);
 
     public bool IsNeutral => string.Equals(CardClass, CardClasses.Neutral, StringComparison.Ordinal);

@@ -62,13 +62,13 @@ public sealed record MissingReportJson(
     }
 }
 
-public sealed record MissingCardJson(int DbfId, string CardId, string Name, string Rarity, string CardClass, string Set, int Needed, int Owned, int Missing, bool InSideboard, int? CraftCostEach, int? CraftCostMissing, bool RotatesNext)
+public sealed record MissingCardJson(int DbfId, string CardId, string Name, string Rarity, string CardClass, string Set, int Needed, int Owned, int Missing, bool InSideboard, int? CraftCostEach, int? CraftCostMissing, bool RotatesNext, string? NotCraftableReason)
 {
     public static MissingCardJson From(DeckCardStatus s)
     {
         ArgumentNullException.ThrowIfNull(s);
         return new(s.Card.DbfId, s.Card.CardId, s.Card.Name, s.Card.Rarity, s.Card.CardClass, s.Card.Set,
-            s.Needed, s.Owned, s.Missing, s.InSideboard, s.CraftCostEach, s.CraftCostMissing, s.RotatesNext);
+            s.Needed, s.Owned, s.Missing, s.InSideboard, s.CraftCostEach, s.CraftCostMissing, s.RotatesNext, s.CraftabilityReason);
     }
 }
 

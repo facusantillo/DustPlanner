@@ -309,3 +309,11 @@ account prefix matching and two cosmetic fixes. 115 tests.
 items (F11–F17 in the report): Fabled companion cards in deck codes (catalog now built from `cards.json`), SQLite
 pooling keeping the database locked, the overlay host racing its own initialisation, a state event per poll, the
 follower's date after midnight, two PowerShell script bugs and two test portability issues. All fixed; 116 tests.
+
+**Uncraftable copies (F18):** the first real `plan` proposed golden SN1P-SN4P and Marin the Fox, and `need` counted
+Ysera, Emerald Aspect as craftable; the game marks all three *Uncraftable — cannot be disenchanted or crafted*.
+Craftability is now decided per copy: HearthstoneJSON's `howToEarn` / `howToEarnGolden` (read from the enUS file for
+every locale) turn reward copies into *not craftable* with the unlock text as the reason, shown in `need`, `plan` and
+`--json`. The list stays updatable without a release: `collection block "<name>" [--golden]` / `unblock` write
+per-card overrides to `<home>/data/non-craftable.json`, merged with the shipped file; `catalog update` brings new game
+texts. 119 tests.

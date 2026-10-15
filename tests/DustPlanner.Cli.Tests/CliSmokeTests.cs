@@ -140,6 +140,50 @@ public sealed class CliSmokeTests : IDisposable
     }
 
     [Fact]
+    public async Task Collection_block_takes_a_partial_name_and_the_copy_leaves_the_plan_until_unblocked()
+    {
+        // "titan relic" is enough: one collectible card contains it. The golden copy is the plan's usual pick (dbf 1006).
+        var (c1, out1, err1) = await Run("collection", "block", "titan relic", "--golden");
+        Assert.True(c1 == 0, err1 + out1);
+        Assert.Contains("Titan Relic (synthetic) (golden", out1, StringComparison.Ordinal);
+        var file = Path.Combine(_home, "data", "non-craftable.json");
+        Assert.Contains("\"uncraftable_golden_card_ids\"", File.ReadAllText(file), StringComparison.Ordinal);
+
+        var (c2, out2, err2) = await Run("--json", "plan", SyntheticDeck, "--as-of", "2026-10-15", "--allow-no-decks");
+        Assert.True(c2 == 0 || c2 == 1, err2 + out2);
+        Assert.DoesNotContain(PlanPicks(out2), p => p.DbfId == 1006 && p.Kind == "golden");
+
+        var (c3, out3, err3) = await Run("collection", "block", "synthetic");
+        Assert.Equal(2, c3);
+        Assert.Contains("did you mean", err3 + out3, StringComparison.Ordinal);
+
+        var (c4, out4, err4) = await Run("--json", "collection", "unblock", "1006", "--golden");
+        Assert.True(c4 == 0, err4 + out4);
+        var (c5, out5, err5) = await Run("--json", "plan", SyntheticDeck, "--as-of", "2026-10-15", "--allow-no-decks");
+        Assert.True(c5 == 0, err5 + out5);
+        Assert.Contains(PlanPicks(out5), p => p.DbfId == 1006 && p.Kind == "golden");
+    }
+
+    private static List<(int DbfId, string Kind)> PlanPicks(string planJson)
+    {
+        using var doc = JsonDocument.Parse(planJson);
+        var root = doc.RootElement;
+        var picks = new List<(int, string)>();
+        IEnumerable<JsonElement> results = root.GetProperty("alternatives").EnumerateArray().Select(a => a.GetProperty("result"));
+        if (root.GetProperty("main").ValueKind == JsonValueKind.Object)
+        {
+            results = results.Prepend(root.GetProperty("main"));
+        }
+
+        foreach (var pick in results.SelectMany(r => r.GetProperty("picks").EnumerateArray()))
+        {
+            picks.Add((pick.GetProperty("dbf_id").GetInt32(), pick.GetProperty("kind").GetString()!));
+        }
+
+        return picks;
+    }
+
+    [Fact]
     public async Task Invalid_deck_code_fails_with_a_clear_message()
     {
         var (code, _, stderr) = await Run("need", "not-a-deck-code");

@@ -81,6 +81,13 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
                 await DownloadAsync(build, file, cancellationToken).ConfigureAwait(false);
             }
 
+            // The craftability rules read the English howToEarn texts: other locales also need the enUS file.
+            var english = CardFile(build, ReferenceLocale);
+            if (!string.Equals(_options.Locale, ReferenceLocale, StringComparison.OrdinalIgnoreCase) && (forceRefresh || !File.Exists(english) || unknownBuildStale))
+            {
+                await DownloadAsync(build, english, cancellationToken, ReferenceLocale).ConfigureAwait(false);
+            }
+
             WriteManifest(new CacheManifest(build, _options.Locale, now));
             return new CatalogLoadResult(await LoadFile(build, cancellationToken).ConfigureAwait(false), false, now, null);
         }
@@ -167,10 +174,12 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
         }
     }
 
-    private async Task DownloadAsync(string build, string file, CancellationToken cancellationToken)
+    private const string ReferenceLocale = "enUS";
+
+    private async Task DownloadAsync(string build, string file, CancellationToken cancellationToken, string? locale = null)
     {
         var segment = build == "latest" ? "latest" : build;
-        var uri = new Uri(_options.BaseAddress, $"{segment}/{_options.Locale}/cards.json");
+        var uri = new Uri(_options.BaseAddress, $"{segment}/{locale ?? _options.Locale}/cards.json");
         using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
@@ -185,11 +194,22 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
 
     private async Task<CardCatalog> LoadFile(string build, CancellationToken cancellationToken)
     {
-        await using var stream = File.OpenRead(CardFile(build));
-        return await Task.Run(() => HearthstoneJsonParser.Parse(stream, build, _options.Locale), cancellationToken).ConfigureAwait(false);
+        var english = CardFile(build, ReferenceLocale);
+        return await Task.Run(() =>
+        {
+            using var stream = File.OpenRead(CardFile(build));
+            var catalog = HearthstoneJsonParser.Parse(stream, build, _options.Locale);
+            if (string.Equals(_options.Locale, ReferenceLocale, StringComparison.OrdinalIgnoreCase) || !File.Exists(english))
+            {
+                return catalog;
+            }
+
+            using var englishStream = File.OpenRead(english);
+            return catalog.WithHowToEarnFrom(HearthstoneJsonParser.Parse(englishStream, build, ReferenceLocale));
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    private string CardFile(string build) => Path.Combine(_options.CacheDirectory, build, $"cards.{_options.Locale}.json");
+    private string CardFile(string build, string? locale = null) => Path.Combine(_options.CacheDirectory, build, $"cards.{locale ?? _options.Locale}.json");
 
     private string ManifestFile => Path.Combine(_options.CacheDirectory, "manifest.json");
 

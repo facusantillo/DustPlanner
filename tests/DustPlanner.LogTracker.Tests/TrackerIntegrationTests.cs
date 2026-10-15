@@ -65,7 +65,7 @@ public class TrackerIntegrationTests
         }
         finally
         {
-            Directory.Delete(logs, recursive: true);
+            TempDir.Delete(logs);
         }
     }
 
@@ -100,6 +100,7 @@ public class TrackerIntegrationTests
             Assert.True(follower.Poll() > 0);
             var game = Assert.Single(completed); // the tie; the third game is still open
             Assert.Equal("tie", game.Result);
+            Assert.Equal(new DateTimeOffset(2026, 10, 16, 0, 5, 0, TimeSpan.Zero), game.StartedAt); // the replayed first game crossed midnight
             Assert.NotNull(follower.CurrentGame);
             Assert.Equal("GT_RANKED", follower.CurrentGame!.GameType);
 
@@ -113,7 +114,7 @@ public class TrackerIntegrationTests
         }
         finally
         {
-            Directory.Delete(logs, recursive: true);
+            TempDir.Delete(logs);
         }
     }
 
@@ -143,7 +144,7 @@ public class TrackerIntegrationTests
         }
         finally
         {
-            Directory.Delete(Path.GetDirectoryName(file)!, recursive: true);
+            TempDir.Delete(Path.GetDirectoryName(file)!);
         }
     }
 }

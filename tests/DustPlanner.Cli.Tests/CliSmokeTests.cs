@@ -24,10 +24,7 @@ public sealed class CliSmokeTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        TempDir.Delete(_home);
     }
 
     [Fact]

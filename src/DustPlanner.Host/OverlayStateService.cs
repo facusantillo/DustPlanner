@@ -154,11 +154,18 @@ public sealed class OverlayStateService : BackgroundService
         }
 
         state = state with { Warnings = warnings, UpdatedAt = _clock.GetUtcNow() };
-        if (state with { UpdatedAt = default } != _state with { UpdatedAt = default })
+        if (!SameContent(state, _state))
         {
             Publish(state);
         }
     }
+
+    /// <summary>
+    /// Record equality is not enough: <see cref="OverlayState.Warnings"/> is a list (reference equality) and would
+    /// make every poll look like a change. Compare the serialised content instead, ignoring the timestamp.
+    /// </summary>
+    internal static bool SameContent(OverlayState a, OverlayState b) =>
+        JsonSerializer.Serialize(a with { UpdatedAt = default }, CoreJson.Options) == JsonSerializer.Serialize(b with { UpdatedAt = default }, CoreJson.Options);
 
     private OverlayState RefreshAccount(OverlayState state, List<string> warnings)
     {

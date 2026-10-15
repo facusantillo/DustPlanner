@@ -110,7 +110,7 @@ public class CollectionTests
         }
         finally
         {
-            Directory.Delete(inbox, recursive: true);
+            TempDir.Delete(inbox);
         }
     }
 }

@@ -62,10 +62,7 @@ public class CatalogTests
         }
         finally
         {
-            if (Directory.Exists(dir))
-            {
-                Directory.Delete(dir, recursive: true);
-            }
+            TempDir.Delete(dir);
         }
     }
 
@@ -93,10 +90,7 @@ public class CatalogTests
         }
         finally
         {
-            if (Directory.Exists(dir))
-            {
-                Directory.Delete(dir, recursive: true);
-            }
+            TempDir.Delete(dir);
         }
     }
 

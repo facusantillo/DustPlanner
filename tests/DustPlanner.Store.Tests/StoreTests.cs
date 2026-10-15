@@ -55,7 +55,7 @@ public class StoreTests
         }
         finally
         {
-            Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
+            TempDir.Delete(Path.GetDirectoryName(path)!);
         }
     }
 

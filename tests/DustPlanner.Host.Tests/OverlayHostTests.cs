@@ -61,10 +61,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
             await _app.DisposeAsync();
         }
 
-        if (Directory.Exists(_home))
-        {
-            Directory.Delete(_home, recursive: true);
-        }
+        TempDir.Delete(_home);
     }
 
     [Fact]
@@ -107,12 +104,18 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         var firstGameEnd = Array.FindIndex(lines, l => l.Contains("tag=STATE value=COMPLETE", StringComparison.Ordinal)) + 1;
         await File.AppendAllLinesAsync(Path.Combine(_session, "Power.log"), lines.Skip(firstGameEnd));
 
-        JsonElement updated;
-        do
+        // Bounded wait: on failure the message carries the last state (its warnings say what the host could not do).
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        var updated = first;
+        var eventsSeen = 0;
+        while (updated.GetProperty("session").GetProperty("games").GetInt32() == 0)
         {
+            Assert.True(DateTime.UtcNow < deadline, $"No completed game reported after {eventsSeen} event(s); last state: {updated}");
             updated = await ReadEvent(reader);
+            eventsSeen++;
         }
-        while (updated.GetProperty("session").GetProperty("games").GetInt32() == 0);
+
+        Assert.True(eventsSeen <= 5, $"Too many state events for one game ({eventsSeen}): the host publishes when nothing changed.");
 
         var session = updated.GetProperty("session");
         Assert.Equal(1, session.GetProperty("ties").GetInt32());
@@ -142,10 +145,16 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
 
     private static async Task<JsonElement> ReadEvent(StreamReader reader)
     {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var deadline = Task.Delay(TimeSpan.FromSeconds(20));
         while (true)
         {
-            var line = await reader.ReadLineAsync(timeout.Token) ?? throw new EndOfStreamException("event stream closed");
+            var read = reader.ReadLineAsync();
+            if (await Task.WhenAny(read, deadline) == deadline)
+            {
+                throw new TimeoutException("No SSE line within 20 s");
+            }
+
+            var line = await read ?? throw new EndOfStreamException("event stream closed");
             if (line.StartsWith("data: ", StringComparison.Ordinal))
             {
                 return JsonDocument.Parse(line["data: ".Length..]).RootElement.Clone();

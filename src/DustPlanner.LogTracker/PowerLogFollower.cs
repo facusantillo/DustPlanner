@@ -51,11 +51,28 @@ public sealed class PowerLogFollower
             var first = _currentPath is null;
             _currentPath = newest.Path;
             _parser = new PowerLogParser(newest.BaseDate, _timeZone);
-            _parser.GameCompleted += g => GameCompleted?.Invoke(g);
             _partial.Clear();
-            _offset = first && skipExisting ? new FileInfo(newest.Path).Length : 0;
+            _offset = 0;
+            if (first && skipExisting)
+            {
+                // Replay what is already in the file without raising events: games played before the follower
+                // started are not reported, but the parser keeps its clock (midnight rollovers) and the game in
+                // progress, so CurrentGame and later timestamps are right even when we start mid-session.
+                _offset = ReadAvailable();
+            }
+
+            _parser.GameCompleted += g => GameCompleted?.Invoke(g);
         }
 
+        ReadAvailable();
+        return _linesLastRead;
+    }
+
+    private int _linesLastRead;
+
+    /// <summary>Reads from the current offset to the end of the file, feeding complete lines to the parser. Returns the new offset.</summary>
+    private long ReadAvailable()
+    {
         using var stream = new FileStream(_currentPath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         if (stream.Length < _offset)
         {
@@ -74,7 +91,8 @@ public sealed class PowerLogFollower
             lines += DrainCompleteLines();
         }
 
-        return lines;
+        _linesLastRead = lines;
+        return _offset;
     }
 
     private int DrainCompleteLines()

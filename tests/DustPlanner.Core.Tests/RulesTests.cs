@@ -111,7 +111,7 @@ public class RulesTests
         }
         finally
         {
-            Directory.Delete(dir, recursive: true);
+            TempDir.Delete(dir);
         }
     }
 }

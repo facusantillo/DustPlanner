@@ -31,6 +31,9 @@ public sealed class DustStore : IDisposable
             DataSource = path,
             Mode = readOnly ? SqliteOpenMode.ReadOnly : SqliteOpenMode.ReadWriteCreate,
             DefaultTimeout = 10,
+            // No pooling: a pooled connection keeps the file handle open after Dispose, which on Windows blocks
+            // deleting/moving the database (and the test folders) until the process exits.
+            Pooling = false,
         };
         var connection = new SqliteConnection(builder.ConnectionString);
         connection.Open();
@@ -72,7 +75,11 @@ public sealed class DustStore : IDisposable
         }
     }
 
-    public void Dispose() => _connection.Dispose();
+    public void Dispose()
+    {
+        _connection.Dispose();
+        SqliteConnection.ClearPool(_connection);
+    }
 
     public int Execute(string sql, params (string Name, object? Value)[] parameters)
     {

@@ -122,7 +122,8 @@ public class PowerLogParserTests
     [Fact]
     public void Timestamps_are_local_time_by_default()
     {
-        var madrid = TimeZoneInfo.FindSystemTimeZoneById("Europe/Madrid");
+        // A fixed +02:00 zone (what Madrid is in October) built by hand: IANA ids are not resolvable on every Windows.
+        var madrid = TimeZoneInfo.CreateCustomTimeZone("QA+02", TimeSpan.FromHours(2), "QA+02", "QA+02");
         var parser = new PowerLogParser(new DateOnly(2026, 10, 15), madrid);
         parser.Feed(File.ReadLines(Fixture("synthetic_edge_cases.power.log")));
         var first = parser.Games[0];

@@ -156,8 +156,10 @@ summary:hover { color: var(--ink); }
 .search ul { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--raised); border: 1px solid var(--line); border-radius: var(--radius); max-height: 260px; overflow: auto; }
 .search li { padding: 6px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
 .search li:hover, .search li.active { background: rgba(169, 140, 255, 0.15); }
-.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 6px 0; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 6px 0; }
 .kv span:nth-child(odd) { color: var(--muted); }
+.kv > span { min-width: 0; }
+.kv code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
 
 @media (max-width: 720px) {
   :root { --gutter: 16px; }

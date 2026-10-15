@@ -24,6 +24,8 @@
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const n = v => (v == null ? "—" : Number(v).toLocaleString(lang === "es" ? "es-ES" : "en-US"));
   const pct = v => (v == null ? null : Math.round(v * 1000) / 10);
+  // "1 copy" / "3 copies": the string table holds the two forms under <key>_one and <key>_many.
+  const count = (key, v) => t(Number(v) === 1 ? key + "_one" : key + "_many", { n: n(v) });
   const CLASS_NAMES = { DEATHKNIGHT: "Death Knight", DEMONHUNTER: "Demon Hunter" };
   const title = s => { if (!s) return "?"; const u = String(s).toUpperCase(); if (CLASS_NAMES[u]) return CLASS_NAMES[u]; return u.charAt(0) + u.slice(1).toLowerCase(); };
   const when = iso => { if (!iso) return "—"; const d = new Date(iso); return d.toLocaleString(lang === "es" ? "es-ES" : "en-GB", { dateStyle: "medium", timeStyle: "short" }); };
@@ -282,11 +284,11 @@
       else html += "<ul>" + p.blockers.map(b => "<li>" + esc(b) + "</li>").join("") + "</ul>";
     } else {
       const m = p.main;
-      html += '<p class="muted">' + esc(t("plan_summary", { need: n(p.need), gives: n(m.total_dust), surplus: n(m.surplus), pain: m.total_pain, copies: m.total_copies, decks: p.protected_deck_count })) + "</p>";
+      html += '<p class="muted">' + esc(t("plan_summary", { need: n(p.need), gives: n(m.total_dust), surplus: n(m.surplus), pain: m.total_pain, copies: count("copies", m.total_copies), decks: count("saved_decks", p.protected_deck_count) })) + "</p>";
       html += picksTable(m);
       html += '<div class="row"><button class="btn primary" id="btn-save-plan">' + t("plan_save") + '</button><span class="why">' + t("plan_never") + '</span></div><div id="plan-saved"></div>';
       p.alternatives.forEach(a => {
-        html += "<details><summary>" + esc(t("plan_alt", { label: a.label, gives: n(a.result.total_dust), pain: a.result.total_pain, copies: a.result.total_copies })) + "</summary>" + picksTable(a.result) + "</details>";
+        html += "<details><summary>" + esc(t("plan_alt", { label: a.label, gives: n(a.result.total_dust), pain: a.result.total_pain, copies: count("copies", a.result.total_copies) })) + "</summary>" + picksTable(a.result) + "</details>";
       });
     }
     if (p.notable_exclusions.length) {

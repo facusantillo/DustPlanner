@@ -202,6 +202,11 @@ The service the plugin starts (`dustplanner-host`) also serves a transparent 192
 Source — rank, session win rate, today's record, dust, last game — on `http://127.0.0.1:8765/overlay` (loopback only).
 Setup, options and what each cell means: [`docs/overlay.md`](docs/overlay.md).
 
+## Publishing
+
+Creating the repository, Pages, the branch and tag rulesets and a release: [`docs/publishing.md`](docs/publishing.md)
+(`tools\github-setup.ps1` does the repository configuration through the GitHub CLI).
+
 ## Installing the plugin
 
 Download the latest `DustPlanner-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into

@@ -10,6 +10,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="${1:-$ROOT/artifacts/release}"
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"      # absolute: the zip step runs from a temp dir
 PROJECT="$ROOT/src/DustPlanner.HdtExporter/DustPlanner.HdtExporter.csproj"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT

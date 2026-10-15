@@ -159,6 +159,59 @@ public sealed class CliSmokeTests : IDisposable
         Assert.Contains("unconfirmed", stdout, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Games_import_list_stats_and_log_config_work_end_to_end()
+    {
+        var logs = Path.Combine(_home, "Logs");
+        var session = Path.Combine(logs, "Hearthstone_2026_10_15_23_50_00");
+        Directory.CreateDirectory(session);
+        File.Copy(Fixture("synthetic_edge_cases.power.log"), Path.Combine(session, "Power.log"));
+
+        var (c1, out1, err1) = await Run("games", "import", "--logs", logs);
+        Assert.True(c1 == 0, err1 + out1);
+        Assert.Contains("1 Power.log file(s), 3 game(s) parsed, 3 new, 1 without a result", out1, StringComparison.Ordinal);
+
+        var (c2, out2, err2) = await Run("--json", "games", "import", "--logs", logs);
+        Assert.True(c2 == 0, err2 + out2);
+        using (var doc = JsonDocument.Parse(out2))
+        {
+            Assert.Equal(0, doc.RootElement.GetProperty("games_inserted").GetInt32());
+        }
+
+        var (c3, out3, err3) = await Run("games", "list");
+        Assert.True(c3 == 0, err3 + out3);
+        Assert.Contains("Account 8589934592-42 · 3 game(s)", out3, StringComparison.Ordinal);
+        Assert.Contains("Rival#2222", out3, StringComparison.Ordinal);
+        Assert.Contains("The Innkeeper", out3, StringComparison.Ordinal);
+
+        var (c4, out4, err4) = await Run("--json", "games", "stats", "--since", "2026-10-01", "--type", "GT_RANKED");
+        Assert.True(c4 == 0, err4 + out4);
+        using (var doc = JsonDocument.Parse(out4))
+        {
+            var overall = doc.RootElement.GetProperty("overall");
+            Assert.Equal(2, overall.GetProperty("games").GetInt32());
+            Assert.Equal(1, overall.GetProperty("losses").GetInt32());
+            Assert.Equal(1, overall.GetProperty("unknown").GetInt32());
+            Assert.Equal(0.0, overall.GetProperty("win_rate").GetDouble());
+        }
+
+        var (c5, out5, _) = await Run("games", "stats");
+        Assert.True(c5 == 0, out5);
+        Assert.Contains("3 game(s): 0 won, 1 lost, 1 tied, 1 unknown", out5, StringComparison.Ordinal);
+        Assert.Contains("Priest", out5, StringComparison.Ordinal);
+
+        var config = Path.Combine(_home, "log.config");
+        var (c6, out6, _) = await Run("games", "log-config", "--path", config);
+        Assert.Equal(1, c6);
+        Assert.Contains("missing", out6, StringComparison.Ordinal);
+        var (c7, out7, _) = await Run("games", "log-config", "--path", config, "--apply");
+        Assert.Equal(0, c7);
+        Assert.Contains("(written)", out7, StringComparison.Ordinal);
+        Assert.Contains("[Power]", await File.ReadAllTextAsync(config), StringComparison.Ordinal);
+        var (c8, _, _) = await Run("games", "log-config", "--path", config);
+        Assert.Equal(0, c8);
+    }
+
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
     private async Task<(int Code, string StdOut, string StdErr)> Run(params string[] args)

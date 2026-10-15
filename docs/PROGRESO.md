@@ -197,3 +197,32 @@ is the easiest way to run A1.
 **Needs user verification** — follow a stored plan once in the game, export again, run `sync` and check the change is
 matched with *high* confidence (the HDT read glitches Dust Utility complained about would show as *low*-confidence
 events: report them if they appear without you having touched the collection).
+
+---
+
+## Stage 6 — Power.log tracker (match history, win rate)
+
+**Done**
+
+- `src/DustPlanner.LogTracker`: `PowerLogParser` (incremental, line by line: CREATE_GAME → players with account ids →
+  heroes from FULL_ENTITY in PLAY → PLAYSTATE / FIRST_PLAYER / TURN → `STATE=COMPLETE`; game type, format, build and
+  player names from `DebugPrintGame`; midnight rollover; `UNKNOWN HUMAN PLAYER` names learned from later lines; local
+  player inferred the hslog way — a card revealed in HAND in the initial entity dump or by the first SHOW_ENTITY into the
+  hand — with fallbacks: the only human vs AI, the only named player). `LogLocator` (HDT's config → game folder, dated
+  session folders `Hearthstone_YYYY_MM_DD_HH_MM_SS/Power.log` and the legacy flat file), `LogConfig` (checks/completes
+  only the `[Power]` section of Blizzard's `log.config`), `GameRepository` (stage-5 `game` table, keyed so re-imports are
+  no-ops; win rate overall / per class / since / by game type), `LogImporter`, `PowerLogFollower` (offset tailing for
+  the overlay host, switches to a new session folder when the game is relaunched).
+- CLI `games import [--logs]`, `games list`, `games stats [--since|--days] [--type] [--format]`,
+  `games log-config [--apply]` (report-only by default).
+- Tests: three public HearthSim logs (CC0, see `tests/DustPlanner.LogTracker.Tests/Fixtures/README.md`) + a synthetic
+  log with concede, midnight rollover, AI opponent tie and an unfinished game; importer/stats, follower, log.config;
+  CLI end to end. 107 tests total.
+
+**Pending / caveats**
+
+- No real log from this machine was available while writing the parser: see VERIFICACION C4 (validate with 20 real
+  games against HDT's stats). The local-player inference is the piece most likely to need a tweak.
+- `games stats` counts ties and unknown results as games but not in the win rate (wins ÷ decided games).
+- Battlegrounds / Mercenaries / Duels logs are parsed but not filtered specially; stats default to every game type, use
+  `--type GT_RANKED` for ladder only.

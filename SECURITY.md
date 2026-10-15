@@ -29,6 +29,10 @@ anyone auditing the code (or deciding whether to run it) knows where the line is
   new access path to the game beyond what HDT itself performs.
 - The log tracker reads `Power.log`, a plain-text file the game writes when
   logging is enabled in `log.config` — the same mechanism every deck tracker uses.
+  It opens the file read-only and shared, never the process. The only file it can
+  write outside its own data folder is Blizzard's `log.config`, and only when you
+  run `dustplanner games log-config --apply`: it adds or completes the `[Power]`
+  section (the settings HDT itself writes) and leaves every other line untouched.
 - Everything else (planner, store, MCP server, overlay host) works on local
   files and a local SQLite database.
 

@@ -1,0 +1,82 @@
+D 23:58:10.0000000 GameState.DebugPrintPower() - CREATE_GAME
+D 23:58:10.0000000 GameState.DebugPrintPower() -     GameEntity EntityID=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=TURN value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=CARDTYPE value=GAME
+D 23:58:10.0000000 GameState.DebugPrintPower() -     Player EntityID=2 PlayerID=1 GameAccountId=[hi=8589934592 lo=42]
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=PLAYSTATE value=PLAYING
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=PLAYER_ID value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -     Player EntityID=3 PlayerID=2 GameAccountId=[hi=8589934592 lo=777]
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=PLAYSTATE value=PLAYING
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=FIRST_PLAYER value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -         tag=PLAYER_ID value=2
+D 23:58:10.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=4 CardID=
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ZONE value=HAND
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ENTITY_ID value=4
+D 23:58:10.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=5 CardID=
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=2
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ZONE value=HAND
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ENTITY_ID value=5
+D 23:58:10.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=64 CardID=HERO_09
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CARDTYPE value=HERO
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ZONE value=PLAY
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ENTITY_ID value=64
+D 23:58:10.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=65 CardID=CS1h_001
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=1
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CARDTYPE value=HERO_POWER
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ZONE value=PLAY
+D 23:58:10.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=66 CardID=HERO_08a
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=2
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=CARDTYPE value=HERO
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ZONE value=PLAY
+D 23:58:10.0000000 GameState.DebugPrintPower() -     tag=ENTITY_ID value=66
+D 23:58:10.0000000 GameState.DebugPrintGame() - BuildNumber=999999
+D 23:58:10.0000000 GameState.DebugPrintGame() - GameType=GT_RANKED
+D 23:58:10.0000000 GameState.DebugPrintGame() - FormatType=FT_STANDARD
+D 23:58:10.0000000 GameState.DebugPrintGame() - ScenarioID=2
+D 23:58:10.0000000 GameState.DebugPrintGame() - PlayerID=1, PlayerName=Synthetic#0001
+D 23:58:10.0000000 GameState.DebugPrintGame() - PlayerID=2, PlayerName=UNKNOWN HUMAN PLAYER
+D 23:58:11.0000000 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=GameEntity EffectCardId= EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=0
+D 23:58:11.0000000 GameState.DebugPrintPower() -     SHOW_ENTITY - Updating Entity=4 CardID=CS1_130
+D 23:58:11.0000000 GameState.DebugPrintPower() -         tag=ZONE value=HAND
+D 23:58:11.0000000 GameState.DebugPrintPower() -         tag=COST value=1
+D 23:58:11.0000000 GameState.DebugPrintPower() - BLOCK_END
+D 23:58:12.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=Rival#2222 tag=MULLIGAN_STATE value=INPUT 
+D 23:59:00.0000000 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=TURN value=2 
+D 00:00:30.0000000 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=TURN value=3 
+D 00:01:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=Synthetic#0001 tag=PLAYSTATE value=CONCEDED 
+D 00:01:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=Rival tag=PLAYSTATE value=WON 
+D 00:01:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=Synthetic tag=PLAYSTATE value=LOST 
+D 00:01:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER 
+D 00:01:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STATE value=COMPLETE 
+D 00:05:00.0000000 GameState.DebugPrintPower() - CREATE_GAME
+D 00:05:00.0000000 GameState.DebugPrintPower() -     GameEntity EntityID=1
+D 00:05:00.0000000 GameState.DebugPrintPower() -         tag=TURN value=1
+D 00:05:00.0000000 GameState.DebugPrintPower() -     Player EntityID=2 PlayerID=1 GameAccountId=[hi=8589934592 lo=42]
+D 00:05:00.0000000 GameState.DebugPrintPower() -         tag=FIRST_PLAYER value=1
+D 00:05:00.0000000 GameState.DebugPrintPower() -     Player EntityID=3 PlayerID=2 GameAccountId=[hi=0 lo=0]
+D 00:05:00.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=64 CardID=HERO_09
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=1
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=CARDTYPE value=HERO
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=ZONE value=PLAY
+D 00:05:00.0000000 GameState.DebugPrintPower() - FULL_ENTITY - Creating ID=66 CardID=HERO_01
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=CONTROLLER value=2
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=CARDTYPE value=HERO
+D 00:05:00.0000000 GameState.DebugPrintPower() -     tag=ZONE value=PLAY
+D 00:05:00.0000000 GameState.DebugPrintGame() - GameType=GT_VS_AI
+D 00:05:00.0000000 GameState.DebugPrintGame() - FormatType=FT_WILD
+D 00:05:00.0000000 GameState.DebugPrintGame() - PlayerID=1, PlayerName=Synthetic#0001
+D 00:05:00.0000000 GameState.DebugPrintGame() - PlayerID=2, PlayerName=The Innkeeper
+D 00:06:00.0000000 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=TURN value=2 
+D 00:07:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=Synthetic#0001 tag=PLAYSTATE value=TIED 
+D 00:07:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=The Innkeeper tag=PLAYSTATE value=TIED 
+D 00:07:00.0000000 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STATE value=COMPLETE 
+D 00:10:00.0000000 GameState.DebugPrintPower() - CREATE_GAME
+D 00:10:00.0000000 GameState.DebugPrintPower() -     GameEntity EntityID=1
+D 00:10:00.0000000 GameState.DebugPrintPower() -     Player EntityID=2 PlayerID=1 GameAccountId=[hi=8589934592 lo=42]
+D 00:10:00.0000000 GameState.DebugPrintPower() -     Player EntityID=3 PlayerID=2 GameAccountId=[hi=8589934592 lo=999]
+D 00:10:00.0000000 GameState.DebugPrintGame() - GameType=GT_RANKED
+D 00:10:00.0000000 GameState.DebugPrintGame() - PlayerID=1, PlayerName=Synthetic#0001
+D 00:10:00.0000000 GameState.DebugPrintGame() - PlayerID=2, PlayerName=UNKNOWN HUMAN PLAYER
+D 00:10:05.0000000 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=TURN value=2 

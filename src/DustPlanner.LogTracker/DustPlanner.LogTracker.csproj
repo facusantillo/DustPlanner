@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DustPlanner.LogTracker</RootNamespace>
+    <Description>Reads Hearthstone's Power.log (a plain text file the game writes) to record games, classes and results. Never touches the client.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DustPlanner.Core/DustPlanner.Core.csproj" />
+    <ProjectReference Include="../DustPlanner.Store/DustPlanner.Store.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DustPlanner.LogTracker.Tests" />
+  </ItemGroup>
+
+</Project>

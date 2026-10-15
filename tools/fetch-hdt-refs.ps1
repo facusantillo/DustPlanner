@@ -35,7 +35,14 @@ if ($FromInstall) {
         Sort-Object { [version]($_.Name -replace '^app-', '') } -Descending |
         Select-Object -First 1
     if (-not $app) { throw "No app-<version> folder found under $hdtRoot" }
-    foreach ($f in $files) { Copy-Item -Path (Join-Path $app.FullName $f) -Destination (Join-Path $dest $f) -Force }
+    foreach ($f in $files) {
+        $src = Join-Path $app.FullName $f
+        if ($f -eq "Hearthstone Deck Tracker.exe" -and -not (Test-Path $src)) {
+            # 1.59.x installs name the executable without spaces; the csproj HintPath uses the release-zip name.
+            $src = Join-Path $app.FullName "HearthstoneDeckTracker.exe"
+        }
+        Copy-Item -Path $src -Destination (Join-Path $dest $f) -Force
+    }
     ($app.Name -replace '^app-', '') | Set-Content -Path (Join-Path $dest "VERSION")
     Write-Host "Copied HDT $($app.Name) references from $($app.FullName) to $dest"
     return

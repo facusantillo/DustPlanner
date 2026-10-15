@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 var hdtDir = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal)) ?? ".";
 var netfxRef = OptionValue(args, "--netfx-ref") ?? Environment.GetEnvironmentVariable("NETFX_REF") ?? FindNetFxReferenceAssemblies();
 var reportPath = OptionValue(args, "--report");
+var jsonOptions = JsonOptionsCache.Instance;
 
 if (netfxRef is null || !Directory.Exists(netfxRef))
 {
@@ -21,7 +22,7 @@ if (netfxRef is null || !Directory.Exists(netfxRef))
 }
 
 var manifestPath = Path.Combine(AppContext.BaseDirectory, "required-apis.json");
-var manifest = JsonSerializer.Deserialize<Manifest>(File.ReadAllText(manifestPath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+var manifest = JsonSerializer.Deserialize<Manifest>(File.ReadAllText(manifestPath), jsonOptions)!;
 
 var paths = new List<string>();
 paths.AddRange(Directory.GetFiles(netfxRef, "*.dll"));
@@ -37,7 +38,7 @@ paths.AddRange(Directory.GetFiles(hdtDir, "*.exe"));
 using var mlc = new MetadataLoadContext(new PathAssemblyResolver(paths), "mscorlib");
 var assemblies = new Dictionary<string, Assembly>(StringComparer.Ordinal)
 {
-    ["hdt"] = mlc.LoadFromAssemblyPath(Path.Combine(hdtDir, "Hearthstone Deck Tracker.exe")),
+    ["hdt"] = mlc.LoadFromAssemblyPath(FindHdtExecutable(hdtDir)),
     ["mirror"] = mlc.LoadFromAssemblyPath(Path.Combine(hdtDir, "HearthMirror.dll")),
     ["db"] = mlc.LoadFromAssemblyPath(Path.Combine(hdtDir, "HearthDb.dll")),
 };
@@ -137,6 +138,14 @@ static string? OptionValue(string[] args, string name)
     return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
 }
 
+/// <summary>Release zips up to 1.55.x ship "Hearthstone Deck Tracker.exe"; installed 1.59.x uses "HearthstoneDeckTracker.exe".</summary>
+static string FindHdtExecutable(string hdtDir)
+{
+    var candidates = HdtFiles.ExecutableNames.Select(n => Path.Combine(hdtDir, n)).ToList();
+    return candidates.FirstOrDefault(File.Exists)
+        ?? throw new FileNotFoundException("No HDT executable found in " + hdtDir + " (expected HearthstoneDeckTracker.exe or 'Hearthstone Deck Tracker.exe').");
+}
+
 static string? FindNetFxReferenceAssemblies()
 {
     var candidates = new List<string>();
@@ -156,6 +165,20 @@ static string? FindNetFxReferenceAssemblies()
     }
 
     return candidates.FirstOrDefault(Directory.Exists);
+}
+
+internal static class HdtFiles
+{
+    /// <summary>Release zips up to 1.55.x ship the first name; installed 1.59.x builds the second.</summary>
+    public static readonly string[] ExecutableNames = ["HearthstoneDeckTracker.exe", "Hearthstone Deck Tracker.exe"];
+}
+
+internal static class JsonOptionsCache
+{
+    public static readonly JsonSerializerOptions Instance = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 }
 
 internal sealed class Manifest

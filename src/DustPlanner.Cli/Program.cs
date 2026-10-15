@@ -23,5 +23,6 @@ root.Subcommands.Add(CatalogCommand.Build(Context));
 root.Subcommands.Add(CollectionCommand.Build(Context));
 root.Subcommands.Add(SyncCommand.Build(Context));
 root.Subcommands.Add(HistoryCommand.Build(Context));
+root.Subcommands.Add(GamesCommand.Build(Context));
 
 return await root.Parse(args).InvokeAsync().ConfigureAwait(false);

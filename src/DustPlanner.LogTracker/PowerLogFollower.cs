@@ -1,0 +1,94 @@
+using System.Text;
+
+namespace DustPlanner.LogTracker;
+
+/// <summary>
+/// Tails the newest Power.log: each <see cref="Poll"/> reads the lines appended since the last call and feeds them to
+/// a parser, switching to a newer session folder when the game is relaunched. Designed for a timer loop (the overlay
+/// host polls every few seconds); no file-system watchers, no hooks.
+/// </summary>
+public sealed class PowerLogFollower
+{
+    private readonly string _logsDirectory;
+    private string? _currentPath;
+    private long _offset;
+    private PowerLogParser? _parser;
+    private readonly StringBuilder _partial = new();
+
+    public PowerLogFollower(string logsDirectory)
+    {
+        _logsDirectory = logsDirectory ?? throw new ArgumentNullException(nameof(logsDirectory));
+    }
+
+    /// <summary>Raised for each game completed since the follower started.</summary>
+    public event Action<GameRecord>? GameCompleted;
+
+    public string? CurrentPath => _currentPath;
+
+    /// <summary>The game in progress according to the log, if any.</summary>
+    public GameRecord? CurrentGame => _parser?.Current;
+
+    /// <summary>
+    /// Reads newly appended lines. When <paramref name="skipExisting"/> is true on the first call, the current file
+    /// content is skipped so only games played from now on are reported (the importer handles history).
+    /// </summary>
+    public int Poll(bool skipExisting = true)
+    {
+        var logs = LogLocator.FindPowerLogs(_logsDirectory);
+        if (logs.Count == 0)
+        {
+            return 0;
+        }
+
+        var newest = logs[^1];
+
+        if (!string.Equals(newest.Path, _currentPath, StringComparison.OrdinalIgnoreCase))
+        {
+            var first = _currentPath is null;
+            _currentPath = newest.Path;
+            _parser = new PowerLogParser(newest.BaseDate);
+            _parser.GameCompleted += g => GameCompleted?.Invoke(g);
+            _partial.Clear();
+            _offset = first && skipExisting ? new FileInfo(newest.Path).Length : 0;
+        }
+
+        using var stream = new FileStream(_currentPath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (stream.Length < _offset)
+        {
+            _offset = 0; // truncated / rewritten
+            _partial.Clear();
+        }
+
+        stream.Seek(_offset, SeekOrigin.Begin);
+        var buffer = new byte[64 * 1024];
+        var lines = 0;
+        int read;
+        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            _offset += read;
+            _partial.Append(Encoding.UTF8.GetString(buffer, 0, read));
+            lines += DrainCompleteLines();
+        }
+
+        return lines;
+    }
+
+    private int DrainCompleteLines()
+    {
+        var count = 0;
+        while (true)
+        {
+            var text = _partial.ToString();
+            var newline = text.IndexOf('\n', StringComparison.Ordinal);
+            if (newline < 0)
+            {
+                return count;
+            }
+
+            var line = text[..newline].TrimEnd('\r');
+            _partial.Remove(0, newline + 1);
+            _parser!.Feed(line);
+            count++;
+        }
+    }
+}

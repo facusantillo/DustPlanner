@@ -74,19 +74,19 @@ public sealed class DustStore : IDisposable
 
     public void Dispose() => _connection.Dispose();
 
-    internal int Execute(string sql, params (string Name, object? Value)[] parameters)
+    public int Execute(string sql, params (string Name, object? Value)[] parameters)
     {
         using var cmd = Command(sql, parameters);
         return cmd.ExecuteNonQuery();
     }
 
-    internal object? Scalar(string sql, params (string Name, object? Value)[] parameters)
+    public object? Scalar(string sql, params (string Name, object? Value)[] parameters)
     {
         using var cmd = Command(sql, parameters);
         return cmd.ExecuteScalar();
     }
 
-    internal SqliteCommand Command(string sql, params (string Name, object? Value)[] parameters)
+    public SqliteCommand Command(string sql, params (string Name, object? Value)[] parameters)
     {
         var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
@@ -98,7 +98,7 @@ public sealed class DustStore : IDisposable
         return cmd;
     }
 
-    internal SqliteTransaction BeginTransaction() => _connection.BeginTransaction();
+    public SqliteTransaction BeginTransaction() => _connection.BeginTransaction();
 
     private void Migrate()
     {
@@ -145,7 +145,7 @@ public sealed class DustStore : IDisposable
         return int.Parse(file.Split('_')[0], CultureInfo.InvariantCulture);
     }
 
-    internal static string Iso(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+    public static string Iso(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
-    internal static DateTimeOffset ParseIso(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+    public static DateTimeOffset ParseIso(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
 }

@@ -4,14 +4,15 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–5 of 8: the HDT exporter plugin (with release packaging), the card catalog and
-> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender) and the local history database
-> exist; the Power.log tracker, the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–6 of 8: the HDT exporter plugin (with release packaging), the card catalog and
+> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender), the local history database and
+> the `Power.log` match tracker exist; the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
 - Reads your collection, decks and rank **through Hearthstone Deck Tracker's public plugin API** and writes them to JSON.
 - Computes missing cards and an optimal disenchant plan that respects your decks, the current meta and your preferences.
+- Reads your match history from the **`Power.log` files Hearthstone writes by itself** (the same files HDT reads).
 - **Never** clicks, types, injects, or reads the game's memory on its own. You disenchant by hand, in the game.
   The full policy is in [`SECURITY.md`](SECURITY.md).
 
@@ -25,7 +26,7 @@ disenchant to get there with the least regret.
 | `src/DustPlanner.Core` | net10.0 | Card data, deckstrings, collection, planner, meta |
 | `src/DustPlanner.Store` | net10.0 | SQLite persistence: snapshots, decks, plans, history, rank, games |
 | `src/DustPlanner.Cli` | net10.0 | Command-line interface |
-| `src/DustPlanner.LogTracker` | net10.0 | `Power.log` game tracker *(stage 6)* |
+| `src/DustPlanner.LogTracker` | net10.0 | `Power.log` parser, importer, follower and win-rate queries |
 | `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server *(stage 7)* |
 | `src/DustPlanner.Host` | net10.0 | Local HTTP host + OBS overlay *(stage 8)* |
 | `tests/` | net10.0 | One test project per module |
@@ -54,6 +55,8 @@ dotnet run --project src/DustPlanner.Cli -- need deck.txt --json     # or a past
 dotnet run --project src/DustPlanner.Cli -- plan "AAECAa0GBPj..."    # + the least painful disenchant plan
 dotnet run --project src/DustPlanner.Cli -- sync                    # store the snapshot, decks and rank; detect changes
 dotnet run --project src/DustPlanner.Cli -- history                 # plans and the changes matched against them
+dotnet run --project src/DustPlanner.Cli -- games import            # parse Hearthstone's Power.log files into the database
+dotnet run --project src/DustPlanner.Cli -- games stats --days 7    # win rate overall and per class (also: list, log-config)
 ```
 
 Example (`need` against a synthetic collection):
@@ -99,6 +102,11 @@ golden 3/10, Wild-only 2, Standard 25 + meta signal, +class you don't play, −r
 the set of copies that reaches the dust you need with the least total pain, preferring exact totals and fewer cards.
 Standard legendaries and epics that show up in your `meta.txt` decks are protected. Everything configurable lives in
 `prefs.json` (see `data/examples/`).
+
+`games import` finds the `Logs` folder through HDT's configuration (or `--logs <path>`), parses every
+`Hearthstone_<date>/Power.log` session and stores each game once: mode, format, both classes, opponent name, result,
+who went first, turns. Hearthstone only writes `Power.log` when Blizzard's `log.config` asks for it — HDT sets that up;
+`games log-config` checks it and, only with `--apply`, completes the `[Power]` section without touching anything else.
 
 Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPLANNER_HOME`): `inbox/` (exporter
 output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`),

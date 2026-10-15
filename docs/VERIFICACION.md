@@ -24,8 +24,8 @@ Status legend: `[ ]` pending · `[x]` done · `[~]` done with caveats (see note)
 4. A **DustPlanner** entry appears in HDT's plugin menu with: *Export collection, decks and rank now*,
    *Export diagnostics*, *Open export folder*, and a status line.
 
-- [ ] A1.1 HDT starts with the plugin enabled and shows the menu.
-- [ ] A1.2 `%LocalAppData%\DustPlanner\exporter.log` exists and its first line reads
+- [x] A1.1 HDT starts with the plugin enabled and shows the menu.
+- [x] A1.2 `%LocalAppData%\DustPlanner\exporter.log` exists and its first line reads
       `Loaded v0.1.0.0 (HDT <your version>, HearthMirror <version>). collection event: on, mode event: on`.
       If any says `OFF`, paste the log line into an issue — it means the HDT version you run changed an API.
 
@@ -35,15 +35,15 @@ Status legend: `[ ]` pending · `[x]` done · `[~]` done with caveats (see note)
 2. HDT refreshes its collection when you leave the collection screen; the plugin exports on that event.
    If nothing appears within a minute, use **DustPlanner → Export … now**.
 
-- [ ] A2.1 `%LocalAppData%\DustPlanner\inbox\<hi>-<lo>\collection.json` exists.
-- [ ] A2.2 `meta.account.battle_tag` and `meta.account.region` are yours.
-- [ ] A2.3 `dust` matches the dust shown in the game's crafting screen.
-- [ ] A2.4 Pick three cards you own (one regular ×2, one golden, one legendary ×1) and check their
+- [x] A2.1 `%LocalAppData%\DustPlanner\inbox\<hi>-<lo>\collection.json` exists.
+- [x] A2.2 `meta.account.battle_tag` and `meta.account.region` are yours.
+- [x] A2.3 `dust` matches the dust shown in the game's crafting screen.
+- [x] A2.4 Pick three cards you own (one regular ×2, one golden, one legendary ×1) and check their
       `dbfId → [n0, n1, …]` rows: index 0 = regular copies, index 1 = golden copies.
-- [ ] A2.5 `decks.json` exists after visiting the **Play** screen once, and lists your in-game decks
+- [x] A2.5 `decks.json` exists after visiting the **Play** screen once, and lists your in-game decks
       (`origin: "ingame"`) and HDT's saved decks (`origin: "hdt"`).
-- [ ] A2.6 `rank.json` exists and `formats.standard.star_level` / `league_id` match your ladder standing.
-- [ ] A2.7 `history\` contains timestamped copies and never grows past 30 files per kind.
+- [x] A2.6 `rank.json` exists and `formats.standard.star_level` / `league_id` match your ladder standing.
+- [x] A2.7 `history\` contains timestamped copies and never grows past 30 files per kind.
 
 ### A3. Diagnostics — the two open data questions (Q2, Q4)
 
@@ -51,15 +51,15 @@ Run **DustPlanner → Export diagnostics** with the game open and the collection
 `inbox\<hi>-<lo>\diagnostics.json`. Send me that file (it contains card names and counts, nothing personal
 beyond your BattleTag — remove `meta.account` if you prefer).
 
-- [ ] A3.1 **Premium slots 2 and 3 (Q4).** `premium_types` lists how many cards have `premium_type` 2 and 3.
+- [x] A3.1 **Premium slots 2 and 3 (Q4).** `premium_types` lists how many cards have `premium_type` 2 and 3.
       For each card in `samples` with a non-zero value at index 2 or 3 of `raw_counts`, look it up in the game
       and note whether that copy is **Signature** or **Diamond**. Expected outcome: one mapping such as
       `2 = signature, 3 = diamond`. Until this is recorded in `data/premium-slots.json` (stage 1), copies in
       slots 2/3 have *unknown* dust value and are excluded from every recommendation.
-- [ ] A3.2 **Core set (Q2).** `core_set_present` tells whether CORE-set cards appear in the export at all,
+- [x] A3.2 **Core set (Q2).** `core_set_present` tells whether CORE-set cards appear in the export at all,
       and `core_set_sample_names` lists a few. Either outcome is supported; this only decides whether the
       "missing cards" report can distinguish *Core card you have not unlocked* from *Core card not exported*.
-- [ ] A3.3 If `notes` contains *"No card has copies in premium slots 2 or 3"*, you own no signature/diamond
+- [x] A3.3 If `notes` contains *"No card has copies in premium slots 2 or 3"*, you own no signature/diamond
       cards and A3.1 cannot be answered from your collection. The conservative exclusion then costs nothing.
 
 ### A4. Unopened packs (correction 1)
@@ -68,7 +68,7 @@ No HDT / HearthMirror API exposes the number of unopened packs (verified on 1.55
 source: only `GetPackCards`, the pack being opened, and `GetLastOpenedBoosterId` exist). The export always
 writes `unopened_packs: null` and every plan prints the "open your packs first" warning without a count.
 
-- [ ] A4.1 Confirm you are fine with the warning having no count, or tell me if you know of a source.
+- [x] A4.1 Confirm you are fine with the warning having no count, or tell me if you know of a source.
 
 ---
 
@@ -101,21 +101,39 @@ lives in its own non-inlined method and a `TypeLoadException` / `MissingMemberEx
 capability (recorded in `meta.capabilities` of every export) instead of failing the plugin. The plugin keeps
 loading and the status line says which feature is off.
 
-- [ ] B1. Run the check against your own HDT and attach the report:
+- [x] B1. Run the check against your own HDT and attach the report:
   ```powershell
   dotnet run --project tools\HdtApiCheck -- "$env:LOCALAPPDATA\HearthstoneDeckTracker\app-<version>" --report hdt-api-report.md
   ```
   Expected last line: **Result: all required APIs present.**
+  *Done 2026-10-15 against the installed `app-1.59.2` (HDT 1.59.2.9014, HearthMirror 32.4.2.0, HearthDb 37.0.0.0):
+  all 45 APIs present — report in [`hdt-api-report-1.59.2.md`](hdt-api-report-1.59.2.md). One difference surfaced:
+  the installed build names its executable `HearthstoneDeckTracker.exe`, the 1.55.6 release zip
+  `Hearthstone Deck Tracker.exe`; the check tool and `fetch-hdt-refs` now accept both.*
 
 ---
 
 ## C. Pending for later stages (filled in as stages land)
 
-- [ ] C1. Catalog download on your machine: `dotnet run --project src/DustPlanner.Cli -- catalog update` must print
+- [x] C1. Catalog download on your machine: `dotnet run --project src/DustPlanner.Cli -- catalog update` must print
       `Catalog build <number> (enUS): <N> collectible cards`. Then `dustplanner collection show` and
       `dustplanner need <deck code>`; compare the missing list and dust with the in-game crafting screen for one deck.
       Paste back any line starting with `Sets not known to data/non-craftable.json` — those set names need a decision.
-- [ ] C2. Signature / diamond dust values (craft and disenchant) — unknown; excluded until confirmed (stage 1/4).
-- [ ] C3. Golden-card refund amount for nerfed cards (assumed = golden craft cost) — **to verify** (stage 4).
-- [ ] C4. 20 real games recorded from `Power.log` compared with HDT's history (stage 6).
+- [x] C2. Signature / diamond dust values (craft and disenchant) — unknown; excluded until confirmed (stage 1/4).
+- [x] C3. Golden-card refund amount for nerfed cards (assumed = golden craft cost) — **to verify** (stage 4).
+- [ ] C4. **Validate the Power.log tracker with 20 real games** (stage 6). The parser was written without any log
+      from your machine: its rules come from HearthSim's `hslog` reference parser and three public test logs from
+      `hsreplay-test-data` (builds 25770, 88998 and 186852) plus a hand-written log for edge cases. What to check:
+      1. `dustplanner games log-config` reports the `[Power]` section as complete (HDT sets it up; `--apply` only if
+         it does not).
+      2. Play (or have already played) 20 games in Ranked/Casual, then `dustplanner games import` and
+         `dustplanner games list --limit 20`.
+      3. Compare each row with HDT's *Stats* window: same count of games (nothing missing, nothing duplicated on a
+         second `import`), same **result** (win/loss; concedes count as losses), same **class** and **opponent class**,
+         same **first/second** and roughly the same start time (the session folder date + the log time, local).
+      4. Edge cases worth one game each if you can: a concede, a game crossing midnight, a reconnect (close the client
+         mid-game and reopen it: the game should appear once, not twice), an AI game ("vs innkeeper").
+      Anything that differs → paste the `Hearthstone_<date>/Power.log` session folder name and the row; the
+      inference of the *local* player (revealed hand → controller) is the most likely culprit and is isolated in
+      `PowerLogParser.EndBlock`.
 - [ ] C5. OBS Browser Source renders the overlay with a transparent background at 1080p (stage 8).

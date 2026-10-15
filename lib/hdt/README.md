@@ -2,7 +2,7 @@
 
 The exporter plugin compiles against four assemblies shipped with Hearthstone Deck Tracker:
 
-- `Hearthstone Deck Tracker.exe`
+- `Hearthstone Deck Tracker.exe` (installed 1.59.x builds name it `HearthstoneDeckTracker.exe`; the scripts copy it under the release-zip name, which is what the csproj references)
 - `HearthMirror.dll`
 - `HearthDb.dll`
 - `Newtonsoft.Json.dll`

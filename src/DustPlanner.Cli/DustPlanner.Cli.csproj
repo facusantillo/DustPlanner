@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="../DustPlanner.Core/DustPlanner.Core.csproj" />
     <ProjectReference Include="../DustPlanner.Store/DustPlanner.Store.csproj" />
+    <ProjectReference Include="../DustPlanner.LogTracker/DustPlanner.LogTracker.csproj" />
   </ItemGroup>
 
 </Project>

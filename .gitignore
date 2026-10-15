@@ -36,3 +36,6 @@ venv/
 # Local user data (never commit a real collection)
 *.local.json
 inbox/
+
+# Default output name of tools/HdtApiCheck --report (the kept reports live in docs/)
+/hdt-api-report.md

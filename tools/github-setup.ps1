@@ -28,22 +28,33 @@ $site = "https://$($Owner.ToLowerInvariant()).github.io/$Repo/"
 
 function Invoke-Api {
     param([string]$Method, [string]$Path, [object]$Body = $null, [switch]$AllowNotFound)
+    # Windows PowerShell 5.1: a body piped to gh picks up the console code page, Set-Content adds a BOM, and with
+    # $ErrorActionPreference = Stop any stderr line becomes a terminating error. So: UTF-8 file without BOM, and
+    # exit codes checked by hand.
+    $ErrorActionPreference = "Continue"
     $ghArgs = @("api", "--method", $Method, $Path, "-H", "Accept: application/vnd.github+json", "-H", "X-GitHub-Api-Version: 2022-11-28")
-    $json = $null
+    $tmp = $null
     if ($null -ne $Body) {
-        $json = ($Body | ConvertTo-Json -Depth 10 -Compress)
-        $ghArgs += @("--input", "-")
+        $tmp = [System.IO.Path]::GetTempFileName()
+        $json = ConvertTo-Json -InputObject $Body -Depth 10 -Compress
+        [System.IO.File]::WriteAllText($tmp, $json, (New-Object System.Text.UTF8Encoding $false))
+        $ghArgs += @("--input", $tmp)
     }
-    $out = if ($json) { $json | & gh @ghArgs 2>&1 } else { & gh @ghArgs 2>&1 }
-    if ($LASTEXITCODE -ne 0) {
-        if ($AllowNotFound -and ("$out" -match "404")) { return $null }
-        throw "gh api $Method $Path failed: $out"
+    try {
+        $out = & gh @ghArgs 2>&1 | ForEach-Object { "$_" }
+        $text = ($out -join "`n")
+        if ($LASTEXITCODE -ne 0) {
+            if ($AllowNotFound -and ($text -match "404")) { return $null }
+            throw "gh api $Method $Path failed: $text"
+        }
+        if ($text.Trim() -eq "") { return $null }
+        return ($text | ConvertFrom-Json)
+    } finally {
+        if ($tmp) { Remove-Item $tmp -ErrorAction SilentlyContinue }
     }
-    if ("$out" -eq "") { return $null }
-    return ("$out" | ConvertFrom-Json)
 }
 
-gh auth status 2>&1 | Out-Null
+& { $ErrorActionPreference = "Continue"; gh auth status 2>&1 | Out-Null }
 if ($LASTEXITCODE -ne 0) { throw "Run 'gh auth login' first." }
 Invoke-Api GET "repos/$slug" | Out-Null
 Write-Host "Repository $slug found."
@@ -111,7 +122,7 @@ Set-Ruleset @{
 }
 
 # --- first site deployment ------------------------------------------------------------------------------------------
-& gh workflow run pages.yml --repo $slug 2>&1 | Out-Null
+& { $ErrorActionPreference = "Continue"; gh workflow run pages.yml --repo $slug 2>&1 | Out-Null }
 if ($LASTEXITCODE -eq 0) { Write-Host "Site workflow started; the page appears at $site in a couple of minutes." }
 else { Write-Host "Could not start the site workflow (is .github/workflows/pages.yml on main yet?). It also runs on the next push that touches site/." }
 

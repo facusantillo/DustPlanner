@@ -4,8 +4,9 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–2 of 8: the HDT exporter plugin, the card catalog and rule tables, and the
-> `need` command (missing cards, dust, rotation) exist; the disenchant recommender is next. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–3 of 8: the HDT exporter plugin (with release packaging), the card catalog and
+> rule tables, and the `need` command (missing cards, dust, rotation) exist; the disenchant recommender is next.
+> See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -81,7 +82,9 @@ output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the 
 
 ## Installing the exporter plugin
 
-See [`docs/VERIFICACION.md`](docs/VERIFICACION.md) §A for the step-by-step until a release zip is published.
+Download the latest `DustPlanner.HdtExporter-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into
+`%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install`.
+Full instructions: [`docs/exporter-install.md`](docs/exporter-install.md).
 
 ## License and disclaimer
 

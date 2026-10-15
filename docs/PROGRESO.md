@@ -108,3 +108,25 @@ much is excluded until `premium-slots.json` is confirmed.
 **Needs user verification** — VERIFICACION C1: `dustplanner catalog update` on Windows (real HearthstoneJSON download),
 then `dustplanner need <your deck code>` against your real `collection.json` and compare with the in-game crafting
 screen (A2.3–A2.4 cover dust and counts).
+
+---
+
+## Stage 3 — Exporter packaging and release workflow
+
+**Done**
+
+- The exporter itself (event-driven export, schema-versioned contract) landed in stage 0; this stage adds distribution:
+  `tools/package-exporter.sh` / `.ps1` build the plugin in Release and produce `DustPlanner.HdtExporter-v<version>.zip`
+  (`DustPlanner/` folder with the three DLLs and `INSTALL.txt`) plus a `.sha256`; `-Install` on the PowerShell script
+  copies the folder straight into `%AppData%\HearthstoneDeckTracker\Plugins\`.
+- `.github/workflows/release.yml`: on a `exporter-v*` tag (or manual dispatch) it fetches the HDT references, builds,
+  tests, packages, uploads the artifact and publishes a GitHub release with the zip and its checksum.
+- `docs/exporter-install.md`: install from zip or from source, what the plugin writes, compatibility notes, uninstall.
+
+**Pending**
+
+- Tag the first release once the plugin has been verified on a real HDT (VERIFICACION A1–A3). The version comes from
+  `<Version>` in `Directory.Build.props` (0.1.0).
+
+**Needs user verification** — none beyond stage 0's items; the zip produced locally (`tools\package-exporter.ps1 -Install`)
+is the easiest way to run A1.

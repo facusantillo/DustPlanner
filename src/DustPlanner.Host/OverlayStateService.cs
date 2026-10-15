@@ -80,7 +80,12 @@ public sealed class OverlayStateService : BackgroundService
         }
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    /// <summary>
+    /// Initialises synchronously here, not in <see cref="ExecuteAsync"/>: the host only reports "started" once every
+    /// hosted service's StartAsync has returned, so the first HTTP request always sees a populated state. Whether
+    /// ExecuteAsync runs inline or on the thread pool differs between runtimes (it raced the first request on Windows).
+    /// </summary>
+    public override Task StartAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -94,6 +99,11 @@ public sealed class OverlayStateService : BackgroundService
         }
 #pragma warning restore CA1031
 
+        return base.StartAsync(cancellationToken);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
         using var timer = new PeriodicTimer(_options.PollInterval, _clock);
         try
         {

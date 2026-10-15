@@ -59,6 +59,18 @@ dotnet run --project src/DustPlanner.Cli -- games import            # parse Hear
 dotnet run --project src/DustPlanner.Cli -- games stats --days 7    # win rate overall and per class (also: list, log-config)
 ```
 
+Typical workflow:
+
+1. Install the exporter plugin in HDT (below), open **My Collection** once with the game running: the plugin writes
+   `collection.json`, `decks.json` and `rank.json` to `%LocalAppData%\DustPlanner\inbox\<account>\`.
+2. `dustplanner catalog update` (once per game patch), then `dustplanner need <deck code>` for any deck you are
+   considering.
+3. `dustplanner plan <deck code>` when you are short on dust. Read the *NOT PROPOSED* block as carefully as the plan.
+4. Disenchant by hand in the game, if you agree. Export again (leave the collection screen) and run
+   `dustplanner sync`: the change is recorded and matched against the stored plan; `dustplanner history` shows it.
+5. Optional: `dustplanner games import` for match history, the MCP server to ask an AI client, the host for an OBS
+   overlay.
+
 Example (`need` against a synthetic collection):
 
 ```
@@ -113,6 +125,36 @@ output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the 
 `dustplanner.db` (SQLite: snapshots, decks, plans, detected changes, rank samples, games), plus your `prefs.json`,
 `meta.txt` and `refunds.json`.
 
+## Configuration
+
+Three optional files in the data folder (examples with every default in [`data/examples/`](data/examples/)):
+
+- **`prefs.json`** — what you play and what you value: `format` (standard/wild), `classes_played`, `plays_wild`,
+  `golden_policy` (`keep_golden` by default: goldens in use are never proposed before regular copies), the
+  `meta_protection` thresholds (share of meta decks above which a Standard legendary / epic is protected), the `pain`
+  score of every candidate category, optimizer weights, `whitelist` / `blacklist` of dbf ids, `excluded_decks`,
+  `max_snapshot_age_days`, and `require_known_decks` (refuse to plan when no saved decks are known; `--allow-no-decks`
+  overrides once).
+- **`meta.txt`** — competitive deck codes you paste, one per line (`### name` lines label them). This is the *only*
+  meta signal: DustPlanner never scrapes deck sites. Cards that appear in many of these decks get a lower pain score
+  and, above the thresholds, full protection.
+- **`refunds.json`** — active full-dust refund windows after a balance patch (`dbf_id`, `premium`, `starts_at`,
+  `ends_at`, `note`), maintained by hand from the in-game *Refund* filter. Copies inside a window are the cheapest
+  candidates of all; the golden refund amount is assumed equal to the golden craft cost and marked *to verify*.
+
+Rule tables in [`data/`](data/) (`format-rotation.json`, `dust-rules.json`, `premium-slots.json`,
+`non-craftable.json`) can be overridden by files of the same name under `<home>\data\`. CI checks
+`format-rotation.json` against python-hearthstone's `STANDARD_SETS` so the rotation list cannot silently drift.
+
+## Conservative by default
+
+Any game fact the tool cannot verify keeps the item **out** of the recommendations and says why:
+
+- HDT premium slots 2 and 3 (signature / diamond) have no confirmed dust value → *unknown kind*, never proposed.
+- Cards from sets not listed in `non-craftable.json` → *unknown craftability*, listed separately in `need`.
+- No HDT API exposes unopened packs → every plan opens with "open your packs first" and the count is never guessed.
+- Refund amounts for golden copies → used only when `refunds.json` says so, flagged *to verify*.
+
 ## Asking an AI client (MCP)
 
 `dustplanner-mcp` is a stdio MCP server with five read-only tools — collection summary, missing cards for a deck, a
@@ -131,6 +173,18 @@ Browser Source — rank, session win rate, today's record, dust, last game — o
 Download the latest `DustPlanner.HdtExporter-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into
 `%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install`.
 Full instructions: [`docs/exporter-install.md`](docs/exporter-install.md).
+
+## Known limitations
+
+- Windows only in practice: the exporter is an HDT plugin (.NET Framework 4.7.2) and the log/exports live in Windows
+  folders. The CLI, MCP server and host build and test on Linux as well (CI does), but have nothing to read there.
+- The collection comes from HDT; if HDT's reading of the game is stale or incomplete, so is the plan. `sync` reports
+  low-confidence changes it cannot attribute to a plan, which is how such glitches show up.
+- Rank and dust refresh when HDT exports (menu transitions), not the instant a game ends.
+- The Power.log parser was validated against public HearthSim test logs, not yet against 20 real games on a user's
+  machine ([`docs/VERIFICACION.md`](docs/VERIFICACION.md) C4); the OBS overlay was checked with headless Chromium, not
+  OBS itself (C5).
+- Firestone and other trackers are out of scope; HSReplay collection JSON and CSV exports are accepted as input.
 
 ## License and disclaimer
 

@@ -3,6 +3,23 @@
 One entry per stage: what was done, what is pending, what needs the user's verification.
 Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 
+## Status at a glance
+
+| Stage | Scope | Code / tests | Needs a human (VERIFICACION) |
+|---|---|---|---|
+| 0 | Exporter spike, diagnostics, repo skeleton, HDT API check | done | A1–A4, B1 ✔ done by the maintainer on HDT 1.59.2 |
+| 1 | Catalog, rule tables, deckstrings, collection import | done | C1 ✔ |
+| 2 | `need` (missing cards, dust, rotation) | done | — |
+| 3 | Exporter release packaging, CI | done | — |
+| 4 | `plan` (disenchant recommender, FsCheck properties) | done | C2 ✔ C3 ✔ (values not recorded: handling stays conservative) |
+| 5 | SQLite store, `sync`, `history`, plan matching | done | follow one plan in the game and `sync` |
+| 6 | Power.log tracker, `games` commands | done | **C4** — 20 real games vs HDT stats |
+| 7 | Read-only MCP server | done | connect Claude Desktop / Claude Code once |
+| 8 | OBS overlay host | done | **C5** — check in OBS |
+
+113 tests, all green on Windows (maintainer's machine, via the Linux VM) and in CI (ubuntu). No remote configured;
+the maintainer publishes.
+
 ---
 
 ## Stage 0 — Spike: exporter plugin, diagnostics mode, repo skeleton

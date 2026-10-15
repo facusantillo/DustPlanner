@@ -3,8 +3,10 @@ using System;
 namespace DustPlanner.HdtExporter.Logic;
 
 /// <summary>
-/// Decides whether an export should run: skips when the content hash is unchanged, and rate-limits
-/// repeated exports of the same kind. Manual exports always run.
+/// Decides whether an export should run. Content-hashed exports (the collection) run whenever the content changed and
+/// are skipped while it is unchanged: a changed collection is never rate-limited, because HDT fires its collection
+/// event exactly once when the player leaves the collection screen and that event must not be lost. Exports without a
+/// hash (decks, rank) are rate-limited by <c>minInterval</c>. Manual exports always run.
 /// </summary>
 public sealed class ExportThrottle
 {
@@ -26,9 +28,9 @@ public sealed class ExportThrottle
             return ThrottleDecision.Run;
         }
 
-        if (contentHash is not null && string.Equals(contentHash, _lastHash, StringComparison.Ordinal))
+        if (contentHash is not null)
         {
-            return ThrottleDecision.SkipUnchanged;
+            return string.Equals(contentHash, _lastHash, StringComparison.Ordinal) ? ThrottleDecision.SkipUnchanged : ThrottleDecision.Run;
         }
 
         if (_lastRun is not null && now - _lastRun.Value < _minInterval)

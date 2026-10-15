@@ -7,7 +7,7 @@ public class ThrottleAndRetentionTests
     private static readonly DateTimeOffset T0 = new(2026, 10, 15, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public void Throttle_skips_unchanged_content_and_too_frequent_runs_but_never_manual_exports()
+    public void Throttle_skips_unchanged_content_and_too_frequent_unhashed_runs_but_never_changes_or_manual_exports()
     {
         var throttle = new ExportThrottle(TimeSpan.FromSeconds(30));
 
@@ -15,10 +15,13 @@ public class ThrottleAndRetentionTests
         throttle.MarkRan(T0, "h1");
 
         Assert.Equal(ThrottleDecision.SkipUnchanged, throttle.Decide(T0.AddMinutes(5), "h1", manual: false));
-        Assert.Equal(ThrottleDecision.SkipTooSoon, throttle.Decide(T0.AddSeconds(10), "h2", manual: false));
+        // Enter the collection screen, disenchant, leave within 30 s: the changed collection must still be written.
+        Assert.Equal(ThrottleDecision.Run, throttle.Decide(T0.AddSeconds(10), "h2", manual: false));
         Assert.Equal(ThrottleDecision.Run, throttle.Decide(T0.AddSeconds(31), "h2", manual: false));
         Assert.Equal(ThrottleDecision.Run, throttle.Decide(T0.AddSeconds(1), "h1", manual: true));
+        // Exports without a content hash (decks, rank) are the ones rate-limited.
         Assert.Equal(ThrottleDecision.SkipTooSoon, throttle.Decide(T0.AddSeconds(1), null, manual: false));
+        Assert.Equal(ThrottleDecision.Run, throttle.Decide(T0.AddSeconds(30), null, manual: false));
     }
 
     [Fact]

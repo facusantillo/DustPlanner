@@ -23,8 +23,13 @@ tools\package-exporter.ps1 -Install        # builds, zips, and copies the plugin
 
 ## What happens next
 
-- With Hearthstone running, open **My Collection** once and go back to the menu. HDT refreshes its collection on that
-  transition and the plugin exports it. Visiting **Play** once makes the in-game decks available.
+- With Hearthstone running, open **My Collection** once and go back to the menu. HDT re-reads the collection from the
+  game only when you **enter or leave the Collection screen** (and after pack opening); the plugin exports on that
+  event. So after disenchanting or crafting, **go back to the main menu** — nothing is exported while you stay in the
+  Collection. Visiting **Play** once makes the in-game decks available.
+- *Export now* (plugin menu) writes what HDT currently holds, bypassing the change detection; it does not make HDT
+  re-read the game. Use it when `dustplanner sync` still reports the previous snapshot after you left the Collection.
+- A changed collection is always written; the `min_interval_seconds` rate limit only applies to decks and rank.
 - Files land in `%LocalAppData%\DustPlanner\inbox\<hi>-<lo>\`:
   `collection.json`, `decks.json`, `rank.json`, plus `history\` with timestamped copies (30 kept per kind).
 - The plugin menu (**DustPlanner**) offers *Export now*, *Export diagnostics* (writes `diagnostics.json`, used to confirm

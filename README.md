@@ -68,8 +68,9 @@ Typical workflow:
 2. `dustplanner catalog update` (once per game patch), then `dustplanner need <deck code>` for any deck you are
    considering.
 3. `dustplanner plan <deck code>` when you are short on dust. Read the *NOT PROPOSED* block as carefully as the plan.
-4. Disenchant by hand in the game, if you agree. Export again (leave the collection screen) and run
-   `dustplanner sync`: the change is recorded and matched against the stored plan; `dustplanner history` shows it.
+4. Disenchant by hand in the game, if you agree, then **go back to the main menu**: HDT re-reads the collection when
+   you leave the Collection screen and the plugin exports it. Run `dustplanner sync`: the change is recorded and
+   matched against the stored plan; `dustplanner history` shows it.
 5. Optional: `dustplanner games import` for match history, the MCP server to ask an AI client, the host for an OBS
    overlay.
 

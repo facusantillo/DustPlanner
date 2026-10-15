@@ -86,11 +86,13 @@ public sealed class OverlayStateService : BackgroundService
         {
             Initialize();
         }
-        catch (Exception ex) when (ex is IOException || ex is InvalidOperationException || ex is UnauthorizedAccessException || ex is Microsoft.Data.Sqlite.SqliteException)
+#pragma warning disable CA1031 // the poll loop must survive anything: the failure is logged and shown on the status page
+        catch (Exception ex)
         {
             Log.InitFailed(_log, ex);
-            Publish(_state with { Warnings = new[] { "Initialisation failed: " + ex.Message } });
+            Publish(_state with { Warnings = new[] { $"Initialisation failed: {ex.GetType().Name}: {ex.Message}" } });
         }
+#pragma warning restore CA1031
 
         using var timer = new PeriodicTimer(_options.PollInterval, _clock);
         try
@@ -147,11 +149,13 @@ public sealed class OverlayStateService : BackgroundService
             state = RefreshInbox(state, warnings);
             state = RefreshGames(state, warnings);
         }
-        catch (Exception ex) when (ex is IOException || ex is InvalidOperationException || ex is UnauthorizedAccessException || ex is JsonException || ex is Microsoft.Data.Sqlite.SqliteException)
+#pragma warning disable CA1031 // same: one bad poll must not kill the host
+        catch (Exception ex)
         {
             Log.PollFailed(_log, ex);
-            warnings.Add("Poll failed: " + ex.Message);
+            warnings.Add($"Poll failed: {ex.GetType().Name}: {ex.Message}");
         }
+#pragma warning restore CA1031
 
         state = state with { Warnings = warnings, UpdatedAt = _clock.GetUtcNow() };
         if (!SameContent(state, _state))

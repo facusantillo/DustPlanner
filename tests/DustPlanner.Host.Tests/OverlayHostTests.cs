@@ -76,7 +76,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Contains("OBS setup", index, StringComparison.Ordinal);
 
         var state = await State();
-        Assert.Equal("8589934592-42", state.GetProperty("account_key").GetString());
+        Assert.True(state.GetProperty("account_key").GetString() == "8589934592-42", "unexpected state: " + state);
         Assert.Equal("Synthetic#0001", state.GetProperty("battle_tag").GetString());
         Assert.Equal(640, state.GetProperty("dust").GetProperty("value").GetInt32());
         Assert.Equal("Diamond 5 (3 stars)", state.GetProperty("rank").GetProperty("label").GetString());
@@ -98,7 +98,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         using var stream = await response.Content.ReadAsStreamAsync();
         using var reader = new StreamReader(stream);
         var first = await ReadEvent(reader);
-        Assert.Equal(0, first.GetProperty("session").GetProperty("games").GetInt32());
+        Assert.True(first.GetProperty("session").GetProperty("games").GetInt32() == 0, "unexpected first state: " + first);
 
         var lines = File.ReadAllLines(Fixture("synthetic_edge_cases.power.log"));
         var firstGameEnd = Array.FindIndex(lines, l => l.Contains("tag=STATE value=COMPLETE", StringComparison.Ordinal)) + 1;

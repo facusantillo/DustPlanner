@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>DustPlanner.HdtExporter</RootNamespace>
+    <AssemblyName>DustPlanner.HdtExporter</AssemblyName>
+    <Description>Hearthstone Deck Tracker plugin that exports collection, decks and rank to JSON for DustPlanner. Read-only; never touches the game client.</Description>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Build on Linux/macOS/CI without the Windows targeting pack. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- Everything the plugin needs at runtime is already loaded by HDT; only our own assemblies go to the output. -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DustPlanner.Contracts/DustPlanner.Contracts.csproj" />
+    <ProjectReference Include="../DustPlanner.HdtExporter.Logic/DustPlanner.HdtExporter.Logic.csproj" />
+  </ItemGroup>
+
+  <!-- WPF is needed only for the IPlugin.MenuItem contract. -->
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <!--
+    HDT compile-time references. Fetch them with tools/fetch-hdt-refs.sh (or .ps1), or copy them from your
+    HDT installation (%LocalAppData%\HearthstoneDeckTracker\app-<version>\) into lib/hdt/.
+    They are never copied to the output: HDT provides them at runtime.
+  -->
+  <ItemGroup>
+    <Reference Include="HearthstoneDeckTracker">
+      <HintPath>$(HdtLibDir)Hearthstone Deck Tracker.exe</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="HearthMirror">
+      <HintPath>$(HdtLibDir)HearthMirror.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="HearthDb">
+      <HintPath>$(HdtLibDir)HearthDb.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(HdtLibDir)Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckHdtReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(HdtLibDir)Hearthstone Deck Tracker.exe')"
+           Text="HDT references not found in '$(HdtLibDir)'. Run tools/fetch-hdt-refs.sh (or .ps1), or copy 'Hearthstone Deck Tracker.exe', HearthMirror.dll, HearthDb.dll and Newtonsoft.Json.dll from your HDT installation into lib/hdt/." />
+  </Target>
+
+</Project>

@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "schema_version": 1,
+    "kind": "collection",
+    "exported_at": "2026-10-15T13:52:10+02:00",
+    "exporter_version": "0.1.0.0",
+    "hdt_version": "1.59.2.0",
+    "hearth_mirror_version": "32.4.2.0",
+    "hearth_db_version": "36.2.0.0",
+    "trigger": "collection_changed",
+    "account": {
+      "hi": 8589934592,
+      "lo": 123456789,
+      "battle_tag": "Example#1234",
+      "region": "EU",
+      "account_key": "8589934592-123456789"
+    },
+    "capabilities": {
+      "collection": true,
+      "in_game_decks": true,
+      "hdt_decks": true,
+      "rank": true,
+      "battle_tag": true,
+      "raw_mirror_collection": true
+    }
+  },
+  "dust": 640,
+  "gold": null,
+  "unopened_packs": null,
+  "cards": {
+    "1001": [2, 0, 0, 0, 0, 0, 0, 0],
+    "1002": [1, 1, 0, 0, 0, 0, 0, 0],
+    "1003": [0, 0, 1, 0, 0, 0, 0, 0],
+    "1004": [0, 0, 0, 1, 0, 0, 0, 0]
+  },
+  "content_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}

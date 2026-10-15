@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>DustPlanner.Contracts</RootNamespace>
+    <AssemblyName>DustPlanner.Contracts</AssemblyName>
+    <Description>Shared JSON contract between the HDT exporter (net472) and the DustPlanner core (.NET). No serializer dependency.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Keep this assembly free of any package so it can be dropped next to the HDT plugin. -->
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+</Project>

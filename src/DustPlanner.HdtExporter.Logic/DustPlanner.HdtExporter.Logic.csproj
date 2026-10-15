@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>DustPlanner.HdtExporter.Logic</RootNamespace>
+    <Description>HDT-independent logic of the exporter (hashing, diagnostics selection, throttling, history retention). Testable from .NET; consumed by the net472 plugin.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DustPlanner.Contracts/DustPlanner.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

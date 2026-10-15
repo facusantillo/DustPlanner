@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  HDT_REF_VERSION: "1.55.6"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache HDT reference assemblies
+        id: hdt-cache
+        uses: actions/cache@v4
+        with:
+          path: lib/hdt
+          key: hdt-refs-${{ env.HDT_REF_VERSION }}
+
+      - name: Fetch HDT reference assemblies
+        if: steps.hdt-cache.outputs.cache-hit != 'true'
+        run: tools/fetch-hdt-refs.sh "$HDT_REF_VERSION"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      - name: Test
+        run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
+
+      - name: Check HDT API surface (exporter vs HDT ${{ env.HDT_REF_VERSION }})
+        run: dotnet run --project tools/HdtApiCheck -c Release --no-build -- lib/hdt --report hdt-api-report.md
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            TestResults/**/*.trx
+            hdt-api-report.md
+          if-no-files-found: ignore

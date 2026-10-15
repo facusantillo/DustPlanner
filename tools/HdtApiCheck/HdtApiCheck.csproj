@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DustPlanner.Tools.HdtApiCheck</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1303;CA1305;CA1310;CA1307;CA1515;CA1812;CA1852</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" />
+    <!-- Only used to pull the .NET Framework reference assemblies into the NuGet cache; never compiled against. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" ExcludeAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="required-apis.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

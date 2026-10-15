@@ -21,5 +21,7 @@ root.Subcommands.Add(NeedCommand.Build(Context));
 root.Subcommands.Add(PlanCommand.Build(Context));
 root.Subcommands.Add(CatalogCommand.Build(Context));
 root.Subcommands.Add(CollectionCommand.Build(Context));
+root.Subcommands.Add(SyncCommand.Build(Context));
+root.Subcommands.Add(HistoryCommand.Build(Context));
 
 return await root.Parse(args).InvokeAsync().ConfigureAwait(false);

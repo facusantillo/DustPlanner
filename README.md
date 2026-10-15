@@ -4,9 +4,9 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–4 of 8: the HDT exporter plugin (with release packaging), the card catalog and
-> rule tables, `need` (missing cards, dust, rotation) and `plan` (disenchant recommender) exist; persistence, the
-> Power.log tracker, the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–5 of 8: the HDT exporter plugin (with release packaging), the card catalog and
+> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender) and the local history database
+> exist; the Power.log tracker, the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -22,9 +22,9 @@ disenchant to get there with the least regret.
 | `src/DustPlanner.Contracts` | netstandard2.0 | JSON contract shared by the exporter and the core |
 | `src/DustPlanner.HdtExporter.Logic` | netstandard2.0 | Exporter logic without HDT dependencies (testable) |
 | `src/DustPlanner.HdtExporter` | net472 | Hearthstone Deck Tracker plugin (exporter) |
-| `src/DustPlanner.Core` | net10.0 | Card data, deckstrings, collection, planner, meta *(stage 1+)* |
-| `src/DustPlanner.Store` | net10.0 | SQLite persistence *(stage 5)* |
-| `src/DustPlanner.Cli` | net10.0 | Command-line interface *(stage 2+)* |
+| `src/DustPlanner.Core` | net10.0 | Card data, deckstrings, collection, planner, meta |
+| `src/DustPlanner.Store` | net10.0 | SQLite persistence: snapshots, decks, plans, history, rank, games |
+| `src/DustPlanner.Cli` | net10.0 | Command-line interface |
 | `src/DustPlanner.LogTracker` | net10.0 | `Power.log` game tracker *(stage 6)* |
 | `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server *(stage 7)* |
 | `src/DustPlanner.Host` | net10.0 | Local HTTP host + OBS overlay *(stage 8)* |
@@ -52,6 +52,8 @@ dotnet run --project src/DustPlanner.Cli -- collection list         # accounts e
 dotnet run --project src/DustPlanner.Cli -- need "AAECAa0GBPj..."    # missing cards for a deck code
 dotnet run --project src/DustPlanner.Cli -- need deck.txt --json     # or a pasted deck block, machine-readable
 dotnet run --project src/DustPlanner.Cli -- plan "AAECAa0GBPj..."    # + the least painful disenchant plan
+dotnet run --project src/DustPlanner.Cli -- sync                    # store the snapshot, decks and rank; detect changes
+dotnet run --project src/DustPlanner.Cli -- history                 # plans and the changes matched against them
 ```
 
 Example (`need` against a synthetic collection):
@@ -99,7 +101,9 @@ Standard legendaries and epics that show up in your `meta.txt` decks are protect
 `prefs.json` (see `data/examples/`).
 
 Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPLANNER_HOME`): `inbox/` (exporter
-output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`).
+output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`),
+`dustplanner.db` (SQLite: snapshots, decks, plans, detected changes, rank samples, games), plus your `prefs.json`,
+`meta.txt` and `refunds.json`.
 
 ## Installing the exporter plugin
 

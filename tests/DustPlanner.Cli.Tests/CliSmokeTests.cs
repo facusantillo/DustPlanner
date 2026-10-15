@@ -95,6 +95,40 @@ public sealed class CliSmokeTests : IDisposable
     }
 
     [Fact]
+    public async Task Sync_plan_disenchant_sync_matches_the_plan_and_history_shows_it()
+    {
+        var (c1, out1, err1) = await Run("sync");
+        Assert.True(c1 == 0, err1 + out1);
+        Assert.Contains("imported", out1, StringComparison.Ordinal);
+
+        var (c2, out2, err2) = await Run("plan", SyntheticDeck, "--as-of", "2026-10-15", "--allow-no-decks");
+        Assert.True(c2 == 0, err2 + out2);
+        Assert.Contains("Plan #1 stored", out2, StringComparison.Ordinal);
+
+        // Simulate the user disenchanting the golden Titan Relic and exporting again.
+        var file = Path.Combine(_home, "inbox", "8589934592-42", "collection.json");
+        File.WriteAllText(file, File.ReadAllText(file)
+            .Replace("\"1006\": [0, 1, 0, 0, 0, 0, 0, 0]", "\"1006\": [0, 0, 0, 0, 0, 0, 0, 0]", StringComparison.Ordinal)
+            .Replace("\"dust\": 640", "\"dust\": 2240", StringComparison.Ordinal)
+            .Replace("2026-10-14T20:10:00+02:00", "2026-10-15T09:00:00+02:00", StringComparison.Ordinal));
+
+        var (c3, out3, err3) = await Run("--json", "sync");
+        Assert.True(c3 == 0, err3 + out3);
+        using var doc = JsonDocument.Parse(out3);
+        var summary = doc.RootElement[0];
+        Assert.Equal(1600, summary.GetProperty("dust_delta").GetInt32());
+        var evt = summary.GetProperty("events")[0];
+        Assert.Equal("disenchanted", evt.GetProperty("event_kind").GetString());
+        Assert.Equal(1, evt.GetProperty("plan_id").GetInt64());
+        Assert.Equal("high", evt.GetProperty("confidence").GetString());
+
+        var (c4, out4, err4) = await Run("history");
+        Assert.True(c4 == 0, err4 + out4);
+        Assert.Contains("confirmed", out4, StringComparison.Ordinal);
+        Assert.Contains("Titan Relic (synthetic)", out4, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Collection_list_and_show_read_the_inbox()
     {
         var (code, stdout, _) = await Run("collection", "list");

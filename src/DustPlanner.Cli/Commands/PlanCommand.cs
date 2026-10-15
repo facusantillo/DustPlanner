@@ -3,6 +3,7 @@ using DustPlanner.Cli.Rendering;
 using DustPlanner.Contracts;
 using DustPlanner.Core.Deckstrings;
 using DustPlanner.Core.Planner;
+using DustPlanner.Store;
 
 namespace DustPlanner.Cli.Commands;
 
@@ -21,12 +22,13 @@ internal static class PlanCommand
         var metaOpt = new Option<string?>("--meta") { Description = "meta.txt with pasted meta deck codes (default: <home>/meta.txt)." };
         var refundsOpt = new Option<string?>("--refunds") { Description = "refunds.json with active nerf refund windows (default: <home>/refunds.json)." };
         var allowNoDecksOpt = new Option<bool>("--allow-no-decks") { Description = "Plan even when no saved decks are known (only the target deck is protected)." };
+        var noSaveOpt = new Option<bool>("--no-save") { Description = "Do not store the plan in the local database (stored plans are matched against later snapshots by 'sync')." };
         var localeOpt = new Option<string>("--locale") { Description = "Card-name locale.", DefaultValueFactory = _ => "enUS" };
         var asOfOpt = new Option<DateOnly?>("--as-of") { Description = "Date for Standard legality, rotation and refund windows (default: today)." };
 
         var command = new Command("plan", "Missing cards for a deck plus the least painful disenchant plan to afford them.")
         {
-            deckArg, collectionOpt, accountOpt, dustOpt, needOpt, decksOpt, protectOpt, prefsOpt, metaOpt, refundsOpt, allowNoDecksOpt, localeOpt, asOfOpt,
+            deckArg, collectionOpt, accountOpt, dustOpt, needOpt, decksOpt, protectOpt, prefsOpt, metaOpt, refundsOpt, allowNoDecksOpt, noSaveOpt, localeOpt, asOfOpt,
         };
 
         command.SetAction(CliAction.Guarded(async (result, ct) =>
@@ -52,7 +54,7 @@ internal static class PlanCommand
             var prefs = UserPrefs.LoadOrDefault(result.GetValue(prefsOpt) ?? Path.Combine(ctx.Paths.Config, UserPrefs.FileName));
             var meta = LoadMeta(result.GetValue(metaOpt) ?? Path.Combine(ctx.Paths.Config, "meta.txt"), catalog);
             var refunds = Refunds.LoadOrEmpty(result.GetValue(refundsOpt) ?? Path.Combine(ctx.Paths.Config, Refunds.FileName));
-            var savedDecks = LoadSavedDecks(ctx, result.GetValue(decksOpt), collectionFile, account, collection.AccountKey, prefs);
+            var savedDecks = LoadSavedDecks(ctx, result.GetValue(decksOpt), collectionFile, collection.AccountKey, prefs);
             var manual = result.GetValue(protectOpt) ?? Array.Empty<string>();
             var protectedDecks = savedDecks.Concat(manual.Select((code, i) =>
             {
@@ -66,13 +68,26 @@ internal static class PlanCommand
                 AllowNoDecks = result.GetValue(allowNoDecksOpt),
             });
 
+            var json = PlanJson.From(plan, missing, collection, catalog);
+            long? savedId = null;
+            if (plan.HasPlan && !result.GetValue(noSaveOpt))
+            {
+                using var store = DustStore.Open(ctx.Paths.Database);
+                new SnapshotRepository(store).UpsertAccount(collection.AccountKey, collection.BattleTag, collection.Region, collection.TakenAt);
+                savedId = new PlanRepository(store).Save(collection.AccountKey, deck, plan, json, DateTimeOffset.UtcNow);
+            }
+
             if (ctx.Json)
             {
-                await ctx.WriteJsonAsync(PlanJson.From(plan, missing, collection, catalog)).ConfigureAwait(false);
+                await ctx.WriteJsonAsync(json with { SavedPlanId = savedId }).ConfigureAwait(false);
             }
             else
             {
                 await ctx.Out.WriteAsync(PlanRenderer.Render(plan, missing, collection, catalog)).ConfigureAwait(false);
+                if (savedId is { } id)
+                {
+                    await ctx.Out.WriteLineAsync($"Plan #{id} stored; 'dustplanner sync' after disenchanting will match it against your next export.").ConfigureAwait(false);
+                }
             }
 
             return plan.HasPlan || plan.Need <= 0 ? 0 : 1;
@@ -84,7 +99,7 @@ internal static class PlanCommand
     private static MetaSignal LoadMeta(string path, Core.Cards.CardCatalog catalog) =>
         File.Exists(path) ? MetaSignal.FromText(File.ReadAllText(path), catalog) : MetaSignal.Empty;
 
-    private static IReadOnlyList<ProtectedDeck> LoadSavedDecks(CliContext ctx, string? decksFile, string? collectionFile, string? account, string accountKey, UserPrefs prefs)
+    private static IReadOnlyList<ProtectedDeck> LoadSavedDecks(CliContext ctx, string? decksFile, string? collectionFile, string accountKey, UserPrefs prefs)
     {
         if (decksFile is not null)
         {
@@ -104,7 +119,19 @@ internal static class PlanCommand
         }
 
         var inbox = Path.Combine(ctx.Paths.Inbox, accountKey, ExportSchema.DecksFileName);
-        return File.Exists(inbox) ? ProtectedDecks.FromExportFile(inbox, prefs) : Array.Empty<ProtectedDeck>();
+        if (File.Exists(inbox))
+        {
+            return ProtectedDecks.FromExportFile(inbox, prefs);
+        }
+
+        // Fallback: decks previously imported into the database by 'sync'.
+        if (File.Exists(ctx.Paths.Database))
+        {
+            using var store = DustStore.Open(ctx.Paths.Database, readOnly: true);
+            return new DeckRepository(store).ProtectedDecks(accountKey, prefs);
+        }
+
+        return Array.Empty<ProtectedDeck>();
     }
 }
 
@@ -120,6 +147,8 @@ internal sealed record PlanJson(
     int ProtectedDeckCount,
     int CandidateDustTotal)
 {
+    public long? SavedPlanId { get; init; }
+
     public static PlanJson From(DisenchantPlan plan, MissingReport missing, Core.Collection.CollectionSnapshot collection, Core.Cards.CardCatalog catalog) => new(
         MissingReportJson.From(missing, collection, catalog),
         plan.Need,

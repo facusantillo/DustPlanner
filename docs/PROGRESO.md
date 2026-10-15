@@ -167,3 +167,33 @@ is the easiest way to run A1.
 
 **Needs user verification** — VERIFICACION C2 (signature/diamond values) and C3 (golden refund amount) still open; run
 `dustplanner plan <deck>` on your real export and sanity-check the "NOT PROPOSED" block before touching anything.
+
+---
+
+## Stage 5 — Persistence and history (SQLite)
+
+**Done**
+
+- `src/DustPlanner.Store` (Microsoft.Data.Sqlite, WAL, embedded SQL migrations with a `schema_migration` table):
+  tables `account`, `collection_snapshot` + `collection_entry` (copies per premium kind + raw HDT array, deduplicated by
+  content hash), `deck` + `deck_card` (in-game / HDT / target / manual, archived flag, sideboard owner), `disenchant_plan`
+  + `disenchant_plan_pick` (status proposed → partial → confirmed, matched copies), `collection_event` (delta per card
+  and kind, disenchanted/gained, dust estimate, plan link, confidence high/medium/low), `rank_sample` (from the exporter),
+  and the `game` table reserved for the Power.log tracker.
+- `HistoryService.Sync`: imports a snapshot, diffs it against the previous one per card and kind, links vanished copies
+  to open plans (≤ 30 days): exact count → *high*, same card → *medium*, no plan → *low* with a rules-based dust
+  estimate; updates plan status.
+- CLI: `sync` (inbox → database: collection, decks, rank, events), `history` (plans + changes), `plan` now stores the
+  plan (`--no-save` to skip) and falls back to decks already in the database when the inbox has no `decks.json`.
+- Tests: Store (migrations/WAL, snapshot dedupe + round trip, deck upsert + planner feed, plan matching with high/low
+  confidence, rank import + labels) and a CLI end-to-end test: sync → plan → simulated disenchant → sync → history.
+  98 tests total.
+
+**Pending**
+
+- `collection_event.dust_estimate` for unplanned disenchants uses the rules at detection time (refund windows from
+  `refunds.json`); the real dust delta is only known from the snapshot's dust balance, shown next to it.
+
+**Needs user verification** — follow a stored plan once in the game, export again, run `sync` and check the change is
+matched with *high* confidence (the HDT read glitches Dust Utility complained about would show as *low*-confidence
+events: report them if they appear without you having touched the collection).

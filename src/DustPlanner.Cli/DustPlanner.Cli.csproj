@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../DustPlanner.Core/DustPlanner.Core.csproj" />
+    <ProjectReference Include="../DustPlanner.Store/DustPlanner.Store.csproj" />
   </ItemGroup>
 
 </Project>

@@ -14,6 +14,7 @@
 
     <!-- Application -->
     <PackageVersion Include="System.CommandLine" Version="2.0.13" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
 
     <!-- Tooling -->
     <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="10.0.13" />

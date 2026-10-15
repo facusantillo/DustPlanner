@@ -17,5 +17,6 @@
   { "id": "SYN_900", "dbfId": 1900, "name": "Fabled Archmage (synthetic)", "set": "TIME_TRAVEL", "rarity": "LEGENDARY", "cardClass": "PRIEST", "type": "MINION", "cost": 10, "collectible": true },
   { "id": "SYN_900t", "dbfId": 1901, "name": "Fabled Staff (synthetic token)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "WEAPON", "cost": 10 },
   { "id": "SYN_900t2", "dbfId": 1902, "name": "Fabled Sanctum (synthetic token)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "LOCATION", "cost": 10 },
-  { "id": "SYN_900e", "dbfId": 1903, "name": "Fabled Enchantment (synthetic, not a companion)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "ENCHANTMENT", "cost": 0 }
+  { "id": "SYN_900e", "dbfId": 1903, "name": "Fabled Enchantment (synthetic, not a companion)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "ENCHANTMENT", "cost": 0 },
+  { "id": "SYN_950", "dbfId": 1950, "name": "Login Reward Mech (synthetic)", "set": "BOOMSDAY", "rarity": "LEGENDARY", "cardClass": "NEUTRAL", "type": "MINION", "cost": 3, "collectible": true, "howToEarnGolden": "Log in during the synthetic event." }
 ]

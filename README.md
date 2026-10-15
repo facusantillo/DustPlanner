@@ -155,6 +155,9 @@ Any game fact the tool cannot verify keeps the item **out** of the recommendatio
 - Cards from sets not listed in `non-craftable.json` → *unknown craftability*, listed separately in `need`.
 - No HDT API exposes unopened packs → every plan opens with "open your packs first" and the count is never guessed.
 - Refund amounts for golden copies → used only when `refunds.json` says so, flagged *to verify*.
+- Reward copies (a golden from a login event, an adventure completion card — HearthstoneJSON's `howToEarn` /
+  `howToEarnGolden`) can never be crafted again and their disenchant value is not published → listed under
+  *NOT PROPOSED* with the unlock text; add the card's dbf id to `blacklist` in `prefs.json` to let the planner use it.
 
 ## Asking an AI client (MCP)
 

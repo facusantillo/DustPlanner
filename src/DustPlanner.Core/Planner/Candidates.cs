@@ -121,6 +121,16 @@ public static class CandidateBuilder
                 var reasons = new List<string>();
                 PainCategory category;
                 int pain;
+                if (card.IsRewardCopy(kind) && !blacklist.Contains(card.DbfId))
+                {
+                    // Login / adventure rewards: the game never lets you craft them again and their disenchant value is
+                    // not published anywhere we can check. Conservative default: excluded until the user opts in.
+                    var how = kind == PremiumKind.Golden ? card.HowToEarnGolden : card.HowToEarn;
+                    excluded.Add(new ExcludedCopies(card, card.DbfId, kind, copies,
+                        $"reward copy that cannot be re-crafted ({how}); disenchant value to verify in game, add {card.DbfId} to prefs.json \"blacklist\" to allow", null));
+                    continue;
+                }
+
                 if (blacklist.Contains(card.DbfId))
                 {
                     category = PainCategory.Blacklisted;

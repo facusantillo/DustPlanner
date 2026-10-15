@@ -1,5 +1,6 @@
 using System.Net;
 using DustPlanner.Core.Cards;
+using DustPlanner.Core.Rules;
 
 namespace DustPlanner.Core.Tests;
 
@@ -10,7 +11,9 @@ public class CatalogTests
     {
         var catalog = TestData.SyntheticCatalog();
 
-        Assert.Equal(15, catalog.Count); // the hero power, the tokens and the enchantment are not collectible
+        Assert.Equal(16, catalog.Count); // the hero power, the tokens and the enchantment are not collectible
+        Assert.True(catalog.GetByDbfId(1950)!.IsRewardCopy(PremiumKind.Golden));
+        Assert.False(catalog.GetByDbfId(1950)!.IsRewardCopy(PremiumKind.Normal));
         Assert.Equal(2, catalog.Companions.Count); // SYN_900t / SYN_900t2 belong to SYN_900; SYN_900e is not a token id
         Assert.Null(catalog.GetByDbfId(1011));
         var dual = catalog.GetByDbfId(1008)!;
@@ -41,7 +44,7 @@ public class CatalogTests
             var first = await provider.GetAsync();
             Assert.False(first.FromCache);
             Assert.Equal("250000", first.Catalog.Build);
-            Assert.Equal(15, first.Catalog.Count);
+            Assert.Equal(16, first.Catalog.Count);
             Assert.True(File.Exists(Path.Combine(dir, "250000", "cards.enUS.json")));
             Assert.Equal(1, handler.Downloads);
 

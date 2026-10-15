@@ -71,6 +71,8 @@ public static class HearthstoneJsonParser
                 Type = GetString(element, "type") ?? string.Empty,
                 Cost = element.TryGetProperty("cost", out var cost) && cost.ValueKind == JsonValueKind.Number ? cost.GetInt32() : 0,
                 Collectible = true,
+                HowToEarn = GetString(element, "howToEarn"),
+                HowToEarnGolden = GetString(element, "howToEarnGolden"),
             });
         }
 

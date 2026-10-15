@@ -22,6 +22,26 @@ public class CandidateBuilderTests
         new(name, "test", name, cards.ToDictionary(c => c.DbfId, c => c.Count));
 
     [Fact]
+    public void Reward_goldens_are_excluded_until_blacklisted()
+    {
+        // SYN_950: the golden copy was a login reward (howToEarnGolden) — never craftable again, value unverified.
+        var pool = Build(Collection((1950, 0, 1, 0)));
+        Assert.DoesNotContain(pool.Groups, g => g.Card.DbfId == 1950);
+        var excluded = Assert.Single(pool.Excluded, e => e.DbfId == 1950);
+        Assert.Contains("reward copy", excluded.Reason, StringComparison.Ordinal);
+        Assert.Contains("synthetic event", excluded.Reason, StringComparison.Ordinal);
+
+        var optedIn = Build(Collection((1950, 0, 1, 0)), new UserPrefs { Blacklist = { 1950 } });
+        var group = Assert.Single(optedIn.Groups, g => g.Card.DbfId == 1950);
+        Assert.Equal(PainCategory.Blacklisted, group.Category);
+        Assert.Equal(1600, group.DustEach);
+
+        // A regular copy of the same card is an ordinary candidate.
+        var regular = Build(Collection((1950, 1, 0, 0)));
+        Assert.Single(regular.Groups, g => g.Card.DbfId == 1950 && g.Kind == PremiumKind.Normal);
+    }
+
+    [Fact]
     public void Four_golden_commons_two_are_surplus_not_golden_unused()
     {
         // 1014: common Priest card from BE (Standard). 4 golden + 2 regular, not in any deck.

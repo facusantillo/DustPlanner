@@ -14,7 +14,7 @@ public sealed class CliSmokeTests : IDisposable
         _home = Path.Combine(Path.GetTempPath(), "dustplanner-cli-" + Guid.NewGuid().ToString("N"));
         var catalogDir = Path.Combine(_home, "catalog", "synthetic");
         Directory.CreateDirectory(catalogDir);
-        File.Copy(Fixture("cards.synthetic.json"), Path.Combine(catalogDir, "cards.collectible.enUS.json"));
+        File.Copy(Fixture("cards.synthetic.json"), Path.Combine(catalogDir, "cards.enUS.json"));
         File.WriteAllText(Path.Combine(_home, "catalog", "manifest.json"),
             $$"""{ "build": "synthetic", "locale": "enUS", "checked_at": "{{DateTimeOffset.UtcNow:O}}" }""");
         var inbox = Path.Combine(_home, "inbox", "8589934592-42");

@@ -33,7 +33,7 @@ public sealed class HearthstoneJsonOptions
 
     public string Locale { get; set; } = "enUS";
 
-    /// <summary>Directory that holds <c>{build}/cards.collectible.{locale}.json</c> and <c>manifest.json</c>.</summary>
+    /// <summary>Directory that holds <c>{build}/cards.{locale}.json</c> and <c>manifest.json</c>.</summary>
     public required string CacheDirectory { get; set; }
 
     /// <summary>How long a cached "latest build" answer is trusted before asking HearthstoneJSON again.</summary>
@@ -41,8 +41,9 @@ public sealed class HearthstoneJsonOptions
 }
 
 /// <summary>
-/// Downloads <c>cards.collectible.json</c> from HearthstoneJSON and caches it per client build.
-/// Card data is © Blizzard Entertainment and is never redistributed; it is fetched on the user's machine.
+/// Downloads <c>cards.json</c> (every card: the collectible ones plus the tokens that Fabled legendaries put in a
+/// deck) from HearthstoneJSON and caches it per client build. Card data is © Blizzard Entertainment and is never
+/// redistributed; it is fetched on the user's machine.
 /// </summary>
 public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
 {
@@ -106,7 +107,7 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
     private async Task<string> ResolveLatestBuildAsync(CancellationToken cancellationToken)
     {
         // GET with headers-only read: the body is discarded, the redirect (or the final URL) carries the build number.
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_options.BaseAddress, $"latest/{_options.Locale}/cards.collectible.json"));
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_options.BaseAddress, $"latest/{_options.Locale}/cards.json"));
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         var isRedirect = (int)response.StatusCode is >= 300 and < 400;
         if (isRedirect && response.Headers.Location is { } location)
@@ -169,7 +170,7 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
     private async Task DownloadAsync(string build, string file, CancellationToken cancellationToken)
     {
         var segment = build == "latest" ? "latest" : build;
-        var uri = new Uri(_options.BaseAddress, $"{segment}/{_options.Locale}/cards.collectible.json");
+        var uri = new Uri(_options.BaseAddress, $"{segment}/{_options.Locale}/cards.json");
         using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
@@ -188,7 +189,7 @@ public sealed partial class HearthstoneJsonCatalogProvider : ICatalogProvider
         return await Task.Run(() => HearthstoneJsonParser.Parse(stream, build, _options.Locale), cancellationToken).ConfigureAwait(false);
     }
 
-    private string CardFile(string build) => Path.Combine(_options.CacheDirectory, build, $"cards.collectible.{_options.Locale}.json");
+    private string CardFile(string build) => Path.Combine(_options.CacheDirectory, build, $"cards.{_options.Locale}.json");
 
     private string ManifestFile => Path.Combine(_options.CacheDirectory, "manifest.json");
 

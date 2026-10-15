@@ -71,6 +71,16 @@ internal static class MissingReportRenderer
             }
         }
 
+        if (report.Companions.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("INCLUDED WITH ANOTHER CARD (deck slots that come with a Fabled card; nothing to craft)");
+            foreach (var c in report.Companions)
+            {
+                sb.AppendLine(CultureInfo.InvariantCulture, $"  {c.Companion.Name} ×{c.Count} — comes with {c.Parent.Name}");
+            }
+        }
+
         if (report.Rotation.Cards.Count > 0)
         {
             sb.AppendLine();

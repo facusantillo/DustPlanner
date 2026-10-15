@@ -64,6 +64,29 @@ public class MissingCardsTests
     }
 
     [Fact]
+    public void Fabled_companions_in_the_deck_are_included_with_their_card_not_missing_or_unknown()
+    {
+        // The game writes the two companion tokens of a Fabled legendary into the deck code (30 slots in total).
+        var deck = DeckstringCodec.Decode(SyntheticDeck);
+        var withFabled = deck with
+        {
+            Cards = deck.Cards.Concat(new[] { new DeckCard(1900, 1), new DeckCard(1901, 1), new DeckCard(1902, 1) }).ToList(),
+        };
+        var rules = TestData.Rules();
+        var catalog = TestData.SyntheticCatalog();
+        var collection = HdtExportImporter.Import(TestData.Fixture("collection.synthetic.json"), rules.PremiumSlots);
+
+        var report = MissingCards.Analyze(DeckstringCodec.Decode(DeckstringCodec.Encode(withFabled)), collection, catalog, rules, TestData.Today);
+
+        Assert.Equal(2, report.Companions.Count);
+        Assert.All(report.Companions, c => Assert.Equal(1900, c.Parent.DbfId));
+        Assert.Contains(report.Companions, c => c.Companion.CardId == "SYN_900t2" && c.Count == 1);
+        Assert.Equal(9999, report.UnknownCards.Single().DbfId); // the companions are not "unknown ids"
+        Assert.Contains(report.Missing, s => s.Card.DbfId == 1900 && s.Missing == 1); // the legendary itself is missing (1,600 dust)
+        Assert.Equal(2240 + 1600, report.TotalCraftCost); // the companions add nothing
+    }
+
+    [Fact]
     public void Lists_rotating_cards_with_dust_at_risk()
     {
         var report = Analyze();

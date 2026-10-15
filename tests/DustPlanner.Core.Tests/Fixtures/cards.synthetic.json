@@ -13,5 +13,9 @@
   { "id": "SYN_012", "dbfId": 1012, "name": "Cataclysm Bomb (synthetic)", "set": "CATACLYSM", "rarity": "RARE", "cardClass": "WARLOCK", "type": "SPELL", "cost": 3, "collectible": true },
   { "id": "SYN_013", "dbfId": 1013, "name": "Timeways Walker (synthetic)", "set": "TIME_TRAVEL", "rarity": "COMMON", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true },
   { "id": "HERO_SYN", "dbfId": 1100, "name": "Anduin (synthetic hero)", "set": "CORE", "rarity": "FREE", "cardClass": "PRIEST", "type": "HERO", "cost": 0, "collectible": true },
-  { "id": "SYN_014", "dbfId": 1014, "name": "Golden Dupe (synthetic)", "set": "BE", "rarity": "COMMON", "cardClass": "PRIEST", "type": "SPELL", "cost": 1, "collectible": true }
+  { "id": "SYN_014", "dbfId": 1014, "name": "Golden Dupe (synthetic)", "set": "BE", "rarity": "COMMON", "cardClass": "PRIEST", "type": "SPELL", "cost": 1, "collectible": true },
+  { "id": "SYN_900", "dbfId": 1900, "name": "Fabled Archmage (synthetic)", "set": "TIME_TRAVEL", "rarity": "LEGENDARY", "cardClass": "PRIEST", "type": "MINION", "cost": 10, "collectible": true },
+  { "id": "SYN_900t", "dbfId": 1901, "name": "Fabled Staff (synthetic token)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "WEAPON", "cost": 10 },
+  { "id": "SYN_900t2", "dbfId": 1902, "name": "Fabled Sanctum (synthetic token)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "LOCATION", "cost": 10 },
+  { "id": "SYN_900e", "dbfId": 1903, "name": "Fabled Enchantment (synthetic, not a companion)", "set": "TIME_TRAVEL", "cardClass": "PRIEST", "type": "ENCHANTMENT", "cost": 0 }
 ]

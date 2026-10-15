@@ -10,7 +10,8 @@ public class CatalogTests
     {
         var catalog = TestData.SyntheticCatalog();
 
-        Assert.Equal(14, catalog.Count); // the hero power is not collectible
+        Assert.Equal(15, catalog.Count); // the hero power, the tokens and the enchantment are not collectible
+        Assert.Equal(2, catalog.Companions.Count); // SYN_900t / SYN_900t2 belong to SYN_900; SYN_900e is not a token id
         Assert.Null(catalog.GetByDbfId(1011));
         var dual = catalog.GetByDbfId(1008)!;
         Assert.Equal(new[] { "PRIEST", "MAGE" }, dual.Classes);
@@ -40,8 +41,8 @@ public class CatalogTests
             var first = await provider.GetAsync();
             Assert.False(first.FromCache);
             Assert.Equal("250000", first.Catalog.Build);
-            Assert.Equal(14, first.Catalog.Count);
-            Assert.True(File.Exists(Path.Combine(dir, "250000", "cards.collectible.enUS.json")));
+            Assert.Equal(15, first.Catalog.Count);
+            Assert.True(File.Exists(Path.Combine(dir, "250000", "cards.enUS.json")));
             Assert.Equal(1, handler.Downloads);
 
             var second = await provider.GetAsync();
@@ -80,7 +81,7 @@ public class CatalogTests
 
             var first = await provider.GetAsync();
             Assert.Equal("255026", first.Catalog.Build);
-            Assert.True(File.Exists(Path.Combine(dir, "255026", "cards.collectible.enUS.json")));
+            Assert.True(File.Exists(Path.Combine(dir, "255026", "cards.enUS.json")));
             Assert.Equal(1, handler.Downloads);
 
             handler.Build = "255100";

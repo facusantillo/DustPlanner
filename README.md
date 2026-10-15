@@ -122,7 +122,7 @@ who went first, turns. Hearthstone only writes `Power.log` when Blizzard's `log.
 `games log-config` checks it and, only with `--apply`, completes the `[Power]` section without touching anything else.
 
 Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPLANNER_HOME`): `inbox/` (exporter
-output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`),
+output), `catalog/` (HearthstoneJSON cache: `cards.json` per build and locale, about 10 MB), `data/` (optional overrides of the rule files in `/data`),
 `dustplanner.db` (SQLite: snapshots, decks, plans, detected changes, rank samples, games), plus your `prefs.json`,
 `meta.txt` and `refunds.json`.
 

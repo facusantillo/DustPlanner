@@ -7,15 +7,42 @@ public sealed class CardCatalog
     private readonly Dictionary<string, CardDef> _byCardId;
     private readonly ILookup<string, CardDef> _byName;
 
+    private readonly Dictionary<int, CompanionCard> _companions;
+
     public CardCatalog(IEnumerable<CardDef> cards, string build, string locale)
+        : this(cards, Array.Empty<CompanionCard>(), build, locale)
+    {
+    }
+
+    public CardCatalog(IEnumerable<CardDef> cards, IEnumerable<CompanionCard> companions, string build, string locale)
     {
         ArgumentNullException.ThrowIfNull(cards);
+        ArgumentNullException.ThrowIfNull(companions);
         var list = cards.ToList();
         _byDbfId = list.ToDictionary(c => c.DbfId);
         _byCardId = list.ToDictionary(c => c.CardId, StringComparer.Ordinal);
         _byName = list.ToLookup(c => c.Name, StringComparer.OrdinalIgnoreCase);
+        _companions = companions.Where(c => _byDbfId.ContainsKey(c.ParentDbfId)).ToDictionary(c => c.DbfId);
         Build = build;
         Locale = locale;
+    }
+
+    /// <summary>Non-collectible cards that come with a collectible one (Fabled companions and other tokens), by dbfId.</summary>
+    public IReadOnlyDictionary<int, CompanionCard> Companions => _companions;
+
+    /// <summary>True when <paramref name="dbfId"/> is a token of a collectible card; <paramref name="parent"/> is that card.</summary>
+    public bool TryGetCompanion(int dbfId, out CompanionCard companion, out CardDef parent)
+    {
+        if (_companions.TryGetValue(dbfId, out var found) && _byDbfId.TryGetValue(found.ParentDbfId, out var owner))
+        {
+            companion = found;
+            parent = owner;
+            return true;
+        }
+
+        companion = null!;
+        parent = null!;
+        return false;
     }
 
     /// <summary>Hearthstone client build the catalog was generated from (as reported by HearthstoneJSON), or a label.</summary>

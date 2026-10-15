@@ -23,6 +23,9 @@ public sealed record DeckCardStatus(
 
 public sealed record UnknownDeckCard(int DbfId, int Count);
 
+/// <summary>A deck slot taken by a non-collectible companion (Fabled legendaries ship with theirs): comes with <see cref="Parent"/>, never crafted.</summary>
+public sealed record CompanionDeckCard(CompanionCard Companion, CardDef Parent, int Count);
+
 public sealed record RotationRisk(string NextRotation, IReadOnlyList<DeckCardStatus> Cards, int DustAtRisk);
 
 public sealed record MissingReport(
@@ -36,6 +39,9 @@ public sealed record MissingReport(
     RotationRisk Rotation,
     IReadOnlyList<string> Warnings)
 {
+    /// <summary>Deck slots filled by companions of a collectible card (see <see cref="CompanionDeckCard"/>).</summary>
+    public IReadOnlyList<CompanionDeckCard> Companions { get; init; } = Array.Empty<CompanionDeckCard>();
+
     public IEnumerable<DeckCardStatus> Missing => Cards.Where(c => c.Missing > 0);
 
     public IEnumerable<DeckCardStatus> MissingCraftable => Missing.Where(c => c.Craftability == CraftabilityStatus.Craftable);
@@ -79,11 +85,20 @@ public static class MissingCards
         var rotating = rules.Rotation.RotatingSets(asOf);
         var statuses = new List<DeckCardStatus>();
         var unknown = new List<UnknownDeckCard>();
+        var companions = new List<CompanionDeckCard>();
         foreach (var (dbfId, (count, sideboard)) in needed)
         {
             if (!catalog.TryGet(dbfId, out var card))
             {
-                unknown.Add(new UnknownDeckCard(dbfId, count));
+                if (catalog.TryGetCompanion(dbfId, out var companion, out var parent))
+                {
+                    companions.Add(new CompanionDeckCard(companion, parent, count));
+                }
+                else
+                {
+                    unknown.Add(new UnknownDeckCard(dbfId, count));
+                }
+
                 continue;
             }
 
@@ -144,7 +159,7 @@ public static class MissingCards
         var rotatingCards = statuses.Where(s => s.RotatesNext).ToList();
         var rotation = new RotationRisk(rules.Rotation.Next.Display, rotatingCards, rotatingCards.Sum(c => c.CraftCostMissing ?? 0));
 
-        return new MissingReport(deck, deck.Name, DeckClassOf(deck, catalog), asOf, statuses, unknown, collection.Dust, rotation, warnings);
+        return new MissingReport(deck, deck.Name, DeckClassOf(deck, catalog), asOf, statuses, unknown, collection.Dust, rotation, warnings) { Companions = companions };
     }
 
     /// <summary>Class of the deck from its hero card (e.g. <c>PRIEST</c>), when the hero is in the catalog.</summary>

@@ -15,7 +15,7 @@ public sealed class AppPaths
     /// <summary>Exporter output: <c>inbox/&lt;account_key&gt;/*.json</c>.</summary>
     public string Inbox => Path.Combine(Root, "inbox");
 
-    /// <summary>HearthstoneJSON cache: <c>catalog/&lt;build&gt;/cards.collectible.&lt;locale&gt;.json</c>.</summary>
+    /// <summary>HearthstoneJSON cache: <c>catalog/&lt;build&gt;/cards.&lt;locale&gt;.json</c>.</summary>
     public string CatalogCache => Path.Combine(Root, "catalog");
 
     /// <summary>Optional overrides of the embedded rule files (<c>format-rotation.json</c>, ...).</summary>

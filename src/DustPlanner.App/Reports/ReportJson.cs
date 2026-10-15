@@ -29,6 +29,7 @@ public sealed record MissingReportJson(
     IReadOnlyList<MissingCardJson> NotCraftable,
     IReadOnlyList<MissingCardJson> UnknownCraftability,
     IReadOnlyList<UnknownDeckCard> UnknownCards,
+    IReadOnlyList<CompanionJson> Companions,
     RotationJson Rotation,
     IReadOnlyList<string> Warnings)
 {
@@ -55,6 +56,7 @@ public sealed record MissingReportJson(
             report.MissingNotCraftable.Select(MissingCardJson.From).ToList(),
             report.MissingUnknownCraftability.Select(MissingCardJson.From).ToList(),
             report.UnknownCards,
+            report.Companions.Select(c => new CompanionJson(c.Companion.DbfId, c.Companion.CardId, c.Companion.Name, c.Count, c.Parent.DbfId, c.Parent.Name)).ToList(),
             new RotationJson(report.Rotation.NextRotation, report.Rotation.DustAtRisk, report.Rotation.Cards.Select(MissingCardJson.From).ToList()),
             report.Warnings);
     }
@@ -71,6 +73,9 @@ public sealed record MissingCardJson(int DbfId, string CardId, string Name, stri
 }
 
 public sealed record RotationJson(string NextRotation, int DustAtRisk, IReadOnlyList<MissingCardJson> Cards);
+
+/// <summary>A deck slot taken by a non-collectible companion of a collectible card (Fabled): nothing to craft.</summary>
+public sealed record CompanionJson(int DbfId, string CardId, string Name, int Count, int ParentDbfId, string ParentName);
 
 public sealed record PlanJson(
     MissingReportJson Missing,

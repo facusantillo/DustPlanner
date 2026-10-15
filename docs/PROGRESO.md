@@ -304,3 +304,8 @@ were "unknown craftability" because python-hearthstone's craftable list is incom
 crashed on a populated database), plus Power.log times now parsed as local time, catalog build resolved from the
 HearthstoneJSON index (no redirect any more), per-class stats honour `--format`, rotation-data staleness warning,
 account prefix matching and two cosmetic fixes. 115 tests.
+
+**Windows run (same day):** the maintainer's first `dotnet test` on Windows and first real deck surfaced seven more
+items (F11–F17 in the report): Fabled companion cards in deck codes (catalog now built from `cards.json`), SQLite
+pooling keeping the database locked, the overlay host racing its own initialisation, a state event per poll, the
+follower's date after midnight, two PowerShell script bugs and two test portability issues. All fixed; 116 tests.

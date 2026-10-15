@@ -26,9 +26,11 @@ public sealed class LogImporter
         var files = LogLocator.FindPowerLogs(logsDirectory);
         var warnings = new List<string>();
         int parsed = 0, inserted = 0, incomplete = 0;
-        foreach (var file in files)
+        // One parser per session folder: HDT's rotated Power_old.log and the Power.log written after it belong to the
+        // same client run, so a game or a midnight rollover may span the two files.
+        foreach (var session in files.GroupBy(f => f.Session, StringComparer.OrdinalIgnoreCase))
         {
-            var (p, i, inc) = ImportFile(file, warnings);
+            var (p, i, inc) = ImportFiles(session.ToList(), warnings);
             parsed += p;
             inserted += i;
             incomplete += inc;
@@ -40,9 +42,22 @@ public sealed class LogImporter
     public (int Parsed, int Inserted, int Incomplete) ImportFile(PowerLogFile file, List<string>? warnings = null)
     {
         ArgumentNullException.ThrowIfNull(file);
-        var parser = new PowerLogParser(file.BaseDate, _timeZone);
-        using (var reader = new StreamReader(new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete)))
+        return ImportFiles([file], warnings);
+    }
+
+    /// <summary>Parses the files of one session in order with a single parser and stores the games found.</summary>
+    public (int Parsed, int Inserted, int Incomplete) ImportFiles(IReadOnlyList<PowerLogFile> sessionFiles, List<string>? warnings = null)
+    {
+        ArgumentNullException.ThrowIfNull(sessionFiles);
+        if (sessionFiles.Count == 0)
         {
+            return (0, 0, 0);
+        }
+
+        var parser = new PowerLogParser(sessionFiles[0].BaseDate, _timeZone);
+        foreach (var file in sessionFiles)
+        {
+            using var reader = new StreamReader(new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete));
             while (reader.ReadLine() is { } line)
             {
                 parser.Feed(line);
@@ -56,12 +71,13 @@ public sealed class LogImporter
             records.Add(open);
         }
 
+        var sessionName = Path.GetFileName(sessionFiles[0].Session);
         int inserted = 0, incomplete = 0;
         foreach (var game in records)
         {
             if (game.Friendly is null)
             {
-                warnings?.Add($"{Path.GetFileName(Path.GetDirectoryName(file.Path))}: game at {game.StartedAt:HH:mm:ss} has no identifiable local player; skipped.");
+                warnings?.Add($"{sessionName}: game at {game.StartedAt:HH:mm:ss} has no identifiable local player; skipped.");
                 continue;
             }
 

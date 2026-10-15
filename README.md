@@ -119,7 +119,8 @@ Standard legendaries and epics that show up in your `meta.txt` decks are protect
 `prefs.json` (see `data/examples/`).
 
 `games import` finds the `Logs` folder through HDT's configuration (or `--logs <path>`), parses every
-`Hearthstone_<date>/Power.log` session and stores each game once: mode, format, both classes, opponent name, result,
+`Hearthstone_<date>/Power.log` session (and the `Power_old.log` HDT leaves behind when it renames the file at start-up)
+and stores each game once: mode, format, both classes, opponent name, result,
 who went first, turns. Hearthstone only writes `Power.log` when Blizzard's `log.config` asks for it — HDT sets that up;
 `games log-config` checks it and, only with `--apply`, completes the `[Power]` section without touching anything else.
 

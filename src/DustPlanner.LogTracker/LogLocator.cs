@@ -5,13 +5,33 @@ using System.Xml.Linq;
 namespace DustPlanner.LogTracker;
 
 /// <summary>A Power.log file with the date its first line belongs to.</summary>
-public sealed record PowerLogFile(string Path, DateOnly BaseDate, DateTimeOffset LastWriteUtc);
+/// <param name="Path">Full path of the file.</param>
+/// <param name="BaseDate">Date of the first line (from the session folder name, else the file dates).</param>
+/// <param name="LastWriteUtc">Last write time of the file.</param>
+public sealed record PowerLogFile(string Path, DateOnly BaseDate, DateTimeOffset LastWriteUtc)
+{
+    /// <summary>Folder the file lives in: one per client launch for the current game (<c>Hearthstone_&lt;date&gt;</c>).</summary>
+    public string Session => System.IO.Path.GetDirectoryName(Path) ?? string.Empty;
+
+    /// <summary>
+    /// True for <c>Power_old.log</c>: Hearthstone Deck Tracker renames <c>Power.log</c> to it whenever its own log
+    /// watcher starts (HDT start, game relaunch), and the game then writes a fresh <c>Power.log</c>. The rotated file
+    /// holds the earlier part of the same session.
+    /// </summary>
+    public bool Rotated => string.Equals(System.IO.Path.GetFileName(Path), LogLocator.PowerLogOldName, StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>Finds Hearthstone's log folder and the Power.log files in it (current client writes one dated session folder per launch).</summary>
 public static partial class LogLocator
 {
     public const string LogsFolderName = "Logs";
     public const string PowerLogName = "Power.log";
+
+    /// <summary>What HDT renames <see cref="PowerLogName"/> to when its log watcher starts (see <see cref="PowerLogFile.Rotated"/>).</summary>
+    public const string PowerLogOldName = "Power_old.log";
+
+    /// <summary>File names read per session, in content order: the rotated file first.</summary>
+    private static readonly string[] FileNamesInOrder = [PowerLogOldName, PowerLogName];
 
     /// <summary>Candidate Hearthstone install folders: HDT's config (it already found the game), then the default paths.</summary>
     public static IEnumerable<string> CandidateGameDirectories()
@@ -62,7 +82,11 @@ public static partial class LogLocator
             .Select(d => Path.Combine(d, LogsFolderName))
             .FirstOrDefault(Directory.Exists);
 
-    /// <summary>Every Power.log under the logs folder, oldest first: dated session folders (<c>Hearthstone_2026_10_15_20_11_03</c>) and the legacy flat file.</summary>
+    /// <summary>
+    /// Every Power.log under the logs folder, oldest first: dated session folders (<c>Hearthstone_2026_10_15_20_11_03</c>)
+    /// and the legacy flat file. Within a session the rotated <c>Power_old.log</c> (HDT's rename) comes before
+    /// <c>Power.log</c>, because it holds the earlier lines.
+    /// </summary>
     public static IReadOnlyList<PowerLogFile> FindPowerLogs(string logsDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(logsDirectory);
@@ -71,23 +95,37 @@ public static partial class LogLocator
             return Array.Empty<PowerLogFile>();
         }
 
-        var files = new List<PowerLogFile>();
+        var files = new List<(PowerLogFile File, string SessionKey)>();
         foreach (var dir in Directory.GetDirectories(logsDirectory))
         {
-            var path = Path.Combine(dir, PowerLogName);
-            if (File.Exists(path))
+            var sessionName = Path.GetFileName(dir);
+            foreach (var name in FileNamesInOrder)
             {
-                files.Add(new PowerLogFile(path, BaseDateFor(path, Path.GetFileName(dir)), File.GetLastWriteTimeUtc(path)));
+                var path = Path.Combine(dir, name);
+                if (File.Exists(path))
+                {
+                    files.Add((new PowerLogFile(path, BaseDateFor(path, sessionName), File.GetLastWriteTimeUtc(path)), sessionName));
+                }
             }
         }
 
-        var flat = Path.Combine(logsDirectory, PowerLogName);
-        if (File.Exists(flat))
+        foreach (var name in FileNamesInOrder)
         {
-            files.Add(new PowerLogFile(flat, BaseDateFor(flat, null), File.GetLastWriteTimeUtc(flat)));
+            var flat = Path.Combine(logsDirectory, name);
+            if (File.Exists(flat))
+            {
+                files.Add((new PowerLogFile(flat, BaseDateFor(flat, null), File.GetLastWriteTimeUtc(flat)), string.Empty));
+            }
         }
 
-        return files.OrderBy(f => f.BaseDate).ThenBy(f => f.LastWriteUtc).ToList();
+        // Session folder names sort chronologically (Hearthstone_YYYY_MM_DD_HH_MM_SS); the legacy flat file has no session.
+        return files
+            .OrderBy(f => f.File.BaseDate)
+            .ThenBy(f => f.SessionKey, StringComparer.Ordinal)
+            .ThenByDescending(f => f.File.Rotated)
+            .ThenBy(f => f.File.LastWriteUtc)
+            .Select(f => f.File)
+            .ToList();
     }
 
     /// <summary>Date of the first line: from the session folder name when it has one, else the file's creation time (local).</summary>

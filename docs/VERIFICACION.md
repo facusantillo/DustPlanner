@@ -136,6 +136,9 @@ loading and the status line says which feature is off.
       Anything that differs → paste the `Hearthstone_<date>/Power.log` session folder name and the row; the
       inference of the *local* player (revealed hand → controller) is the most likely culprit and is isolated in
       `PowerLogParser.EndBlock`.
+      Note: with HDT running, finished sessions hold `Power_old.log` (HDT renames the file when its watcher starts);
+      both names are read, rotated file first. First real run (2026-10-15): 5 ranked games from 2 files, all with
+      result, classes, opponent, first player and turns — the comparison with HDT's Stats window is still yours to do.
 - [ ] C5. **OBS overlay** (stage 8): run `dotnet run --project src\DustPlanner.Host -c Release`, add a Browser Source
       with `http://127.0.0.1:8765/overlay` at 1920×1080 (docs/overlay.md) and confirm: transparent background (only
       the bar is visible), legible at 1080p, the *Session* cell changes within ~5 s after a game ends, *Rank* and

@@ -49,19 +49,37 @@ public sealed class PowerLogFollower
         if (!string.Equals(newest.Path, _currentPath, StringComparison.OrdinalIgnoreCase))
         {
             var first = _currentPath is null;
-            _currentPath = newest.Path;
-            _parser = new PowerLogParser(newest.BaseDate, _timeZone);
-            _partial.Clear();
-            _offset = 0;
-            if (first && skipExisting)
+            var sameSession = _currentPath is not null
+                && string.Equals(Path.GetDirectoryName(_currentPath), newest.Session, StringComparison.OrdinalIgnoreCase);
+            if (sameSession && _parser is not null)
             {
-                // Replay what is already in the file without raising events: games played before the follower
-                // started are not reported, but the parser keeps its clock (midnight rollovers) and the game in
-                // progress, so CurrentGame and later timestamps are right even when we start mid-session.
-                _offset = ReadAvailable();
+                // HDT restarted and renamed Power.log to Power_old.log (the game keeps writing to the renamed file
+                // until it opens a fresh Power.log): same session, same clock, same game in progress. Keep the
+                // parser; keep the offset when the file is the renamed one, start at 0 when it is the fresh one.
+                var renamed = newest.Rotated && new FileInfo(newest.Path).Length >= _offset;
+                _currentPath = newest.Path;
+                if (!renamed)
+                {
+                    _offset = 0;
+                    _partial.Clear();
+                }
             }
+            else
+            {
+                _currentPath = newest.Path;
+                _parser = new PowerLogParser(newest.BaseDate, _timeZone);
+                _partial.Clear();
+                _offset = 0;
+                if (first && skipExisting)
+                {
+                    // Replay what is already in the file without raising events: games played before the follower
+                    // started are not reported, but the parser keeps its clock (midnight rollovers) and the game in
+                    // progress, so CurrentGame and later timestamps are right even when we start mid-session.
+                    _offset = ReadAvailable();
+                }
 
-            _parser.GameCompleted += g => GameCompleted?.Invoke(g);
+                _parser.GameCompleted += g => GameCompleted?.Invoke(g);
+            }
         }
 
         ReadAvailable();

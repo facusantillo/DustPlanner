@@ -11,5 +11,7 @@
   { "id": "SYN_010", "dbfId": 1010, "name": "Mystery Set Card (synthetic)", "set": "FUTURE_SET", "rarity": "RARE", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true },
   { "id": "SYN_011", "dbfId": 1011, "name": "Hero Power (synthetic, non-collectible)", "set": "CORE", "rarity": "FREE", "cardClass": "PRIEST", "type": "HERO_POWER", "cost": 2, "collectible": false },
   { "id": "SYN_012", "dbfId": 1012, "name": "Cataclysm Bomb (synthetic)", "set": "CATACLYSM", "rarity": "RARE", "cardClass": "WARLOCK", "type": "SPELL", "cost": 3, "collectible": true },
-  { "id": "SYN_013", "dbfId": 1013, "name": "Timeways Walker (synthetic)", "set": "TIME_TRAVEL", "rarity": "COMMON", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true }
+  { "id": "SYN_013", "dbfId": 1013, "name": "Timeways Walker (synthetic)", "set": "TIME_TRAVEL", "rarity": "COMMON", "cardClass": "NEUTRAL", "type": "MINION", "cost": 2, "collectible": true },
+  { "id": "HERO_SYN", "dbfId": 1100, "name": "Anduin (synthetic hero)", "set": "CORE", "rarity": "FREE", "cardClass": "PRIEST", "type": "HERO", "cost": 0, "collectible": true },
+  { "id": "SYN_014", "dbfId": 1014, "name": "Golden Dupe (synthetic)", "set": "BE", "rarity": "COMMON", "cardClass": "PRIEST", "type": "SPELL", "cost": 1, "collectible": true }
 ]

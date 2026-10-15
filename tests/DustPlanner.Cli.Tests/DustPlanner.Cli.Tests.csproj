@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/DustPlanner.Cli/DustPlanner.Cli.csproj" />
+    <ProjectReference Include="../../src/DustPlanner.Core/DustPlanner.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../DustPlanner.Core.Tests/Fixtures/cards.synthetic.json" Link="Fixtures/cards.synthetic.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../DustPlanner.Core.Tests/Fixtures/collection.synthetic.json" Link="Fixtures/collection.synthetic.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

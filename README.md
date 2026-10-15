@@ -4,8 +4,8 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stage 0 of 8 — the HDT exporter plugin and the shared contract exist; the
-> planner itself is not implemented yet. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–2 of 8: the HDT exporter plugin, the card catalog and rule tables, and the
+> `need` command (missing cards, dust, rotation) exist; the disenchant recommender is next. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -42,6 +42,42 @@ tools\fetch-hdt-refs.ps1 -FromInstall   # Windows: copy them from your HDT insta
 dotnet build
 dotnet test
 ```
+
+## Using the CLI
+
+```powershell
+dotnet run --project src/DustPlanner.Cli -- catalog update          # fetch the card catalog (cached per build)
+dotnet run --project src/DustPlanner.Cli -- collection list         # accounts exported by the HDT plugin
+dotnet run --project src/DustPlanner.Cli -- need "AAECAa0GBPj..."    # missing cards for a deck code
+dotnet run --project src/DustPlanner.Cli -- need deck.txt --json     # or a pasted deck block, machine-readable
+```
+
+Example (`need` against a synthetic collection):
+
+```
+DustPlanner · target deck: "(unnamed deck)" · Priest · Standard · 13 cards
+Collection: Synthetic#0001 · snapshot 2026-10-14 20:10 (hdt) · catalog build synthetic
+
+MISSING
+  card                                     rarity     class    set                     copies   dust
+  ---------------------------------------  ---------  -------  ----------------------  ------  -----
+  Workshop Gadget (synthetic) (sideboard)  Common     Rogue    WHIZBANGS_WORKSHOP           1     40
+  Lost City Scout (synthetic)              Epic       Neutral  THE_LOST_CITY                1    400
+  Violet Warden (synthetic)                Rare       Mage     ESCAPEFROM_VIOLET_HOLD       2    200
+  Dream Keeper (synthetic)                 Legendary  Priest   EMERALD_DREAM                1  1,600
+                                                                                               -----
+  Total to craft                                                                               2,240
+  Dust available                                                                                 640
+  Still needed                                                                                 1,600
+
+ROTATES AT NEXT ROTATION (2027-03 (estimated)) · craft dust at risk: 2,000
+  Timeways Walker (synthetic) ×2 — TIME_TRAVEL — owned
+  Lost City Scout (synthetic) ×2 — THE_LOST_CITY — craft 400
+  Dream Keeper (synthetic) ×1 — EMERALD_DREAM — craft 1,600
+```
+
+Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPLANNER_HOME`): `inbox/` (exporter
+output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`).
 
 ## Installing the exporter plugin
 

@@ -79,3 +79,32 @@ against the installed HDT version.
 
 **Needs user verification** — VERIFICACION C1 (catalog download on Windows), and a glance at which `set` names
 appear in your real collection that `data/non-craftable.json` does not know (the CLI will list them in stage 2).
+
+---
+
+## Stage 2 — Missing cards (CLI `need`) and collection import
+
+**Done**
+
+- `Core/Collection`: `CollectionSnapshot` (copies per `PremiumKind` through the slot map, raw HDT array kept),
+  importers for the DustPlanner export (`collection.json`, schema-checked), HSReplay-style JSON
+  (`{"collection": {dbfId: [n, g, ...]}, "dust": N}`, arrays of 2–8 ints) and a hand-made CSV (`dbf_id`/`card_id`/`name`
+  + `normal`/`golden`/...), `InboxLocator` (lists `inbox/<account>` folders, selects by key or BattleTag, most recent
+  by default — multi-account from day one).
+- `Core/Planner/MissingCards`: per-card status (needed/owned/missing, sideboard copies count), craft cost of missing
+  craftable copies, Core/free cards reported as *not craftable*, unknown sets reported as *unknown craftability* (never
+  counted), unknown dbfIds reported, Standard-legality warning, snapshot-age warning, and the **rotation block**
+  (correction 2): cards of the deck in sets that rotate next, with the next-rotation date/estimate and the craft dust at
+  risk.
+- `src/DustPlanner.Cli` (`dustplanner`): `need <code|file|->`, `catalog update|info`, `collection list|show`,
+  `--json` everywhere, `--home` / `DUSTPLANNER_HOME`, `--as-of`, `--dust`, `--account`, `--collection`, `--locale`.
+  User errors exit with code 2 and one line on stderr.
+- Tests: Core 52 (importers, inbox, missing-cards scenarios incl. sideboard, Core, unknown set, unknown id, rotation,
+  complete deck, Wild cards in a Standard code); CLI 5 smoke tests running the real binary against a synthetic home.
+
+**Pending** — nothing blocking. `collection show` lists copies of *unknown kind* (HDT slots 2/3) so the user can see how
+much is excluded until `premium-slots.json` is confirmed.
+
+**Needs user verification** — VERIFICACION C1: `dustplanner catalog update` on Windows (real HearthstoneJSON download),
+then `dustplanner need <your deck code>` against your real `collection.json` and compare with the in-game crafting
+screen (A2.3–A2.4 cover dust and counts).

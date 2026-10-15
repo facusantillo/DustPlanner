@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "schema_version": 1,
+    "kind": "collection",
+    "exported_at": "2026-10-14T20:10:00+02:00",
+    "exporter_version": "0.1.0.0",
+    "hdt_version": "1.59.2.0",
+    "hearth_mirror_version": null,
+    "hearth_db_version": null,
+    "trigger": "manual",
+    "account": { "hi": 8589934592, "lo": 42, "battle_tag": "Synthetic#0001", "region": "EU", "account_key": "8589934592-42" },
+    "capabilities": { "collection": true, "in_game_decks": true, "hdt_decks": true, "rank": true, "battle_tag": true, "raw_mirror_collection": true }
+  },
+  "dust": 640,
+  "gold": 1200,
+  "unopened_packs": null,
+  "cards": {
+    "1002": [2, 0, 0, 0, 0, 0, 0, 0],
+    "1004": [1, 0, 0, 0, 0, 0, 0, 0],
+    "1006": [0, 1, 0, 0, 0, 0, 0, 0],
+    "1008": [1, 1, 0, 0, 0, 0, 0, 0],
+    "1012": [0, 0, 1, 0, 0, 0, 0, 0],
+    "1013": [2, 0, 0, 0, 0, 0, 0, 0],
+    "1014": [2, 4, 0, 0, 0, 0, 0, 0],
+    "1100": [1, 0, 0, 0, 0, 0, 0, 0]
+  },
+  "content_hash": null
+}

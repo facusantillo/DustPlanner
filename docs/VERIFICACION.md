@@ -111,7 +111,10 @@ loading and the status line says which feature is off.
 
 ## C. Pending for later stages (filled in as stages land)
 
-- [ ] C1. Catalog download from `api.hearthstonejson.com` on your machine (stage 1).
+- [ ] C1. Catalog download on your machine: `dotnet run --project src/DustPlanner.Cli -- catalog update` must print
+      `Catalog build <number> (enUS): <N> collectible cards`. Then `dustplanner collection show` and
+      `dustplanner need <deck code>`; compare the missing list and dust with the in-game crafting screen for one deck.
+      Paste back any line starting with `Sets not known to data/non-craftable.json` — those set names need a decision.
 - [ ] C2. Signature / diamond dust values (craft and disenchant) — unknown; excluded until confirmed (stage 1/4).
 - [ ] C3. Golden-card refund amount for nerfed cards (assumed = golden craft cost) — **to verify** (stage 4).
 - [ ] C4. 20 real games recorded from `Power.log` compared with HDT's history (stage 6).

@@ -10,7 +10,7 @@ public class CatalogTests
     {
         var catalog = TestData.SyntheticCatalog();
 
-        Assert.Equal(12, catalog.Count); // the hero power is not collectible
+        Assert.Equal(14, catalog.Count); // the hero power is not collectible
         Assert.Null(catalog.GetByDbfId(1011));
         var dual = catalog.GetByDbfId(1008)!;
         Assert.Equal(new[] { "PRIEST", "MAGE" }, dual.Classes);
@@ -40,7 +40,7 @@ public class CatalogTests
             var first = await provider.GetAsync();
             Assert.False(first.FromCache);
             Assert.Equal("250000", first.Catalog.Build);
-            Assert.Equal(12, first.Catalog.Count);
+            Assert.Equal(14, first.Catalog.Count);
             Assert.True(File.Exists(Path.Combine(dir, "250000", "cards.collectible.enUS.json")));
             Assert.Equal(1, handler.Downloads);
 

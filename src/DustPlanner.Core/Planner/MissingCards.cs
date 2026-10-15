@@ -138,7 +138,7 @@ public static class MissingCards
 
         if (unknown.Count > 0)
         {
-            warnings.Add($"{unknown.Count} card id(s) are not in the card catalog (build {catalog.Build}); run 'dustplanner catalog update'.");
+            warnings.Add($"{unknown.Count} card id(s) are not in the card catalog (build {catalog.Build}); update the card data.");
         }
 
         var unknownSets = statuses.Where(s => s.Craftability == CraftabilityStatus.Unknown).Select(s => s.Card.Set).Distinct(StringComparer.Ordinal).ToList();

@@ -16,7 +16,7 @@ namespace DustPlanner.App;
 /// decks, preferences and meta are loaded, and how a plan is produced. Reads files and the database; the only thing
 /// it ever writes is the catalog cache.
 /// </summary>
-public sealed class AppServices
+public sealed partial class AppServices
 {
     private GameRules? _rules;
 
@@ -35,6 +35,28 @@ public sealed class AppServices
     /// <summary>Resolves <c>--home</c> / <c>DUSTPLANNER_HOME</c> / the default folder.</summary>
     public static AppServices ForHome(string? home) =>
         new(home is null ? AppPaths.Default() : new AppPaths(Path.GetFullPath(home)));
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (Lazy<Task<CatalogLoadResult>> Load, DateTimeOffset At)> _catalogs = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>How long <see cref="CachedCatalogAsync"/> keeps a parsed catalog in memory (long-running hosts); the CLI never needs it.</summary>
+    public TimeSpan CatalogCacheTtl { get; init; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>The catalog for the locale, parsed once and kept in memory for <see cref="CatalogCacheTtl"/> (the cache file is about 10 MB).</summary>
+    public async Task<CatalogLoadResult> CachedCatalogAsync(string locale, CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (_catalogs.TryGetValue(locale, out var entry) && now - entry.At < CatalogCacheTtl && !entry.Load.Value.IsFaulted)
+        {
+            return await entry.Load.Value.WaitAsync(ct).ConfigureAwait(false);
+        }
+
+        var fresh = (new Lazy<Task<CatalogLoadResult>>(() => LoadCatalogAsync(forceRefresh: false, locale, CancellationToken.None)), now);
+        _catalogs[locale] = fresh;
+        return await fresh.Item1.Value.WaitAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Forgets the in-memory catalogs (after <c>catalog update</c>).</summary>
+    public void InvalidateCatalogCache() => _catalogs.Clear();
 
     /// <summary>Loads the HearthstoneJSON catalog from the cache, downloading it when missing (or when forced).</summary>
     public async Task<CatalogLoadResult> LoadCatalogAsync(bool forceRefresh, string locale, CancellationToken ct)
@@ -124,7 +146,19 @@ public sealed class AppServices
     public MetaSignal LoadMeta(string? path, CardCatalog catalog)
     {
         var file = path ?? Path.Combine(Paths.Config, MetaSignal.FileName);
-        return File.Exists(file) ? MetaSignal.FromText(File.ReadAllText(file), catalog) : MetaSignal.Empty;
+        if (!File.Exists(file))
+        {
+            return MetaSignal.Empty;
+        }
+
+        try
+        {
+            return MetaSignal.FromText(File.ReadAllText(file), catalog);
+        }
+        catch (InvalidDeckstringException ex)
+        {
+            throw new AppException($"{file} holds a line that is not a deck code ({ex.Message}). Fix it in Settings (meta decks) or remove the file.");
+        }
     }
 
     public Refunds LoadRefunds(string? path) => Refunds.LoadOrEmpty(path ?? Path.Combine(Paths.Config, Refunds.FileName));
@@ -170,8 +204,9 @@ public sealed class AppServices
     public async Task<NeedOutcome> NeedAsync(NeedOptions options, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(options);
-        var deck = ParseDeck(options.Deck);
-        var loaded = await LoadCatalogAsync(forceRefresh: false, options.Locale, ct).ConfigureAwait(false);
+        var loaded = await CachedCatalogAsync(options.Locale, ct).ConfigureAwait(false);
+        // A deck key (hdt:<id>, ingame:<id>) from the exported decks is accepted in place of a code.
+        var deck = ParseDeck(ResolveDeckArgument(options.Deck, options.Account, loaded.Catalog));
         var collection = LoadCollection(options.CollectionFile, options.Account, options.DustOverride, loaded.Catalog);
         var asOf = options.AsOf ?? Today;
         var report = MissingCards.Analyze(deck, collection, loaded.Catalog, Rules, asOf);

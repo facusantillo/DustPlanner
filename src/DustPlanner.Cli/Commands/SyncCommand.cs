@@ -2,13 +2,7 @@ using System.CommandLine;
 using DustPlanner.App;
 using DustPlanner.App.Reports;
 using System.Globalization;
-using System.Text.Json;
 using DustPlanner.Cli.Rendering;
-using DustPlanner.Contracts;
-using DustPlanner.Core.Collection;
-using DustPlanner.Core.Json;
-using DustPlanner.Core.Planner;
-using DustPlanner.Store;
 
 namespace DustPlanner.Cli.Commands;
 
@@ -29,70 +23,7 @@ internal static class SyncCommand
         {
             var ctx = context(result);
             var catalog = (await ctx.LoadCatalogAsync(forceRefresh: false, "enUS", ct).ConfigureAwait(false)).Catalog;
-            var refunds = Refunds.LoadOrEmpty(result.GetValue(refundsOpt) ?? Path.Combine(ctx.Paths.Config, Refunds.FileName));
-            using var store = DustStore.Open(ctx.Paths.Database);
-            var history = new HistoryService(store);
-            var decks = new DeckRepository(store);
-            var ranks = new RankRepository(store);
-            var now = DateTimeOffset.UtcNow;
-            var summaries = new List<SyncSummary>();
-
-            var explicitFile = result.GetValue(collectionOpt);
-            if (explicitFile is not null)
-            {
-                var collection = ctx.LoadCollection(explicitFile, null, null, catalog);
-                summaries.Add(Summarize(history.Sync(collection, catalog, ctx.Rules, refunds, CliContext.Today, now), collection, null, null, catalog));
-            }
-            else
-            {
-                var accounts = InboxLocator.ListAccounts(ctx.Paths.Inbox);
-                var requested = result.GetValue(accountOpt);
-                if (requested is not null)
-                {
-                    var (selected, reason) = InboxLocator.Select(accounts, requested);
-                    if (selected is null)
-                    {
-                        throw new AppException(reason ?? "Account not found.");
-                    }
-
-                    accounts = new[] { selected };
-                }
-
-                if (accounts.Count == 0)
-                {
-                    throw new AppException($"No exports in {ctx.Paths.Inbox}. Install the HDT exporter plugin (docs/exporter-install.md) or pass --collection <file>.");
-                }
-
-                foreach (var account in accounts)
-                {
-                    var collection = HdtExportImporter.ImportFile(Path.Combine(account.Directory, ExportSchema.CollectionFileName), ctx.Rules.PremiumSlots);
-                    var sync = history.Sync(collection, catalog, ctx.Rules, refunds, CliContext.Today, now);
-
-                    int? deckCount = null;
-                    var decksFile = Path.Combine(account.Directory, ExportSchema.DecksFileName);
-                    if (File.Exists(decksFile))
-                    {
-                        var export = JsonSerializer.Deserialize<DecksExport>(File.ReadAllText(decksFile), CoreJson.Options);
-                        if (export is not null)
-                        {
-                            deckCount = decks.ImportExport(export);
-                        }
-                    }
-
-                    int? rankCount = null;
-                    var rankFile = Path.Combine(account.Directory, ExportSchema.RankFileName);
-                    if (File.Exists(rankFile))
-                    {
-                        var export = JsonSerializer.Deserialize<RankExport>(File.ReadAllText(rankFile), CoreJson.Options);
-                        if (export is not null)
-                        {
-                            rankCount = ranks.Import(export);
-                        }
-                    }
-
-                    summaries.Add(Summarize(sync, collection, deckCount, rankCount, catalog));
-                }
-            }
+            var summaries = ctx.App.SyncInbox(catalog, result.GetValue(accountOpt), result.GetValue(collectionOpt), result.GetValue(refundsOpt), CliContext.Today, DateTimeOffset.UtcNow);
 
             if (ctx.Json)
             {
@@ -124,17 +55,4 @@ internal static class SyncCommand
 
         return command;
     }
-
-    private static SyncSummary Summarize(SyncResult sync, CollectionSnapshot collection, int? deckCount, int? rankCount, Core.Cards.CardCatalog catalog) => new(
-        collection.BattleTag ?? collection.AccountKey,
-        collection.AccountKey,
-        sync.Snapshot.TakenAt,
-        sync.NewSnapshot,
-        collection.Dust,
-        sync.DustDelta,
-        deckCount,
-        rankCount,
-        sync.Events.Select(e => EventJson.From(e, catalog)).ToList());
 }
-
-internal sealed record SyncSummary(string Account, string AccountKey, DateTimeOffset SnapshotTakenAt, bool NewSnapshot, int Dust, int DustDelta, int? DecksImported, int? RankSamples, IReadOnlyList<EventJson> Events);

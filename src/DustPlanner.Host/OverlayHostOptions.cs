@@ -7,6 +7,12 @@ public sealed record OverlayHostOptions
 {
     public const int DefaultPort = 8765;
 
+    /// <summary>How many consecutive ports are tried when the requested one is busy.</summary>
+    public const int PortAttempts = 10;
+
+    /// <summary>Written next to the database at start-up: the URL actually bound, the pid and the home folder.</summary>
+    public const string ServiceFileName = "service.json";
+
     public string? Home { get; init; }
 
     public int Port { get; init; } = DefaultPort;
@@ -19,6 +25,9 @@ public sealed record OverlayHostOptions
 
     /// <summary>How often Power.log and the inbox are polled.</summary>
     public TimeSpan PollInterval { get; init; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>Open the panel in the default browser once listening (<c>--open</c>).</summary>
+    public bool OpenBrowser { get; init; }
 
     public AppPaths Paths => Home is null ? AppPaths.Default() : new AppPaths(Path.GetFullPath(Home));
 
@@ -38,8 +47,9 @@ public sealed record OverlayHostOptions
                 case "--logs": options = options with { LogsDirectory = Next() }; break;
                 case "--account": options = options with { Account = Next() }; break;
                 case "--poll-seconds": options = options with { PollInterval = TimeSpan.FromSeconds(double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture)) }; break;
+                case "--open": options = options with { OpenBrowser = true }; break;
                 case "--help" or "-h":
-                    throw new ArgumentException("usage: dustplanner-host [--home <folder>] [--port 8765] [--logs <Hearthstone\\Logs>] [--account <key|BattleTag>] [--poll-seconds 2]");
+                    throw new ArgumentException("usage: dustplanner-host [--home <folder>] [--port 8765] [--logs <Hearthstone\\Logs>] [--account <key|BattleTag>] [--poll-seconds 2] [--open]");
                 default:
                     throw new ArgumentException($"Unknown option {args[i]}");
             }

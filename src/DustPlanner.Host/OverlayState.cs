@@ -23,6 +23,9 @@ public sealed record OverlayState
 
     public LastGameState? LastGame { get; init; }
 
+    /// <summary>Result of the last automatic or requested import of the exporter files into the database.</summary>
+    public SyncState? LastSync { get; init; }
+
     /// <summary>Things the user should fix (no Power.log, no export yet), shown in the status page, never in the overlay.</summary>
     public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
 
@@ -61,3 +64,9 @@ public sealed record RecordState
 public sealed record CurrentGameState(DateTimeOffset StartedAt, string? GameType, string? FormatType, string? PlayerClass, string? OpponentClass, string? OpponentName, int Turn);
 
 public sealed record LastGameState(DateTimeOffset EndedAt, string Result, string? PlayerClass, string? OpponentClass, string? OpponentName, int Turns);
+
+/// <summary>The sync state plus the per-account summaries the CLI prints.</summary>
+public sealed record SyncOutcome(SyncState State, IReadOnlyList<DustPlanner.App.SyncSummary> Accounts);
+
+/// <summary>What the last sync did: when, whether the export was new, how many card changes it recorded (and their plan matches).</summary>
+public sealed record SyncState(DateTimeOffset At, DateTimeOffset SnapshotTakenAt, bool NewSnapshot, int Dust, int DustDelta, int Events, int MatchedEvents, string? Error);

@@ -2,7 +2,6 @@ using System.CommandLine;
 using DustPlanner.App;
 using DustPlanner.App.Reports;
 using DustPlanner.Cli.Rendering;
-using DustPlanner.Store;
 
 namespace DustPlanner.Cli.Commands;
 
@@ -60,9 +59,7 @@ internal static class PlanCommand
             long? savedId = null;
             if (plan.HasPlan && !result.GetValue(noSaveOpt))
             {
-                using var store = DustStore.Open(ctx.Paths.Database);
-                new SnapshotRepository(store).UpsertAccount(need.Collection.AccountKey, need.Collection.BattleTag, need.Collection.Region, need.Collection.TakenAt);
-                savedId = new PlanRepository(store).Save(need.Collection.AccountKey, need.Deck, plan, json, DateTimeOffset.UtcNow);
+                savedId = ctx.App.SavePlan(need, plan, json, DateTimeOffset.UtcNow);
             }
 
             if (ctx.Json)

@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DustPlanner.Host</RootNamespace>
     <AssemblyName>dustplanner-host</AssemblyName>
-    <Description>Local HTTP host: follows Power.log and the exporter inbox and serves a transparent OBS Browser Source overlay (rank, session win rate, dust).</Description>
+    <Description>DustPlanner service: local HTTP host that follows Power.log and the exporter inbox, serves the panel the HDT plugin opens, the JSON API and the transparent OBS overlay.</Description>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1303;CA1515;CA1812;CA1848;CA2007</NoWarn>
   </PropertyGroup>
@@ -17,6 +17,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Overlay/overlay.html" LogicalName="DustPlanner.Host.Overlay.overlay.html" />
     <EmbeddedResource Include="Overlay/index.html" LogicalName="DustPlanner.Host.Overlay.index.html" />
+    <EmbeddedResource Include="Panel/index.html" LogicalName="DustPlanner.Host.Panel.index.html" />
+    <EmbeddedResource Include="Panel/app.css" LogicalName="DustPlanner.Host.Panel.app.css" />
+    <EmbeddedResource Include="Panel/app.js" LogicalName="DustPlanner.Host.Panel.app.js" />
+    <EmbeddedResource Include="Panel/i18n.js" LogicalName="DustPlanner.Host.Panel.i18n.js" />
   </ItemGroup>
 
   <ItemGroup>

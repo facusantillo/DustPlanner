@@ -179,6 +179,49 @@ public sealed class Craftability
         return path;
     }
 
+    /// <summary>Removes every per-card override for the copy (the shipped rule applies again). Returns false when there was none.</summary>
+    public static bool ClearOverride(string overrideDirectory, int dbfId, PremiumKind kind)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(overrideDirectory);
+        var path = Path.Combine(overrideDirectory, GameDataFiles.NonCraftableFile);
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        var file = JsonSerializer.Deserialize<CraftFile>(File.ReadAllText(path), CoreJson.Options) ?? new CraftFile();
+        var key = Key(dbfId);
+        var lists = kind == PremiumKind.Golden
+            ? new[] { file.UncraftableGoldenCardIds, file.CraftableGoldenCardIds }
+            : new[] { file.UncraftableCardIds, file.CraftableCardIds };
+        var removed = lists.Sum(l => l.RemoveAll(k => Key(k) == key));
+        if (removed > 0)
+        {
+            File.WriteAllText(path, JsonSerializer.Serialize(file, CoreJson.Options));
+        }
+
+        return removed > 0;
+    }
+
+    /// <summary>The user's per-card overrides: (dbfId or card id, kind, uncraftable) for each entry of the partial file.</summary>
+    public static IReadOnlyList<(string Card, PremiumKind Kind, bool Uncraftable)> ReadOverrides(string overrideDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(overrideDirectory);
+        var path = Path.Combine(overrideDirectory, GameDataFiles.NonCraftableFile);
+        if (!File.Exists(path))
+        {
+            return Array.Empty<(string, PremiumKind, bool)>();
+        }
+
+        var file = JsonSerializer.Deserialize<CraftFile>(File.ReadAllText(path), CoreJson.Options) ?? new CraftFile();
+        var result = new List<(string, PremiumKind, bool)>();
+        result.AddRange(file.UncraftableCardIds.Select(k => (Key(k), PremiumKind.Normal, true)));
+        result.AddRange(file.UncraftableGoldenCardIds.Select(k => (Key(k), PremiumKind.Golden, true)));
+        result.AddRange(file.CraftableCardIds.Select(k => (Key(k), PremiumKind.Normal, false)));
+        result.AddRange(file.CraftableGoldenCardIds.Select(k => (Key(k), PremiumKind.Golden, false)));
+        return result;
+    }
+
     private static string Key(object value) => value switch
     {
         int i => i.ToString(CultureInfo.InvariantCulture),

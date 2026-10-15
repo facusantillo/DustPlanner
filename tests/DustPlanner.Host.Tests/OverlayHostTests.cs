@@ -72,8 +72,10 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Contains("width: 1920px; height: 1080px", overlay, StringComparison.Ordinal);
         Assert.Contains("EventSource(\"/events\")", overlay, StringComparison.Ordinal);
 
-        var index = await _http.GetStringAsync("/");
-        Assert.Contains("OBS setup", index, StringComparison.Ordinal);
+        var panel = await _http.GetStringAsync("/");
+        Assert.Contains("/panel/app.js", panel, StringComparison.Ordinal);
+        var status = await _http.GetStringAsync("/status");
+        Assert.Contains("OBS setup", status, StringComparison.Ordinal);
 
         var state = await State();
         Assert.True(state.GetProperty("account_key").GetString() == "8589934592-42", "unexpected state: " + state);

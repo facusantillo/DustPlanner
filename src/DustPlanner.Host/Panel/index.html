@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DustPlanner</title>
+<link rel="stylesheet" href="/panel/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">DustPlanner</span>
+    <span class="brand-account" id="hdr-account"></span>
+  </div>
+  <div class="top-actions">
+    <span class="live" id="hdr-live"><span class="dot"></span><span id="hdr-live-text"></span></span>
+    <button class="btn" id="btn-sync" data-i18n="sync_now"></button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <a href="#/home" data-tab="home" data-i18n="tab_home"></a>
+  <a href="#/deck" data-tab="deck" data-i18n="tab_deck"></a>
+  <a href="#/history" data-tab="history" data-i18n="tab_history"></a>
+  <a href="#/games" data-tab="games" data-i18n="tab_games"></a>
+  <a href="#/settings" data-tab="settings" data-i18n="tab_settings"></a>
+</nav>
+
+<main id="main">
+  <section id="page-home" class="page" hidden></section>
+  <section id="page-deck" class="page" hidden></section>
+  <section id="page-history" class="page" hidden></section>
+  <section id="page-games" class="page" hidden></section>
+  <section id="page-settings" class="page" hidden></section>
+</main>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<footer class="foot">
+  <span data-i18n="footer_never"></span>
+  <a href="/overlay" target="_blank" rel="noopener" data-i18n="footer_overlay"></a>
+  <a href="/status" target="_blank" rel="noopener" data-i18n="footer_status"></a>
+</footer>
+
+<script src="/panel/i18n.js"></script>
+<script src="/panel/app.js"></script>
+</body>
+</html>

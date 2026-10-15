@@ -61,7 +61,7 @@ public static class DisenchantPlanner
         var age = DateTimeOffset.UtcNow - request.Collection.TakenAt;
         if (age.TotalDays > request.Prefs.MaxSnapshotAgeDays)
         {
-            blockers.Add($"Collection snapshot is {age.Days} days old (limit {request.Prefs.MaxSnapshotAgeDays} in prefs.json). Export again before planning.");
+            blockers.Add($"Collection snapshot is {age.Days} days old (limit {request.Prefs.MaxSnapshotAgeDays} days in the preferences). Export again before planning.");
         }
 
         var decks = new List<ProtectedDeck>(request.SavedDecks)
@@ -87,7 +87,7 @@ public static class DisenchantPlanner
 
         if (!request.Rules.PremiumSlots.Confirmed)
         {
-            warnings.Add("HDT premium slots 2/3 are unconfirmed: copies of unknown kind are excluded (see 'collection show').");
+            warnings.Add("HDT premium slots 2/3 are unconfirmed: copies of unknown kind (signature / diamond) are never proposed.");
         }
 
         var pool = CandidateBuilder.Build(request.Collection, request.Catalog, request.Rules, request.Prefs, decks, request.Meta, request.Refunds, request.AsOf);
@@ -106,7 +106,7 @@ public static class DisenchantPlanner
         var main = DustOptimizer.Solve(pool.Groups, need, request.Prefs.Optimizer);
         if (!main.Feasible)
         {
-            blockers.Add($"Not enough dust in disenchantable cards: candidates add up to {pool.TotalDust:N0}, you need {need:N0}. Loosen protections (prefs.json) or wait for more cards.");
+            blockers.Add($"Not enough dust in disenchantable cards: candidates add up to {pool.TotalDust:N0}, you need {need:N0}. Loosen the protections in the preferences or wait for more cards.");
             return new DisenchantPlan(need, main, Array.Empty<PlanAlternative>(), pool, notable, warnings, blockers, request.SavedDecks.Count);
         }
 

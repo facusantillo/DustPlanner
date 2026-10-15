@@ -32,6 +32,8 @@ public sealed class OverlayStateService : BackgroundService
     private string? _logsDirectory;
     private DateTime _collectionStamp;
     private DateTime _rankStamp;
+    private bool _syncPending;
+    private readonly object _syncGate = new();
     private Task<CardCatalog?>? _catalogTask;
     private OverlayState _state = OverlayState.Empty;
     private RecordState _session = new();
@@ -220,12 +222,28 @@ public sealed class OverlayStateService : BackgroundService
             if (stamp != _collectionStamp)
             {
                 _collectionStamp = stamp;
+                _syncPending = true;
                 state = state with { Dust = ReadDust(collectionFile) };
             }
         }
         else
         {
             warnings.Add("No collection export yet for this account; dust is unknown until the HDT plugin exports.");
+        }
+
+        if (_syncPending && _catalogTask is { IsCompletedSuccessfully: true, Result: not null })
+        {
+            // The exporter wrote a new collection: import it now so plans are matched without any user action.
+            _syncPending = false;
+            try
+            {
+                state = state with { LastSync = RunSync(state.AccountKey).State };
+            }
+            catch (Exception ex) when (ex is AppException || ex is IOException || ex is InvalidDataException || ex is JsonException || ex is Microsoft.Data.Sqlite.SqliteException)
+            {
+                warnings.Add("Automatic sync failed: " + ex.Message);
+                state = _state;
+            }
         }
 
         var rankFile = Path.Combine(dir, ExportSchema.RankFileName);
@@ -256,6 +274,43 @@ public sealed class OverlayStateService : BackgroundService
 
         return state;
     }
+
+    /// <summary>
+    /// Imports the account's export into the database (collection snapshot, decks, rank) and matches stored plans,
+    /// exactly like <c>dustplanner sync</c>. Runs automatically when the exporter writes a new collection and on
+    /// request from the panel; one at a time.
+    /// </summary>
+    public SyncOutcome RunSync(string? account)
+    {
+        var catalog = _catalogTask is { IsCompletedSuccessfully: true } t ? t.Result : null;
+        var now = _clock.GetUtcNow();
+        if (catalog is null)
+        {
+            throw new AppException("Card catalog not loaded yet; try again in a moment.");
+        }
+
+        lock (_syncGate)
+        {
+            try
+            {
+                var summaries = _app.SyncInbox(catalog, account, null, null, AppServices.Today, now);
+                var mine = summaries.FirstOrDefault(s => account is null || string.Equals(s.AccountKey, account, StringComparison.Ordinal)) ?? summaries[0];
+                var result = new SyncState(now, mine.SnapshotTakenAt, mine.NewSnapshot, mine.Dust, mine.DustDelta, mine.Events.Count, mine.Events.Count(e => e.PlanId is not null), null);
+                Log.Synced(_log, mine.Account, mine.NewSnapshot, mine.Events.Count);
+                Publish(_state with { LastSync = result, UpdatedAt = now });
+                return new SyncOutcome(result, summaries);
+            }
+            catch (Exception ex) when (ex is AppException || ex is IOException || ex is InvalidDataException || ex is JsonException || ex is Microsoft.Data.Sqlite.SqliteException)
+            {
+                Log.SyncFailed(_log, ex);
+                Publish(_state with { LastSync = new SyncState(now, default, false, 0, 0, 0, 0, ex.Message), UpdatedAt = now });
+                throw;
+            }
+        }
+    }
+
+    /// <summary>Forces the next poll to re-read the exporter files and sync (after the panel changed something).</summary>
+    public void RequestSync() => _syncPending = true;
 
     private static DustState? ReadDust(string collectionFile)
     {
@@ -390,4 +445,10 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Game of another account ({Account}) stored but not counted in the session")]
     public static partial void OtherAccount(ILogger logger, string account);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Synced {Account}: new snapshot {NewSnapshot}, {Events} change(s)")]
+    public static partial void Synced(ILogger logger, string account, bool newSnapshot, int events);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Sync failed")]
+    public static partial void SyncFailed(ILogger logger, Exception ex);
 }

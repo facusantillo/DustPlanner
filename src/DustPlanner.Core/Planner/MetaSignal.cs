@@ -16,6 +16,9 @@ public sealed class MetaSignal
         _classes = classes;
     }
 
+    /// <summary>Default file name under the DustPlanner home folder (pasted deck codes, one per line, "#" comments).</summary>
+    public const string FileName = "meta.txt";
+
     public static MetaSignal Empty { get; } = new(0, new Dictionary<int, double>(), new Dictionary<int, HashSet<string>>());
 
     public int DeckCount { get; }

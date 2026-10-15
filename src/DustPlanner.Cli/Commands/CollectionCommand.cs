@@ -1,4 +1,5 @@
 using System.CommandLine;
+using DustPlanner.App.Reports;
 using System.Globalization;
 using DustPlanner.Cli.Rendering;
 using DustPlanner.Core.Collection;
@@ -52,21 +53,7 @@ internal static class CollectionCommand
 
             if (ctx.Json)
             {
-                await ctx.WriteJsonAsync(new
-                {
-                    account = collection.BattleTag ?? collection.AccountKey,
-                    account_key = collection.AccountKey,
-                    region = collection.Region,
-                    taken_at = collection.TakenAt,
-                    source = collection.Source,
-                    dust = collection.Dust,
-                    gold = collection.Gold,
-                    unopened_packs = collection.UnopenedPacks,
-                    distinct_cards = collection.DistinctCards,
-                    copies = byKind.ToDictionary(p => p.Key.ToString().ToLowerInvariant(), p => p.Value),
-                    cards_not_in_catalog = notInCatalog,
-                    unknown_sets = unknownSets,
-                }).ConfigureAwait(false);
+                await ctx.WriteJsonAsync(CollectionSummaryJson.From(collection, catalog, ctx.Rules)).ConfigureAwait(false);
                 return 0;
             }
 

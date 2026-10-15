@@ -1,4 +1,6 @@
 using System.CommandLine;
+using DustPlanner.App;
+using DustPlanner.App.Reports;
 using System.Globalization;
 using DustPlanner.Cli.Rendering;
 using DustPlanner.Core.Planner;
@@ -20,7 +22,7 @@ internal static class HistoryCommand
             var ctx = context(result);
             if (!File.Exists(ctx.Paths.Database))
             {
-                throw new CliException($"No database yet at {ctx.Paths.Database}. Run 'dustplanner sync' first.");
+                throw new AppException($"No database yet at {ctx.Paths.Database}. Run 'dustplanner sync' first.");
             }
 
             var catalog = (await ctx.LoadCatalogAsync(forceRefresh: false, "enUS", ct).ConfigureAwait(false)).Catalog;
@@ -28,7 +30,7 @@ internal static class HistoryCommand
             var snapshots = new SnapshotRepository(store);
             var known = snapshots.Accounts();
             var accountKey = result.GetValue(accountOpt) ?? (known.Count > 0 ? known[0] : null)
-                ?? throw new CliException("The database holds no account yet. Run 'dustplanner sync' first.");
+                ?? throw new AppException("The database holds no account yet. Run 'dustplanner sync' first.");
 
             var events = new HistoryService(store).Events(accountKey, result.GetValue(limitOpt));
             var plans = new PlanRepository(store).List(accountKey);
@@ -41,7 +43,7 @@ internal static class HistoryCommand
                     account_key = accountKey,
                     snapshots = snapshotList,
                     plans,
-                    events = events.Select(e => new EventJson(e.Id, e.DbfId, catalog.GetByDbfId(e.DbfId)?.Name ?? $"dbfId {e.DbfId}", CandidateBuilder.KindName(e.Kind), e.Delta, e.EventKind, e.DustEstimate, e.PlanId, e.ConfidenceLevel, e.DetectedAt)),
+                    events = events.Select(e => EventJson.From(e, catalog)),
                 }).ConfigureAwait(false);
                 return 0;
             }

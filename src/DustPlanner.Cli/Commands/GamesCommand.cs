@@ -1,4 +1,6 @@
 using System.CommandLine;
+using DustPlanner.App;
+using DustPlanner.App.Reports;
 using System.Globalization;
 using DustPlanner.Cli.Rendering;
 using DustPlanner.LogTracker;
@@ -136,8 +138,8 @@ internal static class GamesCommand
                     since,
                     game_type = gameType,
                     format,
-                    overall = new StatsJson(overall),
-                    by_class = byClass.Select(c => new { player_class = c.PlayerClass, stats = new StatsJson(c.Rate) }),
+                    overall = StatsJson.From(overall),
+                    by_class = byClass.Select(c => new { player_class = c.PlayerClass, stats = StatsJson.From(c.Rate) }),
                 }).ConfigureAwait(false);
                 return 0;
             }
@@ -203,25 +205,25 @@ internal static class GamesCommand
     {
         if (explicitLogs is not null)
         {
-            return Directory.Exists(explicitLogs) ? Path.GetFullPath(explicitLogs) : throw new CliException($"Logs folder not found: {explicitLogs}");
+            return Directory.Exists(explicitLogs) ? Path.GetFullPath(explicitLogs) : throw new AppException($"Logs folder not found: {explicitLogs}");
         }
 
         return LogLocator.FindLogsDirectory()
-            ?? throw new CliException("Hearthstone's Logs folder was not found. Pass --logs <path-to-Hearthstone\\Logs>.");
+            ?? throw new AppException("Hearthstone's Logs folder was not found. Pass --logs <path-to-Hearthstone\\Logs>.");
     }
 
     private static DustStore OpenReadOnly(CliContext ctx)
     {
         if (!File.Exists(ctx.Paths.Database))
         {
-            throw new CliException($"No database yet at {ctx.Paths.Database}. Run 'dustplanner games import' first.");
+            throw new AppException($"No database yet at {ctx.Paths.Database}. Run 'dustplanner games import' first.");
         }
 
         return DustStore.Open(ctx.Paths.Database, readOnly: true);
     }
 
     private static string ResolveAccount(GameRepository games, string? requested) =>
-        requested ?? games.LatestAccount() ?? throw new CliException("No games stored yet. Run 'dustplanner games import' first.");
+        requested ?? games.LatestAccount() ?? throw new AppException("No games stored yet. Run 'dustplanner games import' first.");
 
     internal static DateTimeOffset? ParseSince(string? since, int? days)
     {
@@ -245,7 +247,7 @@ internal static class GamesCommand
             return new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Local)).ToUniversalTime();
         }
 
-        throw new CliException($"--since expects YYYY-MM-DD or 'today', got '{since}'.");
+        throw new AppException($"--since expects YYYY-MM-DD or 'today', got '{since}'.");
     }
 
     private static string Percent(WinRate rate) => rate.Percentage is { } p ? (p * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%" : "-";
@@ -270,10 +272,3 @@ internal static class GamesCommand
     private static string Title(string? value) => string.IsNullOrEmpty(value) ? "?" : char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
 }
 
-internal sealed record StatsJson(int Games, int Wins, int Losses, int Ties, int Unknown, double? WinRate)
-{
-    public StatsJson(WinRate rate)
-        : this(rate.Games, rate.Wins, rate.Losses, rate.Ties, rate.Unknown, rate.Percentage)
-    {
-    }
-}

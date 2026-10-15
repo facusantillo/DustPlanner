@@ -1,4 +1,5 @@
 using System.CommandLine;
+using DustPlanner.App;
 
 namespace DustPlanner.Cli;
 
@@ -14,7 +15,7 @@ internal static class CliAction
             {
                 return await body(result, ct).ConfigureAwait(false);
             }
-            catch (CliException ex)
+            catch (AppException ex)
             {
                 await Console.Error.WriteLineAsync("error: " + ex.Message).ConfigureAwait(false);
                 return UserErrorExitCode;

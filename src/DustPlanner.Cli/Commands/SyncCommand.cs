@@ -1,4 +1,6 @@
 using System.CommandLine;
+using DustPlanner.App;
+using DustPlanner.App.Reports;
 using System.Globalization;
 using System.Text.Json;
 using DustPlanner.Cli.Rendering;
@@ -50,7 +52,7 @@ internal static class SyncCommand
                     var (selected, reason) = InboxLocator.Select(accounts, requested);
                     if (selected is null)
                     {
-                        throw new CliException(reason ?? "Account not found.");
+                        throw new AppException(reason ?? "Account not found.");
                     }
 
                     accounts = new[] { selected };
@@ -58,7 +60,7 @@ internal static class SyncCommand
 
                 if (accounts.Count == 0)
                 {
-                    throw new CliException($"No exports in {ctx.Paths.Inbox}. Install the HDT exporter plugin (docs/exporter-install.md) or pass --collection <file>.");
+                    throw new AppException($"No exports in {ctx.Paths.Inbox}. Install the HDT exporter plugin (docs/exporter-install.md) or pass --collection <file>.");
                 }
 
                 foreach (var account in accounts)
@@ -132,9 +134,7 @@ internal static class SyncCommand
         sync.DustDelta,
         deckCount,
         rankCount,
-        sync.Events.Select(e => new EventJson(e.Id, e.DbfId, catalog.GetByDbfId(e.DbfId)?.Name ?? $"dbfId {e.DbfId}", CandidateBuilder.KindName(e.Kind), e.Delta, e.EventKind, e.DustEstimate, e.PlanId, e.ConfidenceLevel, e.DetectedAt)).ToList());
+        sync.Events.Select(e => EventJson.From(e, catalog)).ToList());
 }
 
 internal sealed record SyncSummary(string Account, string AccountKey, DateTimeOffset SnapshotTakenAt, bool NewSnapshot, int Dust, int DustDelta, int? DecksImported, int? RankSamples, IReadOnlyList<EventJson> Events);
-
-internal sealed record EventJson(long Id, int DbfId, string CardName, string Kind, int Delta, string EventKind, int? DustEstimate, long? PlanId, string Confidence, DateTimeOffset DetectedAt);

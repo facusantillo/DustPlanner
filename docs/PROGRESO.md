@@ -226,3 +226,27 @@ events: report them if they appear without you having touched the collection).
 - `games stats` counts ties and unknown results as games but not in the win rate (wins ÷ decided games).
 - Battlegrounds / Mercenaries / Duels logs are parsed but not filtered specially; stats default to every game type, use
   `--type GT_RANKED` for ladder only.
+
+---
+
+## Stage 7 — Read-only MCP server
+
+**Done**
+
+- `src/DustPlanner.App`: the loading/planning logic and the JSON projections that used to live inside the CLI, now a
+  library shared by the CLI, the MCP server and (next) the overlay host — one `AppServices` (catalog, collection, decks,
+  prefs, meta, refunds, `NeedAsync`, `PlanAsync`) and one set of snake_case report records. The CLI output is unchanged.
+- `src/DustPlanner.Mcp` (official `ModelContextProtocol` C# SDK 2.2.0, stdio): tools `get_collection_summary`,
+  `get_missing_for_deck`, `propose_disenchant_plan`, `get_history`, `get_winrate`, all annotated `readOnlyHint`; the
+  database is opened read-only, plans are never stored, logs go to stderr; user-facing failures are returned as tool
+  errors with the message. Server instructions state the no-automation policy to the model.
+- `docs/mcp.md`: Claude Desktop / Claude Code configuration, tool table, example questions.
+- Tests: `tests/DustPlanner.Mcp.Tests` drives the real binary over stdio with the official client (tool list and
+  annotations, collection/missing/plan round trip, error shape, win rate from a filled database) and asserts no database
+  is created by the calls. 111 tests total.
+
+**Pending / caveats**
+
+- The catalog is cached in memory for 10 minutes per server process; after `dustplanner catalog update` restart the
+  client (or wait) to see a new build.
+- No HTTP transport: stdio only, by design (local, single user, nothing listening on a port).

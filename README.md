@@ -4,9 +4,9 @@ A read-only dust planner for Hearthstone: tell it which deck you want to build, 
 cards you are missing, how much Arcane Dust you need, and which cards in your collection you could
 disenchant to get there with the least regret.
 
-> **Status: work in progress.** Stages 0–6 of 8: the HDT exporter plugin (with release packaging), the card catalog and
-> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender), the local history database and
-> the `Power.log` match tracker exist; the MCP server and the OBS overlay follow. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
+> **Status: work in progress.** Stages 0–7 of 8: the HDT exporter plugin (with release packaging), the card catalog and
+> rule tables, `need` (missing cards, dust, rotation), `plan` (disenchant recommender), the local history database, the
+> `Power.log` match tracker and the read-only MCP server exist; the OBS overlay follows. See [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## What it does — and what it never does
 
@@ -25,9 +25,10 @@ disenchant to get there with the least regret.
 | `src/DustPlanner.HdtExporter` | net472 | Hearthstone Deck Tracker plugin (exporter) |
 | `src/DustPlanner.Core` | net10.0 | Card data, deckstrings, collection, planner, meta |
 | `src/DustPlanner.Store` | net10.0 | SQLite persistence: snapshots, decks, plans, history, rank, games |
+| `src/DustPlanner.App` | net10.0 | Application services shared by the front ends (loading, planning, JSON projections) |
 | `src/DustPlanner.Cli` | net10.0 | Command-line interface |
 | `src/DustPlanner.LogTracker` | net10.0 | `Power.log` parser, importer, follower and win-rate queries |
-| `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server *(stage 7)* |
+| `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server (stdio) for Claude Desktop / Claude Code |
 | `src/DustPlanner.Host` | net10.0 | Local HTTP host + OBS overlay *(stage 8)* |
 | `tests/` | net10.0 | One test project per module |
 | `tools/` | — | `HdtApiCheck`, HDT reference fetch scripts, data validation scripts |
@@ -112,6 +113,13 @@ Data lives under `%LocalAppData%\DustPlanner` (override with `--home` or `DUSTPL
 output), `catalog/` (HearthstoneJSON cache), `data/` (optional overrides of the rule files in `/data`),
 `dustplanner.db` (SQLite: snapshots, decks, plans, detected changes, rank samples, games), plus your `prefs.json`,
 `meta.txt` and `refunds.json`.
+
+## Asking an AI client (MCP)
+
+`dustplanner-mcp` is a stdio MCP server with five read-only tools — collection summary, missing cards for a deck, a
+disenchant proposal, history, win rate — so Claude Desktop or Claude Code can answer *"what am I missing for this deck
+and what would you disenchant?"* from your own data. It never stores a plan, never touches the game. Setup and the tool
+list: [`docs/mcp.md`](docs/mcp.md).
 
 ## Installing the exporter plugin
 

@@ -26,7 +26,7 @@ Idempotent; needs the GitHub CLI. It sets, through the REST API:
 |---|---|
 | GitHub Pages | source **GitHub Actions**: `.github/workflows/pages.yml` publishes `site/` on every push that touches it, at `https://<owner>.github.io/DustPlanner/` or at the custom domain given with `-Domain` |
 | Ruleset `main` | the default branch cannot be deleted or force-pushed and keeps a linear history; direct pushes stay allowed (one maintainer) |
-| Ruleset `release tags` | `exporter-v*` tags cannot be deleted or moved: a published release always points at the commit it was built from |
+| Ruleset `release tags` | `v*` tags cannot be deleted or moved: a published release always points at the commit it was built from |
 | Repository | description, homepage = the site, topics, issues on, wiki and projects off, merged branches deleted |
 | Site | runs the `Publish site` workflow once |
 
@@ -41,7 +41,7 @@ gh api -X POST repos/<owner>/DustPlanner/rulesets --input - <<'JSON'
 JSON
 gh api -X POST repos/<owner>/DustPlanner/rulesets --input - <<'JSON'
 {"name":"release tags","target":"tag","enforcement":"active",
- "conditions":{"ref_name":{"include":["refs/tags/exporter-v*"],"exclude":[]}},
+ "conditions":{"ref_name":{"include":["refs/tags/v*"],"exclude":[]}},
  "rules":[{"type":"deletion"},{"type":"non_fast_forward"},{"type":"update"}]}
 JSON
 gh workflow run pages.yml
@@ -77,25 +77,28 @@ The version is `<Version>` in `Directory.Build.props` (plugin assembly version, 
 
 ```powershell
 # bump <Version>, commit, then:
-git tag exporter-v0.1.0
-git push origin exporter-v0.1.0
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
-`release.yml` builds the plugin, publishes the service self-contained (win-x64), packs `DustPlanner-v0.1.0.zip` with
-its `.sha256`, and creates the GitHub Release. The site's download button and the README link to `releases/latest`.
+`release.yml` builds the plugin, publishes the service self-contained (win-x64), packs `DustPlanner-v1.0.0.zip` with
+its `.sha256`, adds the same zip as `DustPlanner.zip` (fixed name) and creates the GitHub Release. The site's download
+button and the README point at `releases/latest/download/DustPlanner.zip`, which always serves the newest release
+directly; the versioned name is for the releases page and for keeping older versions apart. (The first, pre-site
+release was tagged `exporter-v0.1.0`; the ruleset still protects that pattern.)
 
 ### If a release tag has to move
 
-The `release tags` ruleset blocks deleting or moving `exporter-v*` tags, maintainers included, so a tag pushed at a
+The `release tags` ruleset blocks deleting or moving `v*` tags, maintainers included, so a tag pushed at a
 commit whose workflow failed cannot simply be re-pointed. Either release the next patch version, or lift the ruleset
 for the one operation and put it back:
 
 ```powershell
 $id = gh api repos/<owner>/DustPlanner/rulesets --jq '.[] | select(.name == "release tags") | .id'
 gh api -X PUT repos/<owner>/DustPlanner/rulesets/$id -f enforcement=disabled
-git push origin --delete exporter-v0.1.0
-git tag -d exporter-v0.1.0
-git tag exporter-v0.1.0 && git push origin exporter-v0.1.0
+git push origin --delete v1.0.0
+git tag -d v1.0.0
+git tag v1.0.0 && git push origin v1.0.0
 tools\github-setup.ps1 -Owner <owner>          # re-activates the ruleset (idempotent)
 ```
 

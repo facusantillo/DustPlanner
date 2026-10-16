@@ -8,7 +8,8 @@ HDT already holds (see [`SECURITY.md`](../SECURITY.md)).
 
 ## From a release zip
 
-1. Download `DustPlanner-v<version>.zip` from the GitHub Releases page and, optionally, check its `.sha256`.
+1. Download `DustPlanner.zip` from [dustplanner.app](https://dustplanner.app/) (it is the latest release's
+   `DustPlanner-v<version>.zip` under a fixed name) and, optionally, check its `.sha256` on the releases page.
 2. Close HDT.
 3. Extract the zip. Copy the `DustPlanner` folder into `%AppData%\HearthstoneDeckTracker\Plugins\` so that
    `...\Plugins\DustPlanner\DustPlanner.HdtExporter.dll` exists (the folder also holds

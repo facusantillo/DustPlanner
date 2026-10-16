@@ -14,7 +14,7 @@
       or at https://<Domain>/ when -Domain is given (custom domain; HTTPS enforced once GitHub has issued the certificate,
       so run the script again if it says the certificate is not ready yet)
     - Ruleset "main": no deletion, no force-push, linear history on the default branch (direct pushes stay allowed)
-    - Ruleset "release tags": exporter-v* tags cannot be deleted or moved once pushed (releases stay reproducible)
+    - Ruleset "release tags": v* tags cannot be deleted or moved once pushed (releases stay reproducible)
     - Repository: description, homepage (the site), topics, issues on, wiki/projects off, delete merged branches
     - Runs the "Publish site" workflow once so the site exists before the first release
 #>
@@ -127,7 +127,7 @@ Set-Ruleset @{
     name        = "release tags"
     target      = "tag"
     enforcement = "active"
-    conditions  = @{ ref_name = @{ include = @("refs/tags/exporter-v*"); exclude = @() } }
+    conditions  = @{ ref_name = @{ include = @("refs/tags/v*", "refs/tags/exporter-v*"); exclude = @() } }
     rules       = @(
         @{ type = "deletion" },
         @{ type = "non_fast_forward" },
@@ -141,4 +141,4 @@ if ($LASTEXITCODE -eq 0) { Write-Host "Site workflow started; the page appears a
 else { Write-Host "Could not start the site workflow (is .github/workflows/pages.yml on main yet?). It also runs on the next push that touches site/." }
 
 Write-Host ""
-Write-Host "Next: bump <Version> in Directory.Build.props when needed, then 'git tag exporter-v<version> && git push origin exporter-v<version>' publishes the release zip."
+Write-Host "Next: bump <Version> in Directory.Build.props when needed, then 'git tag v<version> && git push origin v<version>' publishes the release zip."

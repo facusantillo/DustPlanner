@@ -28,7 +28,7 @@
     <h1>Sabé qué desencantar antes de desencantarlo.</h1>
     <p class="lead">DustPlanner vive dentro de Hearthstone Deck Tracker. Elegí un mazo, mirá exactamente qué cartas te faltan y cuánto polvo son, y obtené la lista menos dolorosa de copias para desencantar y llegar — sin tocar tus mazos, las cartas del meta ni las copias que el juego se niega a craftear.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>Descargar el plugin</a>
+      <a class="btn primary" href="https://github.com/facusantillo/DustPlanner/releases/latest/download/DustPlanner.zip" data-release>Descargar el plugin</a>
       <a class="btn" href="#install">Instalar en dos minutos</a>
     </div>
     <p class="fine">Windows · necesita Hearthstone Deck Tracker · gratis, licencia MIT · no hay que instalar nada más.</p>
@@ -127,7 +127,7 @@
 <section id="install">
   <h2>Instalar</h2>
   <ol class="steps">
-    <li><b>Descargar</b><a href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>El último <code>DustPlanner-v….zip</code></a> desde GitHub Releases. Unos 50 MB: el servicio viene incluido, no hay runtime que instalar.</li>
+    <li><b>Descargar</b><a href="https://github.com/facusantillo/DustPlanner/releases/latest/download/DustPlanner.zip" data-release><code>DustPlanner.zip</code></a>, la última versión. Unos 50 MB: el servicio viene incluido, no hay runtime que instalar. Las versiones anteriores y los checksums están en la <a href="https://github.com/facusantillo/DustPlanner/releases" data-repo="releases">página de releases</a>.</li>
     <li><b>Copiar</b>Cerrá HDT. Descomprimí y copiá la carpeta <code>DustPlanner</code> en <code>%AppData%\<wbr>HearthstoneDeckTracker\<wbr>Plugins\</code>.</li>
     <li><b>Activar</b>Abrí HDT → <i>Options → Tracker → Plugins</i> → tildá <b>DustPlanner</b>.</li>
     <li><b>Exportar una vez</b>Con el juego abierto, entrá a <i>Mi colección</i> y volvé al menú. Pasá una vez por <i>Jugar</i> para que se conozcan tus mazos. Después <i>Plugins → DustPlanner → Open DustPlanner</i>.</li>
@@ -185,7 +185,7 @@
   (function () {
     var repo = "https://github.com/facusantillo/DustPlanner";
     document.querySelectorAll("a.repo, a[data-repo]").forEach(function (a) { a.href = repo + "/" + (a.dataset.repo || ""); });
-    document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest"; });
+    document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest/download/DustPlanner.zip"; });
   })();
 </script>
 </body>

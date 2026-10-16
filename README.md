@@ -209,8 +209,9 @@ Creating the repository, Pages, the branch and tag rulesets and a release: [`doc
 
 ## Installing the plugin
 
-Download the latest `DustPlanner-v*.zip` from GitHub Releases and copy its `DustPlanner` folder into
-`%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install` (which also
+Download [`DustPlanner.zip`](https://github.com/facusantillo/DustPlanner/releases/latest/download/DustPlanner.zip)
+(the latest release; every release also carries it as `DustPlanner-v<version>.zip`) and copy its `DustPlanner` folder
+into `%AppData%\HearthstoneDeckTracker\Plugins\`, or build it yourself with `tools\package-exporter.ps1 -Install` (which also
 publishes the service into `DustPlanner\service\`; `-NoService` for a plugin-only developer build).
 Full instructions: [`docs/exporter-install.md`](docs/exporter-install.md).
 

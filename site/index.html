@@ -28,7 +28,7 @@
     <h1>Know what to dust before you dust it.</h1>
     <p class="lead">DustPlanner lives inside Hearthstone Deck Tracker. Pick a deck, see exactly which cards you are missing and how much dust that is, and get the least painful list of copies to disenchant to get there — without touching your decks, the meta staples or the cards the game refuses to craft.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>Download the plugin</a>
+      <a class="btn primary" href="https://github.com/facusantillo/DustPlanner/releases/latest/download/DustPlanner.zip" data-release>Download the plugin</a>
       <a class="btn" href="#install">Install in two minutes</a>
     </div>
     <p class="fine">Windows · needs Hearthstone Deck Tracker · free, MIT licensed · nothing else to install.</p>
@@ -127,7 +127,7 @@
 <section id="install">
   <h2>Install</h2>
   <ol class="steps">
-    <li><b>Download</b><a href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>The latest <code>DustPlanner-v….zip</code></a> from GitHub Releases. About 50 MB: the service is bundled, so there is no runtime to install.</li>
+    <li><b>Download</b><a href="https://github.com/facusantillo/DustPlanner/releases/latest/download/DustPlanner.zip" data-release><code>DustPlanner.zip</code></a>, the latest version. About 50 MB: the service is bundled, so there is no runtime to install. Older versions and checksums are on the <a href="https://github.com/facusantillo/DustPlanner/releases" data-repo="releases">releases page</a>.</li>
     <li><b>Copy</b>Close HDT. Unzip and copy the <code>DustPlanner</code> folder into <code>%AppData%\<wbr>HearthstoneDeckTracker\<wbr>Plugins\</code>.</li>
     <li><b>Enable</b>Start HDT → <i>Options → Tracker → Plugins</i> → tick <b>DustPlanner</b>.</li>
     <li><b>Export once</b>With the game running, open <i>My Collection</i> and go back to the menu. Visit <i>Play</i> once so your decks are known. Then <i>Plugins → DustPlanner → Open DustPlanner</i>.</li>
@@ -185,7 +185,7 @@
   (function () {
     var repo = "https://github.com/facusantillo/DustPlanner";
     document.querySelectorAll("a.repo, a[data-repo]").forEach(function (a) { a.href = repo + "/" + (a.dataset.repo || ""); });
-    document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest"; });
+    document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest/download/DustPlanner.zip"; });
   })();
 </script>
 </body>

@@ -7,10 +7,12 @@
   changing anything here. It never creates the repository or pushes code; do that first:
 
       gh repo create <owner>/DustPlanner --public --source . --remote origin --push
-      tools\github-setup.ps1 -Owner <owner>
+      tools\github-setup.ps1 -Owner <owner> [-Domain dustplanner.app]
 
   What it does (all through the REST API, nothing else touches the repository):
-    - Pages: build_type "workflow", so .github/workflows/pages.yml publishes site/ at https://<owner>.github.io/DustPlanner/
+    - Pages: build_type "workflow", so .github/workflows/pages.yml publishes site/ at https://<owner>.github.io/DustPlanner/,
+      or at https://<Domain>/ when -Domain is given (custom domain; HTTPS enforced once GitHub has issued the certificate,
+      so run the script again if it says the certificate is not ready yet)
     - Ruleset "main": no deletion, no force-push, linear history on the default branch (direct pushes stay allowed)
     - Ruleset "release tags": exporter-v* tags cannot be deleted or moved once pushed (releases stay reproducible)
     - Repository: description, homepage (the site), topics, issues on, wiki/projects off, delete merged branches
@@ -19,12 +21,14 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Owner,
-    [string]$Repo = "DustPlanner"
+    [string]$Repo = "DustPlanner",
+    # Custom domain for the site, e.g. dustplanner.app. Its DNS must already point at GitHub Pages (docs/publishing.md).
+    [string]$Domain = ""
 )
 
 $ErrorActionPreference = "Stop"
 $slug = "$Owner/$Repo"
-$site = "https://$($Owner.ToLowerInvariant()).github.io/$Repo/"
+$site = if ($Domain) { "https://$($Domain.ToLowerInvariant())/" } else { "https://$($Owner.ToLowerInvariant()).github.io/$Repo/" }
 
 function Invoke-Api {
     param([string]$Method, [string]$Path, [object]$Body = $null, [switch]$AllowNotFound)
@@ -81,6 +85,16 @@ if ($null -eq $pages) {
     Write-Host "Pages source switched to GitHub Actions."
 } else {
     Write-Host "Pages already uses GitHub Actions."
+}
+if ($Domain) {
+    Invoke-Api PUT "repos/$slug/pages" @{ cname = $Domain.ToLowerInvariant() } | Out-Null
+    Write-Host "Pages custom domain: $Domain."
+    try {
+        Invoke-Api PUT "repos/$slug/pages" @{ https_enforced = $true } | Out-Null
+        Write-Host "HTTPS enforced."
+    } catch {
+        Write-Host "HTTPS not enforced yet: GitHub is still issuing the certificate for $Domain (usually minutes, up to an hour). Run this script again later."
+    }
 }
 
 # --- rulesets --------------------------------------------------------------------------------------------------------

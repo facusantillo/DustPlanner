@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DustPlanner — sabé qué desencantar antes de desencantarlo</title>
+<link rel="canonical" href="https://dustplanner.app/es/">
 <meta name="description" content="Un planificador de polvo de solo lectura para Hearthstone, dentro de Hearthstone Deck Tracker: qué cartas te faltan para un mazo, cuánto polvo necesitás y qué copias desencantar con el menor arrepentimiento.">
 <link rel="stylesheet" href="../site.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23a98cff'/%3E%3C/svg%3E">
@@ -17,7 +18,7 @@
     <a href="#install">Instalar</a>
     <a href="#safety">Seguridad</a>
     <a href="#faq">Preguntas</a>
-    <a class="repo" href="https://github.com/">GitHub</a>
+    <a class="repo" href="https://github.com/facusantillo/DustPlanner/">GitHub</a>
     <a class="lang" href="../" lang="en" hreflang="en">English</a>
   </nav>
 </header>
@@ -27,7 +28,7 @@
     <h1>Sabé qué desencantar antes de desencantarlo.</h1>
     <p class="lead">DustPlanner vive dentro de Hearthstone Deck Tracker. Elegí un mazo, mirá exactamente qué cartas te faltan y cuánto polvo son, y obtené la lista menos dolorosa de copias para desencantar y llegar — sin tocar tus mazos, las cartas del meta ni las copias que el juego se niega a craftear.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/" data-release>Descargar el plugin</a>
+      <a class="btn primary" href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>Descargar el plugin</a>
       <a class="btn" href="#install">Instalar en dos minutos</a>
     </div>
     <p class="fine">Windows · necesita Hearthstone Deck Tracker · gratis, licencia MIT · no hay que instalar nada más.</p>
@@ -126,7 +127,7 @@
 <section id="install">
   <h2>Instalar</h2>
   <ol class="steps">
-    <li><b>Descargar</b><a href="https://github.com/" data-release>El último <code>DustPlanner-v….zip</code></a> desde GitHub Releases. Unos 50 MB: el servicio viene incluido, no hay runtime que instalar.</li>
+    <li><b>Descargar</b><a href="https://github.com/facusantillo/DustPlanner/releases/latest" data-release>El último <code>DustPlanner-v….zip</code></a> desde GitHub Releases. Unos 50 MB: el servicio viene incluido, no hay runtime que instalar.</li>
     <li><b>Copiar</b>Cerrá HDT. Descomprimí y copiá la carpeta <code>DustPlanner</code> en <code>%AppData%\<wbr>HearthstoneDeckTracker\<wbr>Plugins\</code>.</li>
     <li><b>Activar</b>Abrí HDT → <i>Options → Tracker → Plugins</i> → tildá <b>DustPlanner</b>.</li>
     <li><b>Exportar una vez</b>Con el juego abierto, entrá a <i>Mi colección</i> y volvé al menú. Pasá una vez por <i>Jugar</i> para que se conozcan tus mazos. Después <i>Plugins → DustPlanner → Open DustPlanner</i>.</li>
@@ -142,7 +143,7 @@
   <div class="never warn">
     <p><b>Conservador por defecto.</b> Cualquier dato del juego que la herramienta no pueda verificar deja la carta <em>fuera</em> del plan y lo dice: copias de recompensa que el juego marca como <em>Uncraftable</em>, cartas de sets que los datos de reglas no conocen, slots premium cuyo valor en polvo no está confirmado. El plan siempre empieza con lo único que ninguna API de HDT le puede decir: abrí tus sobres pendientes primero.</p>
   </div>
-  <p>La política completa está en el <a href="https://github.com/" data-repo="blob/main/SECURITY.md">SECURITY.md</a> del repositorio. El código es MIT y abierto: podés leer exactamente qué lee.</p>
+  <p>La política completa está en el <a href="https://github.com/facusantillo/DustPlanner/blob/main/SECURITY.md" data-repo="blob/main/SECURITY.md">SECURITY.md</a> del repositorio. El código es MIT y abierto: podés leer exactamente qué lee.</p>
 </section>
 
 <section id="faq">
@@ -172,7 +173,7 @@
     <div><h3>API JSON</h3><p>El panel es un cliente de <code>http://127.0.0.1:8765/api/*</code>: overview, decks, need, plan, sync, history, games, prefs, meta, excepciones de cartas. Los mismos payloads que la CLI.</p></div>
     <div><h3>Servidor MCP</h3><p>Un servidor Model Context Protocol de solo lectura por stdio, para que Claude Desktop o Claude Code pregunten "¿qué me falta para este mazo y qué desencantarías?" con tus propios datos.</p></div>
   </div>
-  <p>Código, documentación e issues en <a href="https://github.com/" data-repo="">GitHub</a>.</p>
+  <p>Código, documentación e issues en <a href="https://github.com/facusantillo/DustPlanner/" data-repo="">GitHub</a>.</p>
 </section>
 
 <footer>
@@ -180,12 +181,9 @@
 </footer>
 
 <script>
+  // The site is served from https://dustplanner.app/ (GitHub Pages, custom domain): repository links point here.
   (function () {
-    var fallback = "https://github.com/OWNER/DustPlanner";
-    var repo = fallback;
-    var m = location.hostname.match(/^([^.]+)\.github\.io$/);
-    var seg = location.pathname.split("/").filter(Boolean)[0];
-    if (m && seg && seg !== "es") repo = "https://github.com/" + m[1] + "/" + seg;
+    var repo = "https://github.com/facusantillo/DustPlanner";
     document.querySelectorAll("a.repo, a[data-repo]").forEach(function (a) { a.href = repo + "/" + (a.dataset.repo || ""); });
     document.querySelectorAll("a[data-release]").forEach(function (a) { a.href = repo + "/releases/latest"; });
   })();

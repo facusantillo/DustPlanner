@@ -17,14 +17,14 @@ check, and validates the data files.
 ## 2. Configure the repository
 
 ```powershell
-tools\github-setup.ps1 -Owner <owner>
+tools\github-setup.ps1 -Owner <owner> [-Domain <domain>]
 ```
 
 Idempotent; needs the GitHub CLI. It sets, through the REST API:
 
 | What | Setting |
 |---|---|
-| GitHub Pages | source **GitHub Actions**: `.github/workflows/pages.yml` publishes `site/` at `https://<owner>.github.io/DustPlanner/` on every push that touches it |
+| GitHub Pages | source **GitHub Actions**: `.github/workflows/pages.yml` publishes `site/` on every push that touches it, at `https://<owner>.github.io/DustPlanner/` or at the custom domain given with `-Domain` |
 | Ruleset `main` | the default branch cannot be deleted or force-pushed and keeps a linear history; direct pushes stay allowed (one maintainer) |
 | Ruleset `release tags` | `exporter-v*` tags cannot be deleted or moved: a published release always points at the commit it was built from |
 | Repository | description, homepage = the site, topics, issues on, wiki and projects off, merged branches deleted |
@@ -46,6 +46,30 @@ gh api -X POST repos/<owner>/DustPlanner/rulesets --input - <<'JSON'
 JSON
 gh workflow run pages.yml
 ```
+
+### Custom domain: dustplanner.app
+
+The site is served at **https://dustplanner.app/** (domain registered with Cloudflare, site still hosted by GitHub
+Pages). DNS records in Cloudflare (*dustplanner.app → DNS → Records*), all **DNS only** (grey cloud: with the proxy
+on, GitHub cannot issue the certificate):
+
+| Type | Name | Content |
+|---|---|---|
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+| AAAA | `@` | `2606:50c0:8000::153` |
+| AAAA | `@` | `2606:50c0:8001::153` |
+| AAAA | `@` | `2606:50c0:8002::153` |
+| AAAA | `@` | `2606:50c0:8003::153` |
+| CNAME | `www` | `facusantillo.github.io` |
+
+Then `tools\github-setup.ps1 -Owner facusantillo -Domain dustplanner.app` sets the Pages custom domain and the
+repository homepage. `.app` is HTTPS-only in every browser (HSTS preload), so the site answers only once GitHub has
+issued the certificate: run the script again after a few minutes to enforce HTTPS. To keep anyone else from pointing
+a GitHub Pages site at the domain, verify it once in the account settings (*Settings → Pages → Add a verified
+domain*, one TXT record). The old `facusantillo.github.io/DustPlanner/` address redirects to the domain.
 
 ## 3. Publish a release
 

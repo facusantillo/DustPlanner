@@ -18,8 +18,8 @@ disenchant to get there with the least regret.
 
 ## For players: one plugin, no terminal
 
-The project site (`site/`, published with GitHub Pages at `https://<owner>.github.io/DustPlanner/`) explains all of this
-with screenshots, in English and Spanish.
+The project site, **[dustplanner.app](https://dustplanner.app/)** (`site/`, published with GitHub Pages), explains all
+of this with screenshots, in English and Spanish.
 
 Install the plugin zip from GitHub Releases into HDT (instructions in [`docs/exporter-install.md`](docs/exporter-install.md)).
 It exports your collection whenever you leave the game's Collection screen, starts the DustPlanner service in the

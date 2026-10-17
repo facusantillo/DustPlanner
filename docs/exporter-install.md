@@ -47,7 +47,8 @@ tools\package-exporter.ps1 -Install -NoService   # plugin only (the service is s
   re-read the game. Use it when `dustplanner sync` still reports the previous snapshot after you left the Collection.
 - A changed collection is always written; the `min_interval_seconds` rate limit only applies to decks and rank.
 - Files land in `%LocalAppData%\DustPlanner\inbox\<hi>-<lo>\`:
-  `collection.json`, `decks.json`, `rank.json`, plus `history\` with timestamped copies (30 kept per kind).
+  `collection.json`, `decks.json`, `rank.json`, `active-deck.json` (the deck selected in HDT; no history, `deck: null`
+  when none is selected or it is an Arena deck), plus `history\` with timestamped copies (30 kept per kind).
 - The plugin menu (**DustPlanner**) offers *Export now*, *Export diagnostics* (writes `diagnostics.json`, used to confirm
   what HDT's premium slots 2/3 mean — see [`VERIFICACION.md`](VERIFICACION.md) §A3) and *Open export folder*.
 - Settings: `%LocalAppData%\DustPlanner\exporter-settings.json`

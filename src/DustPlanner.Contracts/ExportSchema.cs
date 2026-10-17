@@ -23,10 +23,14 @@ public static class ExportSchema
     public const string RankKind = "rank";
     public const string DiagnosticsKind = "diagnostics";
 
+    /// <summary>Hyphenated on purpose: the file is <c>active-deck.json</c> (kind + <c>.json</c>, like the others).</summary>
+    public const string ActiveDeckKind = "active-deck";
+
     public const string CollectionFileName = "collection.json";
     public const string DecksFileName = "decks.json";
     public const string RankFileName = "rank.json";
     public const string DiagnosticsFileName = "diagnostics.json";
+    public const string ActiveDeckFileName = "active-deck.json";
     public const string HistoryFolderName = "history";
 
     /// <summary>

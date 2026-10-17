@@ -37,6 +37,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
             Formats = { ["standard"] = new RankInfo { LeagueId = 5, StarLevel = 6, Stars = 3, SeasonId = 150 }, ["wild"] = new RankInfo { LeagueId = 3, StarLevel = 2, Stars = 1, SeasonId = 150 } },
         };
         File.WriteAllText(Path.Combine(inbox, "rank.json"), JsonSerializer.Serialize(rank, CoreJson.Options));
+        File.WriteAllText(Path.Combine(inbox, ExportSchema.ActiveDeckFileName), JsonSerializer.Serialize(ActiveDeck(new DateTimeOffset(2026, 10, 15, 20, 0, 0, TimeSpan.Zero), "manual"), CoreJson.Options));
 
         _logs = Path.Combine(_home, "Logs");
         _session = Path.Combine(_logs, "Hearthstone_2026_10_15_23_50_00");
@@ -52,6 +53,12 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         var address = _app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         _http = new HttpClient { BaseAddress = new Uri(address) };
     }
+
+    private static ActiveDeckExport ActiveDeck(DateTimeOffset at, string trigger) => new()
+    {
+        Meta = new ExportMeta { Kind = ExportSchema.ActiveDeckKind, ExportedAt = at, Trigger = trigger, Account = new AccountRef { Hi = 8589934592, Lo = 42, BattleTag = "Synthetic#0001", Region = "EU" } },
+        Deck = new Contracts.ActiveDeck { Name = "Synthetic Priest", Deckstring = "AAECAa0GAA==", HdtDeckId = "6f0c2a1e-5b7d-4e3a-9c21-0f8d6a4b2c11", CardClass = "PRIEST", Format = "standard" },
+    };
 
     public async Task DisposeAsync()
     {
@@ -71,6 +78,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Contains("background: transparent", overlay, StringComparison.Ordinal);
         Assert.Contains("width: 1920px; height: 1080px", overlay, StringComparison.Ordinal);
         Assert.Contains("EventSource(\"/events\")", overlay, StringComparison.Ordinal);
+        Assert.Contains("id=\"cell-deck\"", overlay, StringComparison.Ordinal);
 
         var panel = await _http.GetStringAsync("/");
         Assert.Contains("/panel/app.js", panel, StringComparison.Ordinal);
@@ -85,6 +93,9 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Equal("standard", state.GetProperty("rank").GetProperty("format").GetString());
         Assert.Empty(state.GetProperty("warnings").EnumerateArray());
         Assert.Equal(0, state.GetProperty("session").GetProperty("games").GetInt32());
+        Assert.Equal("Synthetic Priest", state.GetProperty("active_deck").GetProperty("name").GetString());
+        Assert.Equal("PRIEST", state.GetProperty("active_deck").GetProperty("card_class").GetString());
+        Assert.Equal("AAECAa0GAA==", state.GetProperty("active_deck").GetProperty("deckstring").GetString());
 
         var missing = await _http.GetAsync("/nope");
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
@@ -131,10 +142,38 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Equal("GT_RANKED", state.GetProperty("current_game").GetProperty("game_type").GetString());
 
         // Stored like 'games import' would store it; the pre-existing first game was skipped (not replayed into the session).
+        var stored = Stored();
+        Assert.Single(stored);
+        Assert.Null(stored[0].DeckId);   // the only sample so far was taken on 2026-10-15 20:00, far from this game
+        using (var store = DustStore.Open(Path.Combine(_home, "dustplanner.db"), readOnly: true))
+        {
+            Assert.NotNull(new RankRepository(store).Latest("8589934592-42", "standard"));
+        }
+
+        // HDT exports the active deck a few seconds into the game: the stored game gets linked to it on import.
+        var inbox = Path.Combine(_home, "inbox", "8589934592-42");
+        var export = ActiveDeck(stored[0].StartedAt.AddSeconds(5), "game_start");
+        File.WriteAllText(Path.Combine(inbox, ExportSchema.ActiveDeckFileName), JsonSerializer.Serialize(export, CoreJson.Options));
+        deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (Stored()[0].DeckId is null)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The game was not linked to the active deck sample; state: " + await State());
+            await Task.Delay(100);
+        }
+
+        var linked = Stored()[0];
+        Assert.Equal(export.Meta.ExportedAt, (await State()).GetProperty("active_deck").GetProperty("updated_at").GetDateTimeOffset());
+        using (var store = DustStore.Open(Path.Combine(_home, "dustplanner.db"), readOnly: true))
+        {
+            Assert.Equal("Synthetic Priest", store.Scalar("SELECT name FROM deck WHERE id = $d", ("$d", linked.DeckId)));
+            Assert.Single(new ActiveDeckRepository(store).List("8589934592-42"), s => s.Reason == "game_start");
+        }
+    }
+
+    private IReadOnlyList<StoredGame> Stored()
+    {
         using var store = DustStore.Open(Path.Combine(_home, "dustplanner.db"), readOnly: true);
-        var games = new GameRepository(store);
-        Assert.Single(games.List("8589934592-42", 10));
-        Assert.NotNull(new RankRepository(store).Latest("8589934592-42", "standard"));
+        return new GameRepository(store).List("8589934592-42", 10);
     }
 
     public void Dispose() => _http?.Dispose();

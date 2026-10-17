@@ -33,6 +33,7 @@ internal sealed class HdtGateway : IHdtGateway
         Rank = true,
         BattleTag = true,
         RawMirrorCollection = true,
+        ActiveDeck = true,
     };
 
     public Version? HdtVersion => Guard(() => HdtAssemblyVersion(), "HDT version", _ => { });
@@ -68,13 +69,19 @@ internal sealed class HdtGateway : IHdtGateway
         Guard(() => ReadCard(dbfId), "HearthDb.Cards.GetFromDbfId", _ => { });
 
     public ActiveDeckInfo? GetActiveDeck() =>
-        Guard(() => ReadActiveDeck(), "DeckList.Instance.ActiveDeck / HearthDbConverter.ToHearthDbDeck", _ => { });
+        Guard(() => ReadActiveDeck(), "DeckList.Instance.ActiveDeck / HearthDbConverter.ToHearthDbDeck", c => c.ActiveDeck = false);
 
     public bool SubscribeCollectionChanged(Action handler) =>
         GuardValue(() => { HookCollectionChanged(handler); return true; }, "CollectionHelpers.Hearthstone.OnCollectionChanged", c => c.Collection = false) ?? false;
 
     public bool SubscribeModeChanged(Action<string> handler) =>
         GuardValue(() => { HookModeChanged(handler); return true; }, "GameEvents.OnModeChanged", _ => { }) ?? false;
+
+    public bool SubscribeGameStart(Action handler) =>
+        GuardValue(() => { HookGameStart(handler); return true; }, "GameEvents.OnGameStart", _ => { }) ?? false;
+
+    public bool SubscribeActiveDeckChanged(Action handler) =>
+        GuardValue(() => { HookActiveDeckChanged(handler); return true; }, "DeckList.Instance.ActiveDeckChanged", _ => { }) ?? false;
 
     // ---------------------------------------------------------------------------------------------
     // Capability guard
@@ -300,7 +307,23 @@ internal sealed class HdtGateway : IHdtGateway
         {
             Name = deck.Name ?? string.Empty,
             Deckstring = HearthDb.Deckstrings.DeckSerializer.Serialize(hearthDbDeck, false),
+            HdtDeckId = deck.DeckId.ToString("D"),
+            CardClass = deck.Class,
+            Format = FormatName(hearthDbDeck, deck),
         };
+    }
+
+    /// <summary>HearthDb's format when it knows one; HDT's Wild flag otherwise (the converter leaves Classic/Twist to HearthDb).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string FormatName(HearthDb.Deckstrings.Deck hearthDbDeck, Deck deck)
+    {
+        var name = hearthDbDeck.Format.ToString();
+        if (!string.Equals(name, "FT_UNKNOWN", StringComparison.Ordinal) && !name.All(char.IsDigit))
+        {
+            return name;
+        }
+
+        return deck.IsWildDeck ? "FT_WILD" : "FT_STANDARD";
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -449,4 +472,10 @@ internal sealed class HdtGateway : IHdtGateway
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void HookModeChanged(Action<string> handler) => GameEvents.OnModeChanged.Add((Mode mode) => handler(mode.ToString()));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void HookGameStart(Action handler) => GameEvents.OnGameStart.Add(handler);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void HookActiveDeckChanged(Action handler) => DeckList.Instance.ActiveDeckChanged += _ => handler();
 }

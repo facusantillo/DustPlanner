@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "schema_version": 1,
+    "kind": "active-deck",
+    "exported_at": "2026-10-18T20:31:05+02:00",
+    "exporter_version": "1.0.1.0",
+    "hdt_version": "1.59.2.0",
+    "hearth_mirror_version": "32.4.2.0",
+    "hearth_db_version": "36.2.0.0",
+    "trigger": "game_start",
+    "account": {
+      "hi": 8589934592,
+      "lo": 123456789,
+      "battle_tag": "Example#1234",
+      "region": "EU",
+      "account_key": "8589934592-123456789"
+    },
+    "capabilities": {
+      "collection": true,
+      "in_game_decks": true,
+      "hdt_decks": true,
+      "rank": true,
+      "battle_tag": true,
+      "raw_mirror_collection": true,
+      "active_deck": true
+    }
+  },
+  "deck": {
+    "name": "Priest Control",
+    "deckstring": "AAECAcwIA+sH8gePTgXqB+wH7QfwB/UHAAEB7wfrBwAA",
+    "hdt_deck_id": "6f0c2a1e-5b7d-4e3a-9c21-0f8d6a4b2c11",
+    "card_class": "PRIEST",
+    "format": "standard"
+  }
+}

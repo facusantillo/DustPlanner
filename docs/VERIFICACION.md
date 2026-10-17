@@ -164,4 +164,11 @@ loading and the status line says which feature is off.
       files or issues. In Cloudflare (account holding `dustplanner.app`): Workers + KV + Durable Objects enabled, and
       check that no `live` DNS record exists in the zone. In GitHub: secrets `CLOUDFLARE_API_TOKEN` and
       `CLOUDFLARE_ACCOUNT_ID` for `worker.yml` (K3).
+- [ ] K2. **Active deck in the overlay** (K1): with the new plugin build installed and the service running, select a
+      deck in HDT and start a game. Check: `%LocalAppData%\DustPlanner\inbox\<account>\active-deck.json` appears within
+      seconds (`meta.trigger` = `active_deck_changed` or `game_start`, `deck.name` is your deck, `deck.card_class` upper
+      case), the overlay shows a **Deck** cell with the name, and after the game `dustplanner games list --limit 1`
+      (or the panel's Games page) shows the game; in `dustplanner.db`, `SELECT deck_id FROM game ORDER BY id DESC
+      LIMIT 1` is not NULL. Select an Arena deck: the file says `"deck": null` and the cell disappears. Anything that
+      differs → paste `exporter.log` lines containing `active deck`.
 

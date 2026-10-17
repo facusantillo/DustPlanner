@@ -85,7 +85,7 @@ dotnet run --project src/DustPlanner.Cli -- collection block "Marin the Fox"   #
 Typical workflow:
 
 1. Install the exporter plugin in HDT (below), open **My Collection** once with the game running: the plugin writes
-   `collection.json`, `decks.json` and `rank.json` to `%LocalAppData%\DustPlanner\inbox\<account>\`.
+   `collection.json`, `decks.json`, `rank.json` and `active-deck.json` to `%LocalAppData%\DustPlanner\inbox\<account>\`.
 2. `dustplanner catalog update` (once per game patch), then `dustplanner need <deck code>` for any deck you are
    considering.
 3. `dustplanner plan <deck code>` when you are short on dust. Read the *NOT PROPOSED* block as carefully as the plan.

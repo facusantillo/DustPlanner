@@ -19,8 +19,9 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | 9 | Panel (web UI) + JSON API in the service, automatic sync, plugin launches the service | done | **C6** — panel from HDT on the real machine |
 | 10 | One zip: plugin + bundled service, release workflow, docs | done | install the zip, open the panel from HDT |
 | K0 | Kick spike: API fields confirmed, Developer Agreement reviewed, HDT active-deck event (`docs/PRD-kick.md` §11) | done | **K1** — create the Kick app and the Cloudflare account pieces (not needed before K3) |
+| K1 | Active deck: `active-deck.json`, `OverlayState.ActiveDeck`, `active_deck` table, `game.deck_id`, overlay cell | done | **K2** — deck name in the overlay when a game starts |
 
-124 tests, all green on Windows (maintainer's machine, via the Linux VM) and in the container. No remote configured;
+146 tests, all green in the container (Linux, .NET 10 SDK); the Windows run is the maintainer's. No remote configured;
 the maintainer publishes.
 
 ---
@@ -397,4 +398,35 @@ recorded in its §11.
   Workers/KV/Durable Objects, and a free `live` DNS record. None of it blocks K1–K2.
 - The 1.59.2 source tag could not be fetched from this environment; the event was confirmed in 1.55.6 (binaries) and
   in the current main branch, so an intermediate removal is very unlikely but not checked.
+
+---
+
+## Kick — K1 — Active deck
+
+**Done**
+
+- `DustPlanner.Contracts.ActiveDeckExport` (`kind: active-deck`, file `active-deck.json`): the shared `meta` envelope
+  plus `deck { name, deckstring, hdt_deck_id, card_class, format }`, `deck: null` when HDT has no active deck or it is
+  an Arena deck. `card_class` is upper case like `game.player_class`; `format` comes from HearthDb's `FormatType`
+  (`standard | wild | classic | twist`, null when unknown). New capability flag `active_deck`.
+- Exporter: `IHdtGateway.GetActiveDeck()` now carries the GUID, class and format; new `SubscribeGameStart`
+  (`GameEvents.OnGameStart`) and `SubscribeActiveDeckChanged` (`DeckList.Instance.ActiveDeckChanged`). The plugin exports
+  the active deck on both events (`ExportActiveDeckOnly`, no memory read, no forced collection load), inside every
+  `ExportAll` (menu transitions, manual) and content-hashed (`ActiveDeckExportBuilder.ContentHash`), so an unchanged
+  deck never rewrites the file. No `history\` copies: the service keeps the samples.
+- Store: migration `002_active_deck.sql` (`active_deck`, 30-day retention pruned on import). `ActiveDeckRepository`
+  links a game to the newest sample of the same class taken between 10 min before and 60 s after its start, creating the
+  `deck` row (`origin = hdt`, `external_id = <GUID>`) when `decks.json` has not brought it. The link runs when a game
+  is stored (`GameRepository.Insert`, host and `games import`) and when a sample arrives after the game.
+- Host: `OverlayState.ActiveDeck` from `active-deck.json` (polled by modification time like `rank.json`), imported into
+  the database on change. Overlay cell **Deck** (name, class · format), `?hide=deck`. `StoredGame.DeckId`.
+- Tests: contract sample + round trip + null deck + old files without the capability; builder normalisation, hash and
+  throttle; repository import/dedupe/prune, window and class rules, late export linking, newest sample wins; host state
+  and end-to-end link of a tracked game. 146 tests.
+
+**Pending / caveats**
+
+- Which account appears as a `type: bot` sender (K5) and whether HDT's `ActiveDeckChanged` fires on the deck
+  auto-selection HDT does when a game starts (if it does, the `game_start` export is simply a no-op by hash).
+- VERIFICACION K2: the deck name shows up in the overlay when a game starts, on the real machine.
 

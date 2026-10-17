@@ -153,6 +153,22 @@ public sealed class PanelApiTests : IAsyncLifetime, IDisposable
         var bad = await _http!.PutAsJsonAsync("/api/prefs", new { format = "nope" });
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
 
+        // The chat block is validated with the rest: a bad alias is refused with its reason, a good block is normalised.
+        var chatDefaults = saved.GetProperty("prefs").GetProperty("chat");
+        Assert.Equal("!", chatDefaults.GetProperty("prefix").GetString());
+        Assert.False(chatDefaults.GetProperty("commands").GetProperty("dust").GetProperty("enabled").GetBoolean());
+        var badChat = await _http!.PutAsJsonAsync("/api/prefs", new { format = "wild", chat = new { prefix = "!", commands = new { deck = new { enabled = true, aliases = new[] { "rank" } } } } });
+        Assert.Equal(HttpStatusCode.BadRequest, badChat.StatusCode);
+        Assert.Contains("chat.commands.deck", await badChat.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        var goodChat = await Put("/api/prefs", new { format = "wild", chat = new { prefix = "?", language = "EN", cooldown_seconds = 5, commands = new { deck = new { enabled = true, aliases = new[] { " Code " }, template = " {deck_name} " } } } });
+        var chat = goodChat.GetProperty("prefs").GetProperty("chat");
+        Assert.Equal("?", chat.GetProperty("prefix").GetString());
+        Assert.Equal("en", chat.GetProperty("language").GetString());
+        Assert.Equal("code", chat.GetProperty("commands").GetProperty("deck").GetProperty("aliases")[0].GetString());
+        Assert.Equal("{deck_name}", chat.GetProperty("commands").GetProperty("deck").GetProperty("template").GetString());
+        Assert.True(chat.GetProperty("commands").GetProperty("rank").GetProperty("enabled").GetBoolean()); // filled in from the defaults
+        await Put("/api/prefs", new { format = "wild" }); // back to the default chat block for the rest of the test
+
         var meta = await Put("/api/meta", new { text = "### Meta Priest\n" + SyntheticDeck + "\n" });
         Assert.Equal(1, meta.GetProperty("deck_count").GetInt32());
         var badMeta = await _http!.PutAsJsonAsync("/api/meta", new { text = SyntheticDeck + "\nnot a code\n" });

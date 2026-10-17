@@ -170,6 +170,28 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         }
     }
 
+    [Fact]
+    public async Task Chat_endpoint_answers_plain_text_with_cooldowns_and_404_for_unknown_or_disabled_commands()
+    {
+        // Spanish asked explicitly: the default follows the machine's UI language, which the test must not depend on.
+        var deck = await _http!.GetAsync("/api/chat/deck?lang=es&user=ana");
+        Assert.Equal(HttpStatusCode.OK, deck.StatusCode);
+        Assert.Equal("text/plain", deck.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("utf-8", deck.Content.Headers.ContentType!.CharSet);
+        Assert.Equal("Synthetic Priest · AAECAa0GAA== · copialo y pegalo en Hearthstone", await deck.Content.ReadAsStringAsync());
+
+        // Same command right away: cooling down → 204 and nothing to post. Another command is fine.
+        var again = await _http.GetAsync("/api/chat/mazo?lang=es&user=bob");
+        Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
+        Assert.Equal("Diamante 5 · Estándar", await _http.GetStringAsync("/api/chat/rango?lang=es"));
+        // Fresh database and a session without completed games: friendly fallbacks, never an error.
+        Assert.Equal("No games today yet", await _http.GetStringAsync("/api/chat/wr?lang=en"));
+        Assert.Equal("No game finished yet", await _http.GetStringAsync("/api/chat/last?lang=en"));
+
+        Assert.Equal(HttpStatusCode.NotFound, (await _http.GetAsync("/api/chat/dust?lang=es")).StatusCode);   // off by default
+        Assert.Equal(HttpStatusCode.NotFound, (await _http.GetAsync("/api/chat/giveaway")).StatusCode);
+    }
+
     private IReadOnlyList<StoredGame> Stored()
     {
         using var store = DustStore.Open(Path.Combine(_home, "dustplanner.db"), readOnly: true);

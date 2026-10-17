@@ -16,7 +16,7 @@ per-card override file, the catalog cache).
 | Deck | your exported HDT decks in a picker, or a pasted code; the dust gap (have / plan gives / missing); missing cards with cost; cards the game will not craft, with the reason; companions; rotation; the plan with pain and reasons, alternatives, what was not proposed and why; the warnings | What am I missing? · Plan what to dust · Save this plan · plan for another amount · plan without saved decks |
 | History | plans with status (proposed / partial / confirmed), their picks and how many were done; detected collection changes with the plan they matched | — |
 | Games | win rate overall and per class for a period / mode / format; recent games | Import Power.log now |
-| Settings | what you play (format, classes, Wild, golden policy, guards), meta decks (`meta.txt`), cards the game refuses (search → block / allow, your overrides), card data build, language, file locations | Save preferences · Save meta decks · Block / Allow · Remove · Update card data |
+| Settings | what you play (format, classes, Wild, golden policy, guards), chat commands (prefix, language, cooldowns, aliases, custom texts — [`kick-streamerbot.md`](kick-streamerbot.md)), meta decks (`meta.txt`), cards the game refuses (search → block / allow, your overrides), card data build, language, file locations | Save preferences · Save meta decks · Block / Allow · Remove · Update card data |
 
 The plugin's **What am I missing for the selected deck?** opens `/#/deck?code=<deckstring>`; `/#/deck?key=hdt:<id>`
 works for an exported deck. The page listens to `/events` (server-sent events): after the plugin exports a new
@@ -38,12 +38,13 @@ All answers are the snake_case JSON the CLI prints with `--json`. Bodies are JSO
 | `GET /api/history?account=&limit=` | | snapshots, plans with picks, events |
 | `GET /api/games?account=&since=&days=&type=&format=&recent=` | | overall, by class, recent games |
 | `POST /api/games/import` | `{logs?}` | files read, games parsed / inserted, warnings |
-| `GET /api/prefs` · `PUT /api/prefs` | the `prefs.json` object | path, exists, prefs |
+| `GET /api/prefs` · `PUT /api/prefs` | the `prefs.json` object (its `chat` block is validated too) | path, exists, prefs |
 | `GET /api/meta` · `PUT /api/meta` | `{text}` | text, deck_count, warnings (a line that is not a code is refused) |
 | `GET /api/cards/search?q=&limit=` | | matching collectible cards |
 | `GET /api/cards/overrides` · `POST /api/cards/overrides` · `DELETE /api/cards/overrides/{dbfId}?golden=` | `{card, golden, uncraftable}` | the user's per-card craftability overrides |
 | `GET /api/catalog` · `POST /api/catalog/update` | | build, locale, cards, cache info |
-| `GET /api/state` · `GET /events` | | the overlay state (rank, dust, session, today, current / last game, last sync, warnings) |
+| `GET /api/state` · `GET /events` | | the overlay state (rank, dust, session, today, current / last game, active deck, last sync, warnings) |
+| `GET /api/chat/{command}?lang=&user=` | | **plain text**, one line: the chat answer for `deck`, `rank`, `wr`, `last`, `dust` or an alias; `204` in cooldown, `404` unknown or disabled ([`kick-streamerbot.md`](kick-streamerbot.md)) |
 
 ## Status page
 

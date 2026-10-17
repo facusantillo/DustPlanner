@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DustPlanner.Kick</RootNamespace>
+    <Description>Stream-chat side of DustPlanner: the texts the chat commands answer with (platform-neutral), and later the connector to the Kick relay.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DustPlanner.Core/DustPlanner.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DustPlanner.Kick.Tests" />
+  </ItemGroup>
+
+</Project>

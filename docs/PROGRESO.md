@@ -20,8 +20,9 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | 10 | One zip: plugin + bundled service, release workflow, docs | done | install the zip, open the panel from HDT |
 | K0 | Kick spike: API fields confirmed, Developer Agreement reviewed, HDT active-deck event (`docs/PRD-kick.md` §11) | done | **K1** — create the Kick app and the Cloudflare account pieces (not needed before K3) |
 | K1 | Active deck: `active-deck.json`, `OverlayState.ActiveDeck`, `active_deck` table, `game.deck_id`, overlay cell | done | **K2** — deck name in the overlay when a game starts |
+| K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
 
-146 tests, all green in the container (Linux, .NET 10 SDK); the Windows run is the maintainer's. No remote configured;
+175 tests, all green in the container (Linux, .NET 10 SDK); the Windows run is the maintainer's. No remote configured;
 the maintainer publishes.
 
 ---
@@ -429,4 +430,41 @@ recorded in its §11.
 - Which account appears as a `type: bot` sender (K5) and whether HDT's `ActiveDeckChanged` fires on the deck
   auto-selection HDT does when a game starts (if it does, the `game_start` export is simply a no-op by hash).
 - VERIFICACION K2: the deck name shows up in the overlay when a game starts, on the real machine.
+
+---
+
+## Kick — K2 — Chat texts (the local path)
+
+**Done**
+
+- New library `DustPlanner.Kick` (net10): `ChatResponder` is the one place chat texts are produced; the native connector
+  (K5) will call the same code. Platform-neutral names (command, viewer, stream). `ChatContext` carries what the texts
+  can mention, detached from the host; `ChatTexts` holds the built-in templates, fallbacks, class / format / result
+  words and the localised rank label (`Diamante 3`, `Leyenda #1.234`); `ChatFormat` does numbers (`1.240` / `1,240`,
+  `70 %` / `70%`) and the limits Kick confirmed in K0 (500 grapheme clusters **and** 2,048 UTF-8 bytes, cut with an
+  ellipsis). No answer starts with the prefix. Missing data → a friendly line, never an error.
+- `chat` block in `prefs.json` (`ChatPrefs` in Core, validated with the rest on `PUT /api/prefs`): prefix, language
+  (`null` = the Windows UI language, read with `GetUserDefaultUILanguage` because the host runs with invariant
+  globalization), per-command enabled / aliases / custom template with `{placeholders}`, global (10 s) and per-viewer
+  (30 s) cooldowns. Unknown commands, duplicate aliases, multi-word aliases and long templates are refused with plain
+  messages; missing commands take their defaults.
+- Host: `GET /api/chat/{command}?lang=&user=` → `text/plain; charset=utf-8`; `204` in cooldown, `404` unknown or
+  disabled. The responder is a singleton (cooldown clocks); prefs are read per request so a save applies at once.
+  Panel: **Settings → Chat commands** (prefix, language, cooldowns, a row per command with on/off, aliases and custom
+  text, the placeholder list), saved with *Save preferences*.
+- `docs/kick-streamerbot.md`: command + action + *Fetch URL* + *Send Message to Channel*, the `204` rule, testing from
+  the browser. `docs/panel.md` lists the endpoint.
+- Version 1.0.1 (an intermediate 1.0.x, as the PRD allows): the plugin and the service both changed.
+- Tests: the PRD's example lines in both languages, aliases, fallbacks on empty and partial state, dust off by default,
+  cooldown rules (global, per viewer, case-insensitive viewer, unknown words do not count), custom templates and the
+  prefix rule, deck link only with a public page, grapheme and byte limits, number / streak / class / rank formatting,
+  language fallback; prefs defaults, JSON shape, normalisation and every validation message; host endpoint statuses and
+  the chat block through `PUT /api/prefs`. 175 tests.
+
+**Pending / caveats**
+
+- The Streamer.bot step names were checked against docs.streamer.bot (Fetch URL fields, `Kick → Chat → Send Message to
+  Channel`), but the maintainer does not use Streamer.bot yet: VERIFICACION K3 is the first real run.
+- `{deck_url}` / `{deck_link}` stay empty until K6 publishes the deck page.
+- `ChatResponder` has no state about who is live: that arrives with K7 (stream sessions).
 

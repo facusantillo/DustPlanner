@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../DustPlanner.App/DustPlanner.App.csproj" />
+    <ProjectReference Include="../DustPlanner.Kick/DustPlanner.Kick.csproj" />
   </ItemGroup>
 
   <ItemGroup>

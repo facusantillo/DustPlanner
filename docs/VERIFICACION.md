@@ -171,4 +171,11 @@ loading and the status line says which feature is off.
       (or the panel's Games page) shows the game; in `dustplanner.db`, `SELECT deck_id FROM game ORDER BY id DESC
       LIMIT 1` is not NULL. Select an Arena deck: the file says `"deck": null` and the cell disappears. Anything that
       differs → paste `exporter.log` lines containing `active deck`.
+- [ ] K3. **Chat commands through Streamer.bot** (K2): with the service running, open
+      `http://127.0.0.1:8765/api/chat/deck?lang=es` in a browser and read the line; then follow
+      `docs/kick-streamerbot.md` for `!deck`, `!rank` and `!wr`, type them in your Kick chat during a stream and check
+      the answers match the panel (deck name and code, rank label, today's record). Type `!deck` twice within 10 s: the
+      second one must get no answer (`204`). Type `!dust`: nothing (it is off by default) until you enable it in
+      Settings → Chat commands. Change the language in Settings to English and check `!rank` answers in English without
+      restarting anything. Anything that differs → paste the Streamer.bot action log and the URL you used.
 

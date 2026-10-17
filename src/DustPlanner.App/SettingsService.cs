@@ -48,6 +48,13 @@ public sealed partial class AppServices
 
         prefs.Format = prefs.Format.ToLowerInvariant();
         prefs.ClassesPlayed = prefs.ClassesPlayed.Select(c => c.Trim().ToUpperInvariant()).Where(c => c.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+        prefs.Chat ??= new ChatPrefs();
+        var chatErrors = prefs.Chat.Validate();
+        if (chatErrors.Count > 0)
+        {
+            throw new AppException(string.Join(" ", chatErrors));
+        }
+
         Directory.CreateDirectory(Paths.Config);
         File.WriteAllText(PrefsPath, JsonSerializer.Serialize(prefs, CoreJson.Options));
         return prefs;

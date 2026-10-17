@@ -18,8 +18,11 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | 8 | OBS overlay host | done | **C5** — check in OBS |
 | 9 | Panel (web UI) + JSON API in the service, automatic sync, plugin launches the service | done | **C6** — panel from HDT on the real machine |
 | 10 | One zip: plugin + bundled service, release workflow, docs | done | install the zip, open the panel from HDT |
+| K0 | Kick spike: API fields confirmed, Developer Agreement reviewed, HDT active-deck event (`docs/PRD-kick.md` §11) | done | **K1** — create the Kick app and the Cloudflare account pieces (not needed before K3) |
+| K1 | Active deck: `active-deck.json`, `OverlayState.ActiveDeck`, `active_deck` table, `game.deck_id`, overlay cell | done | **K2** — deck name in the overlay when a game starts |
+| K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
 
-124 tests, all green on Windows (maintainer's machine, via the Linux VM) and in the container. No remote configured;
+175 tests, all green in the container (Linux, .NET 10 SDK); the Windows run is the maintainer's. No remote configured;
 the maintainer publishes.
 
 ---
@@ -366,3 +369,102 @@ every locale) turn reward copies into *not craftable* with the unlock text as th
 `--json`. The list stays updatable without a release: `collection block "<name>" [--golden]` / `unblock` write
 per-card overrides to `<home>/data/non-craftable.json`, merged with the shipped file; `catalog update` brings new game
 texts. 119 tests.
+
+---
+
+## Kick — K0 — Spike and prerequisites
+
+Stages K0–K8 follow `docs/PRD-kick.md` (Spanish, like the PROPUESTA); decisions taken during implementation are
+recorded in its §11.
+
+**Done**
+
+- Kick's OpenAPI (`api.kick.com/swagger/doc.yaml`) was readable this time; every field the PRD had marked
+  **(OpenAPI)** is now confirmed in PRD §11.2: chat `content` is capped at 500 grapheme clusters *and* 2,048 UTF-8
+  bytes, `type` is required, `broadcaster_user_id` is ignored for `type: bot`; event subscriptions infer the
+  broadcaster from a user token; `GET /channels` without parameters returns the token's own channel; `DELETE
+  /events/subscriptions` takes `id[]`. Rate limits are not documented (only a `429`), so the PRD's one-message-per-second
+  rule stands. Which account a `type: bot` message is shown under is *not* in the spec: K5's human check.
+- Kick Developer Agreement (`dev.kick.com/terms-of-service`) reviewed against the design (PRD §11.3). Two
+  adjustments for K3: purge tokens and schedule channel deletion when a refresh fails with `invalid_grant` (user
+  revoked at Kick), and keep all Kick-derived caches under 24 h. The privacy page (K8) is a requirement, not a nicety.
+- HDT: `DeckList.Instance.ActiveDeckChanged` (`event Action<Deck?>`) and `GameEvents.OnGameStart` exist in 1.55.6
+  and in HearthSim's main branch; both, plus `ActionList.Add(Action)`, `Deck.Class`, `Deck.Name` and
+  `HearthDb.Deckstrings.Deck.Format`, were added to `tools/HdtApiCheck/required-apis.json`. `HdtApiCheck` is green.
+- Contract decision: `active-deck.json` reuses the `meta` envelope of the other exports (PRD §11.5).
+
+**Pending / caveats**
+
+- Needs the maintainer (VERIFICACION K1): the Kick app from a dedicated bot account, the bot's `user_id`, Cloudflare
+  Workers/KV/Durable Objects, and a free `live` DNS record. None of it blocks K1–K2.
+- The 1.59.2 source tag could not be fetched from this environment; the event was confirmed in 1.55.6 (binaries) and
+  in the current main branch, so an intermediate removal is very unlikely but not checked.
+
+---
+
+## Kick — K1 — Active deck
+
+**Done**
+
+- `DustPlanner.Contracts.ActiveDeckExport` (`kind: active-deck`, file `active-deck.json`): the shared `meta` envelope
+  plus `deck { name, deckstring, hdt_deck_id, card_class, format }`, `deck: null` when HDT has no active deck or it is
+  an Arena deck. `card_class` is upper case like `game.player_class`; `format` comes from HearthDb's `FormatType`
+  (`standard | wild | classic | twist`, null when unknown). New capability flag `active_deck`.
+- Exporter: `IHdtGateway.GetActiveDeck()` now carries the GUID, class and format; new `SubscribeGameStart`
+  (`GameEvents.OnGameStart`) and `SubscribeActiveDeckChanged` (`DeckList.Instance.ActiveDeckChanged`). The plugin exports
+  the active deck on both events (`ExportActiveDeckOnly`, no memory read, no forced collection load), inside every
+  `ExportAll` (menu transitions, manual) and content-hashed (`ActiveDeckExportBuilder.ContentHash`), so an unchanged
+  deck never rewrites the file. No `history\` copies: the service keeps the samples.
+- Store: migration `002_active_deck.sql` (`active_deck`, 30-day retention pruned on import). `ActiveDeckRepository`
+  links a game to the newest sample of the same class taken between 10 min before and 60 s after its start, creating the
+  `deck` row (`origin = hdt`, `external_id = <GUID>`) when `decks.json` has not brought it. The link runs when a game
+  is stored (`GameRepository.Insert`, host and `games import`) and when a sample arrives after the game.
+- Host: `OverlayState.ActiveDeck` from `active-deck.json` (polled by modification time like `rank.json`), imported into
+  the database on change. Overlay cell **Deck** (name, class · format), `?hide=deck`. `StoredGame.DeckId`.
+- Tests: contract sample + round trip + null deck + old files without the capability; builder normalisation, hash and
+  throttle; repository import/dedupe/prune, window and class rules, late export linking, newest sample wins; host state
+  and end-to-end link of a tracked game. 146 tests.
+
+**Pending / caveats**
+
+- Which account appears as a `type: bot` sender (K5) and whether HDT's `ActiveDeckChanged` fires on the deck
+  auto-selection HDT does when a game starts (if it does, the `game_start` export is simply a no-op by hash).
+- VERIFICACION K2: the deck name shows up in the overlay when a game starts, on the real machine.
+
+---
+
+## Kick — K2 — Chat texts (the local path)
+
+**Done**
+
+- New library `DustPlanner.Kick` (net10): `ChatResponder` is the one place chat texts are produced; the native connector
+  (K5) will call the same code. Platform-neutral names (command, viewer, stream). `ChatContext` carries what the texts
+  can mention, detached from the host; `ChatTexts` holds the built-in templates, fallbacks, class / format / result
+  words and the localised rank label (`Diamante 3`, `Leyenda #1.234`); `ChatFormat` does numbers (`1.240` / `1,240`,
+  `70 %` / `70%`) and the limits Kick confirmed in K0 (500 grapheme clusters **and** 2,048 UTF-8 bytes, cut with an
+  ellipsis). No answer starts with the prefix. Missing data → a friendly line, never an error.
+- `chat` block in `prefs.json` (`ChatPrefs` in Core, validated with the rest on `PUT /api/prefs`): prefix, language
+  (`null` = the Windows UI language, read with `GetUserDefaultUILanguage` because the host runs with invariant
+  globalization), per-command enabled / aliases / custom template with `{placeholders}`, global (10 s) and per-viewer
+  (30 s) cooldowns. Unknown commands, duplicate aliases, multi-word aliases and long templates are refused with plain
+  messages; missing commands take their defaults.
+- Host: `GET /api/chat/{command}?lang=&user=` → `text/plain; charset=utf-8`; `204` in cooldown, `404` unknown or
+  disabled. The responder is a singleton (cooldown clocks); prefs are read per request so a save applies at once.
+  Panel: **Settings → Chat commands** (prefix, language, cooldowns, a row per command with on/off, aliases and custom
+  text, the placeholder list), saved with *Save preferences*.
+- `docs/kick-streamerbot.md`: command + action + *Fetch URL* + *Send Message to Channel*, the `204` rule, testing from
+  the browser. `docs/panel.md` lists the endpoint.
+- Version 1.0.1 (an intermediate 1.0.x, as the PRD allows): the plugin and the service both changed.
+- Tests: the PRD's example lines in both languages, aliases, fallbacks on empty and partial state, dust off by default,
+  cooldown rules (global, per viewer, case-insensitive viewer, unknown words do not count), custom templates and the
+  prefix rule, deck link only with a public page, grapheme and byte limits, number / streak / class / rank formatting,
+  language fallback; prefs defaults, JSON shape, normalisation and every validation message; host endpoint statuses and
+  the chat block through `PUT /api/prefs`. 175 tests.
+
+**Pending / caveats**
+
+- The Streamer.bot step names were checked against docs.streamer.bot (Fetch URL fields, `Kick → Chat → Send Message to
+  Channel`), but the maintainer does not use Streamer.bot yet: VERIFICACION K3 is the first real run.
+- `{deck_url}` / `{deck_link}` stay empty until K6 publishes the deck page.
+- `ChatResponder` has no state about who is live: that arrives with K7 (stream sessions).
+

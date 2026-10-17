@@ -23,6 +23,9 @@ public sealed record OverlayState
 
     public LastGameState? LastGame { get; init; }
 
+    /// <summary>The deck selected in HDT (<c>active-deck.json</c>); null until the exporter sees one, or when it is an Arena deck.</summary>
+    public ActiveDeckState? ActiveDeck { get; init; }
+
     /// <summary>Result of the last automatic or requested import of the exporter files into the database.</summary>
     public SyncState? LastSync { get; init; }
 
@@ -64,6 +67,9 @@ public sealed record RecordState
 public sealed record CurrentGameState(DateTimeOffset StartedAt, string? GameType, string? FormatType, string? PlayerClass, string? OpponentClass, string? OpponentName, int Turn);
 
 public sealed record LastGameState(DateTimeOffset EndedAt, string Result, string? PlayerClass, string? OpponentClass, string? OpponentName, int Turns);
+
+/// <summary>HDT's active deck as exported: name, deck code, upper-case class, format, and when the exporter sampled it.</summary>
+public sealed record ActiveDeckState(string? HdtDeckId, string Name, string Deckstring, string? CardClass, string? Format, DateTimeOffset UpdatedAt);
 
 /// <summary>The sync state plus the per-account summaries the CLI prints.</summary>
 public sealed record SyncOutcome(SyncState State, IReadOnlyList<DustPlanner.App.SyncSummary> Accounts);

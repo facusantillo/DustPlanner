@@ -40,4 +40,7 @@ public sealed class ExporterCapabilities
     public bool Rank { get; set; }
     public bool BattleTag { get; set; }
     public bool RawMirrorCollection { get; set; }
+
+    /// <summary>HDT exposes its active deck and the events the exporter hooks to follow it (added with the Kick stages).</summary>
+    public bool ActiveDeck { get; set; }
 }

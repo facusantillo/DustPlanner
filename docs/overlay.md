@@ -1,7 +1,7 @@
 # OBS overlay (dustplanner-host)
 
 `dustplanner-host` is a small local web server that follows the files the game and HDT write on their own —
-`Power.log`, the exporter's `collection.json` and `rank.json` — and serves a transparent overlay for an
+`Power.log`, the exporter's `collection.json`, `rank.json` and `active-deck.json` — and serves a transparent overlay for an
 **OBS Browser Source**: current rank, session win rate, today's record, dust, and the last game.
 
 It listens on **loopback only** (`http://127.0.0.1:8765`); nothing is reachable from the network. It never talks to
@@ -40,7 +40,7 @@ Query options (combine with `&`):
 | `?scale=1.25` | bigger / smaller bar (CSS scale, crisp at any value) |
 | `?align=right` | bar anchored to the top-right corner instead |
 | `?theme=light` | light pill for dark scenes |
-| `?hide=today,dust` | hide cells: `rank`, `session`, `today`, `dust`, `last`; `streak` hides the "N in a row" note |
+| `?hide=today,dust` | hide cells: `rank`, `session`, `today`, `dust`, `last`, `deck`; `streak` hides the "N in a row" note |
 
 What the cells mean:
 
@@ -50,11 +50,14 @@ What the cells mean:
 - **Today** — games started since local midnight, from the database plus the session.
 - **Dust** — balance from the latest collection export (updates when HDT refreshes the collection).
 - **Last game** — result, classes and turns of the last completed game.
+- **Deck** — the deck selected in HDT (`active-deck.json`, written when a game starts, when you pick another deck in
+  HDT, and on the menu transitions that already export). Hidden until the exporter has written one, and for Arena.
+  The same sample links each stored game to its deck (`game.deck_id`), which is what per-deck win rates rest on.
 
 ## How it updates
 
 The host polls every 2 seconds: new lines of the newest `Power.log` session folder, and the modification time of the
-two export files. The overlay keeps a Server-Sent Events connection (`/events`) and re-renders on every change;
+three export files. The overlay keeps a Server-Sent Events connection (`/events`) and re-renders on every change;
 `/api/state` returns the same JSON for anything else you want to build.
 
 ## Verification (VERIFICACION C5)

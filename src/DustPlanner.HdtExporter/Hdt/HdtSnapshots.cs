@@ -72,7 +72,7 @@ internal interface IHdtGateway
 
     CardInfo? ResolveCard(int dbfId);
 
-    /// <summary>The deck selected in HDT's deck list as a deck code, or null when none is selected.</summary>
+    /// <summary>The deck selected in HDT's deck list as a deck code, or null when none is selected (or it is an Arena deck).</summary>
     ActiveDeckInfo? GetActiveDeck();
 
     /// <summary>Subscribes to HDT's collection-changed event. Returns false when the event is unavailable.</summary>
@@ -80,6 +80,12 @@ internal interface IHdtGateway
 
     /// <summary>Subscribes to HDT's mode-changed event; the handler receives the mode name (e.g. <c>HUB</c>).</summary>
     bool SubscribeModeChanged(Action<string> handler);
+
+    /// <summary>Subscribes to HDT's game-start event (<c>GameEvents.OnGameStart</c>). Returns false when unavailable.</summary>
+    bool SubscribeGameStart(Action handler);
+
+    /// <summary>Subscribes to <c>DeckList.Instance.ActiveDeckChanged</c>. Returns false when unavailable.</summary>
+    bool SubscribeActiveDeckChanged(Action handler);
 }
 
 /// <summary>HDT's selected deck, serialised the way the game would.</summary>
@@ -88,4 +94,22 @@ internal sealed class ActiveDeckInfo
     public string Name { get; set; } = string.Empty;
 
     public string Deckstring { get; set; } = string.Empty;
+
+    /// <summary>HDT's deck GUID in <c>D</c> format.</summary>
+    public string? HdtDeckId { get; set; }
+
+    /// <summary>Class as HDT spells it (<c>Priest</c>).</summary>
+    public string? CardClass { get; set; }
+
+    /// <summary>HearthDb format enum name (<c>FT_STANDARD</c>), or null when unknown.</summary>
+    public string? Format { get; set; }
+
+    public ActiveDeckInput ToInput() => new ActiveDeckInput
+    {
+        Name = Name,
+        Deckstring = Deckstring,
+        HdtDeckId = HdtDeckId,
+        CardClass = CardClass,
+        Format = Format,
+    };
 }

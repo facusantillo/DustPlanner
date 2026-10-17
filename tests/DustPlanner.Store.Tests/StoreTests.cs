@@ -34,20 +34,20 @@ public class StoreTests
     public void Migrations_apply_once_and_file_database_uses_wal()
     {
         using var memory = DustStore.OpenInMemory();
-        Assert.Equal(1, memory.SchemaVersion);
+        Assert.Equal(2, memory.SchemaVersion);
 
         var path = Path.Combine(Path.GetTempPath(), "dustplanner-store-" + Guid.NewGuid().ToString("N"), "test.db");
         try
         {
             using (var store = DustStore.Open(path))
             {
-                Assert.Equal(1, store.SchemaVersion);
+                Assert.Equal(2, store.SchemaVersion);
                 Assert.Equal("wal", (string)store.Scalar("PRAGMA journal_mode")!);
             }
 
             using (var again = DustStore.Open(path))
             {
-                Assert.Equal(1, again.SchemaVersion);
+                Assert.Equal(2, again.SchemaVersion);
             }
 
             using var reader = DustStore.Open(path, readOnly: true);

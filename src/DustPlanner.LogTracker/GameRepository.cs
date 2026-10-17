@@ -4,9 +4,13 @@ using DustPlanner.Store;
 namespace DustPlanner.LogTracker;
 
 public sealed record StoredGame(long Id, string AccountKey, string GameKey, DateTimeOffset StartedAt, DateTimeOffset? EndedAt, string? GameType, string? Format,
-    string? PlayerClass, string? OpponentClass, string? PlayerHeroCardId, string? OpponentHeroCardId, string? OpponentName, string Result, bool? WentFirst, int? Turns);
+    string? PlayerClass, string? OpponentClass, string? PlayerHeroCardId, string? OpponentHeroCardId, string? OpponentName, string Result, bool? WentFirst, int? Turns,
+    long? DeckId = null);
 
-/// <summary>Stores parsed games in the <c>game</c> table (stage-5 schema) and answers win-rate questions.</summary>
+/// <summary>
+/// Stores parsed games in the <c>game</c> table (stage-5 schema) and answers win-rate questions. A stored game is linked
+/// to the HDT deck that was active around its start when the exporter sampled one (<see cref="ActiveDeckRepository"/>).
+/// </summary>
 public sealed class GameRepository
 {
     private readonly DustStore _store;
@@ -36,14 +40,20 @@ public sealed class GameRepository
             ("$k", friendly.AccountKey), ("$key", game.Key), ("$start", DustStore.Iso(game.StartedAt)), ("$end", game.EndedAt is { } e ? DustStore.Iso(e) : null),
             ("$type", game.GameType), ("$fmt", game.FormatType), ("$pc", HeroClasses.ClassOf(friendly.HeroCardId, catalog)), ("$oc", HeroClasses.ClassOf(opponent?.HeroCardId, catalog)),
             ("$ph", friendly.HeroCardId), ("$oh", opponent?.HeroCardId), ("$on", opponent?.Name), ("$res", game.Result), ("$first", friendly.IsFirst ? 1 : 0), ("$turns", game.Turns));
-        return cmd.ExecuteNonQuery() == 1;
+        if (cmd.ExecuteNonQuery() != 1)
+        {
+            return false;
+        }
+
+        new ActiveDeckRepository(_store).LinkGame(friendly.AccountKey, game.Key, game.StartedAt, HeroClasses.ClassOf(friendly.HeroCardId, catalog));
+        return true;
     }
 
     public IReadOnlyList<StoredGame> List(string? accountKey, int limit = 50)
     {
         using var cmd = _store.Command(
             """
-            SELECT id, account_key, game_key, started_at, ended_at, game_type, format, player_class, opponent_class, player_hero_card_id, opponent_hero_card_id, opponent_name, result, went_first, turns
+            SELECT id, account_key, game_key, started_at, ended_at, game_type, format, player_class, opponent_class, player_hero_card_id, opponent_hero_card_id, opponent_name, result, went_first, turns, deck_id
             FROM game WHERE ($k IS NULL OR account_key = $k) ORDER BY started_at DESC, id DESC LIMIT $n
             """,
             ("$k", accountKey), ("$n", limit));
@@ -53,7 +63,7 @@ public sealed class GameRepository
         {
             list.Add(new StoredGame(reader.GetInt64(0), reader.GetString(1), reader.GetString(2), DustStore.ParseIso(reader.GetString(3)),
                 reader.IsDBNull(4) ? null : DustStore.ParseIso(reader.GetString(4)), Str(reader, 5), Str(reader, 6), Str(reader, 7), Str(reader, 8), Str(reader, 9), Str(reader, 10), Str(reader, 11),
-                reader.GetString(12), reader.IsDBNull(13) ? null : reader.GetInt32(13) != 0, reader.IsDBNull(14) ? null : reader.GetInt32(14)));
+                reader.GetString(12), reader.IsDBNull(13) ? null : reader.GetInt32(13) != 0, reader.IsDBNull(14) ? null : reader.GetInt32(14), reader.IsDBNull(15) ? null : reader.GetInt64(15)));
         }
 
         return list;

@@ -106,6 +106,9 @@ public sealed class UserPrefs
     /// <summary>Refuse to plan when no saved decks are known (the "in use" rule would be blind).</summary>
     public bool RequireKnownDecks { get; set; } = true;
 
+    /// <summary>Stream-chat commands (prefix, aliases, templates, cooldowns). Defaults answer in the system language.</summary>
+    public ChatPrefs Chat { get; set; } = new();
+
     public bool IsStandardPlayer => !string.Equals(Format, "wild", StringComparison.OrdinalIgnoreCase) && !PlaysWild;
 
     public bool PlaysClass(CardDef card)

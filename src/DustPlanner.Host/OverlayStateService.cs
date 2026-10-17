@@ -13,9 +13,9 @@ using Microsoft.Extensions.Logging;
 namespace DustPlanner.Host;
 
 /// <summary>
-/// Polls (never watches, never hooks) three things the game and HDT write on their own — Power.log, the exporter's
-/// <c>collection.json</c> and <c>rank.json</c> — and publishes an <see cref="OverlayState"/> whenever something
-/// changed. Completed games are stored in the database like <c>games import</c> does.
+/// Polls (never watches, never hooks) four things the game and HDT write on their own — Power.log, the exporter's
+/// <c>collection.json</c>, <c>rank.json</c> and <c>active-deck.json</c> — and publishes an <see cref="OverlayState"/>
+/// whenever something changed. Completed games are stored in the database like <c>games import</c> does.
 /// </summary>
 public sealed class OverlayStateService : BackgroundService
 {
@@ -32,6 +32,7 @@ public sealed class OverlayStateService : BackgroundService
     private string? _logsDirectory;
     private DateTime _collectionStamp;
     private DateTime _rankStamp;
+    private DateTime _activeDeckStamp;
     private bool _syncPending;
     private readonly object _syncGate = new();
     private Task<CardCatalog?>? _catalogTask;
@@ -272,8 +273,34 @@ public sealed class OverlayStateService : BackgroundService
             warnings.Add("No rank export yet; the rank appears after HDT sees the Play screen with the exporter plugin enabled.");
         }
 
+        // No warning when the file is missing: older exporters never write it, and the overlay simply hides the cell.
+        var activeDeckFile = Path.Combine(dir, ExportSchema.ActiveDeckFileName);
+        if (File.Exists(activeDeckFile))
+        {
+            var stamp = File.GetLastWriteTimeUtc(activeDeckFile);
+            if (stamp != _activeDeckStamp)
+            {
+                _activeDeckStamp = stamp;
+                var export = JsonSerializer.Deserialize<ActiveDeckExport>(File.ReadAllText(activeDeckFile), CoreJson.Options);
+                if (export is not null)
+                {
+                    if (_store is not null)
+                    {
+                        new ActiveDeckRepository(_store).Import(export);
+                    }
+
+                    state = state with { ActiveDeck = ToActiveDeckState(export) };
+                }
+            }
+        }
+
         return state;
     }
+
+    private static ActiveDeckState? ToActiveDeckState(ActiveDeckExport export) =>
+        export.Deck is { } deck && !string.IsNullOrEmpty(deck.Deckstring)
+            ? new ActiveDeckState(deck.HdtDeckId, deck.Name, deck.Deckstring, deck.CardClass?.ToUpperInvariant(), deck.Format, export.Meta.ExportedAt)
+            : null;
 
     /// <summary>
     /// Imports the account's export into the database (collection snapshot, decks, rank) and matches stored plans,

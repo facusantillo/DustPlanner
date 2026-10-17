@@ -172,3 +172,9 @@ summary:hover { color: var(--ink); }
   .toast { animation: rise 0.18s ease-out; }
   @keyframes rise { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
 }
+.chat-commands { width: 100%; margin-top: 8px; }
+.chat-commands td input[type="text"] { width: 100%; box-sizing: border-box; }
+.chat-commands td:first-child { width: 28px; }
+.chat-commands td:nth-child(2) { white-space: nowrap; width: 1%; padding-right: 14px; }
+.chat-commands td:nth-child(3) { width: 26%; }
+

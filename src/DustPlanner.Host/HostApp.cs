@@ -7,6 +7,7 @@ using DustPlanner.Host.Api;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -34,6 +35,8 @@ public static class HostApp
         builder.Services.AddSingleton(services);
         builder.Services.AddSingleton<OverlayStateService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<OverlayStateService>());
+        builder.Services.TryAddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<DustPlanner.Kick.ChatResponder>();
 
         var app = builder.Build();
 
@@ -50,6 +53,7 @@ public static class HostApp
         app.MapGet("/events", StreamEventsAsync);
 
         ApiEndpoints.Map(app, info);
+        ChatEndpoints.Map(app);
 
         return app;
     }

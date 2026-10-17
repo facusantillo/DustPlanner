@@ -403,7 +403,10 @@
     html += "<h2>" + t("set_language") + '</h2><div class="row"><select id="p-lang"><option value="en"' + (lang === "en" ? " selected" : "") + ">" + t("lang_en") + '</option><option value="es"' + (lang === "es" ? " selected" : "") + ">" + t("lang_es") + "</option></select></div>";
     html += "<h2>" + t("set_service") + '</h2><div class="kv"><span>' + t("path_service") + "</span><span>" + esc(service.name + " " + service.version + " · " + service.url) + "</span><span>" + t("path_home") + "</span><span><code>" + esc(service.home) + "</code></span><span>" + t("path_prefs") + "</span><span><code>" + esc(prefs.path) + "</code></span></div>";
     html += "</div></div>";
+    // Full width below the grid: the command table needs the room.
+    html += chatSettings(p.chat || {}, service) + '<div class="row"><button class="btn primary" id="btn-prefs-chat">' + t("set_save") + "</button></div>";
     page.innerHTML = html;
+    $("#btn-prefs-chat").addEventListener("click", () => $("#btn-prefs").click());
 
     $("#btn-prefs").addEventListener("click", async () => {
       const b = $("#btn-prefs"); busy(b, true);
@@ -414,8 +417,9 @@
         golden_policy: $("#p-golden").value,
         require_known_decks: $("#p-require").checked,
         max_snapshot_age_days: Number($("#p-age").value) || p.max_snapshot_age_days,
+        chat: readChatSettings(p.chat || {}),
       });
-      try { await put("/api/prefs", body); toast(t("set_saved"), "ok"); } catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
+      try { const r = await put("/api/prefs", body); p.chat = r.prefs.chat; toast(t("set_saved"), "ok"); } catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
     });
     $("#btn-meta").addEventListener("click", async () => {
       const b = $("#btn-meta"); busy(b, true);
@@ -474,6 +478,46 @@
     });
     async function refreshOverrides() { const r = await api("/api/cards/overrides"); $("#overrides").innerHTML = overridesTable(r.overrides); }
   }
+  const CHAT_COMMANDS = ["deck", "rank", "wr", "last", "dust"];
+  const CHAT_PLACEHOLDERS = ["deck_name", "deckstring", "deck_class", "deck_format", "deck_url", "deck_link", "rank", "rank_format", "today_w", "today_l", "today_t", "today_wr", "session_w", "session_l", "session_wr", "streak", "streak_text", "last_result", "player_class", "opponent_class", "turns", "dust", "user"];
+
+  /** The `chat` block of prefs.json as a form: prefix, language, cooldowns and one row per command. */
+  function chatSettings(c, service) {
+    const cmds = c.commands || {};
+    const langSel = (v) => '<select id="c-lang"><option value=""' + (!v ? " selected" : "") + ">" + t("chat_lang_auto") + '</option><option value="es"' + (v === "es" ? " selected" : "") + '>Español</option><option value="en"' + (v === "en" ? " selected" : "") + ">English</option></select>";
+    let html = "<h2>" + t("set_chat") + '</h2><p class="why">' + esc(t("set_chat_hint", { url: service.url + "/api/chat/deck" })) + ' <a href="https://github.com/facusantillo/DustPlanner/blob/main/docs/kick-streamerbot.md" target="_blank" rel="noopener">' + t("chat_guide") + "</a></p>" +
+      '<div class="row"><label class="field"><span>' + t("chat_prefix") + '</span><input type="text" id="c-prefix" maxlength="3" value="' + esc(c.prefix == null ? "!" : c.prefix) + '" style="width:60px"></label>' +
+      '<label class="field"><span>' + t("chat_language") + "</span>" + langSel(c.language) + "</label>" +
+      '<label class="field"><span>' + t("chat_cooldown") + '</span><input type="number" id="c-cool" min="0" max="3600" value="' + (c.cooldown_seconds == null ? 10 : c.cooldown_seconds) + '" style="width:90px"></label>' +
+      '<label class="field"><span>' + t("chat_user_cooldown") + '</span><input type="number" id="c-ucool" min="0" max="3600" value="' + (c.user_cooldown_seconds == null ? 30 : c.user_cooldown_seconds) + '" style="width:90px"></label></div>' +
+      '<table class="chat-commands"><thead><tr><th></th><th>' + t("chat_col_command") + "</th><th>" + t("chat_col_aliases") + "</th><th>" + t("chat_col_template") + "</th></tr></thead><tbody>";
+    for (const name of CHAT_COMMANDS) {
+      const cmd = cmds[name] || { enabled: name !== "dust", aliases: [], template: null };
+      html += '<tr data-cmd="' + name + '"><td><input type="checkbox" class="c-on"' + (cmd.enabled ? " checked" : "") + '></td><td><code>' + esc((c.prefix == null ? "!" : c.prefix) + name) + "</code><br><span class=\"faint\">" + esc(t("chat_cmd_" + name)) + '</span></td>' +
+        '<td><input type="text" class="c-aliases" value="' + esc((cmd.aliases || []).join(", ")) + '" placeholder="mazo, deckcode"></td>' +
+        '<td><input type="text" class="c-template" maxlength="500" value="' + esc(cmd.template || "") + '" placeholder="' + esc(t("chat_template_default")) + '"></td></tr>';
+    }
+    html += "</tbody></table>" +
+      '<details class="why"><summary>' + t("chat_placeholders") + "</summary><p>" + CHAT_PLACEHOLDERS.map(x => "<code>{" + x + "}</code>").join(" ") + "</p></details>";
+    return html;
+  }
+
+  function readChatSettings(c) {
+    const commands = {};
+    document.querySelectorAll("tr[data-cmd]").forEach(row => {
+      const name = row.dataset.cmd;
+      const tpl = $(".c-template", row).value.trim();
+      commands[name] = { enabled: $(".c-on", row).checked, aliases: $(".c-aliases", row).value.split(",").map(x => x.trim()).filter(Boolean), template: tpl || null };
+    });
+    return Object.assign({}, c, {
+      prefix: $("#c-prefix").value,
+      language: $("#c-lang").value || null,
+      commands,
+      cooldown_seconds: Number($("#c-cool").value),
+      user_cooldown_seconds: Number($("#c-ucool").value),
+    });
+  }
+
   function overridesTable(list) {
     if (!list.length) return '<p class="empty">' + t("set_no_overrides") + "</p>";
     return "<table><thead><tr><th>" + t("col_card") + "</th><th>" + t("col_kind") + "</th><th>" + t("col_your_rule") + "</th><th>" + t("col_shipped_rule") + "</th><th></th></tr></thead><tbody>" +

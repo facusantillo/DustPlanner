@@ -28,6 +28,8 @@ public sealed class DustPlannerPlugin : IPlugin, IDisposable
     private MenuItem? _serviceItem;
     private bool _collectionHooked;
     private bool _modeHooked;
+    private bool _gameStartHooked;
+    private bool _activeDeckHooked;
 
     public string Name => "DustPlanner";
 
@@ -57,9 +59,12 @@ public sealed class DustPlannerPlugin : IPlugin, IDisposable
 
             _collectionHooked = gateway.SubscribeCollectionChanged(() => RunInBackground("collection_changed", manual: false));
             _modeHooked = gateway.SubscribeModeChanged(OnModeChanged);
+            _gameStartHooked = gateway.SubscribeGameStart(() => RunActiveDeckInBackground("game_start"));
+            _activeDeckHooked = gateway.SubscribeActiveDeckChanged(() => RunActiveDeckInBackground("active_deck_changed"));
 
             PluginLog.Info("Loaded v" + Version + " (HDT " + (gateway.HdtVersion?.ToString() ?? "?") + ", HearthMirror " + (gateway.HearthMirrorVersion?.ToString() ?? "?") + "). " +
-                           "collection event: " + (_collectionHooked ? "on" : "OFF") + ", mode event: " + (_modeHooked ? "on" : "OFF") + ". Inbox: " + _settings.InboxDirectory);
+                           "collection event: " + (_collectionHooked ? "on" : "OFF") + ", mode event: " + (_modeHooked ? "on" : "OFF") +
+                           ", game start event: " + (_gameStartHooked ? "on" : "OFF") + ", active deck event: " + (_activeDeckHooked ? "on" : "OFF") + ". Inbox: " + _settings.InboxDirectory);
             UpdateStatus(_collectionHooked ? "Waiting for collection changes" : "Collection event unavailable in this HDT version; use Export now");
 
             if (_settings.StartService)
@@ -119,6 +124,18 @@ public sealed class DustPlannerPlugin : IPlugin, IDisposable
             var status = service.ExportAll(trigger, manual);
             UpdateStatus(status);
         });
+    }
+
+    /// <summary>Only the active deck: cheap (no memory read) and content-hashed, so firing it on every game start is fine.</summary>
+    private void RunActiveDeckInBackground(string trigger)
+    {
+        var service = _service;
+        if (service is null)
+        {
+            return;
+        }
+
+        Task.Run(() => UpdateStatus(service.ExportActiveDeckOnly(trigger)));
     }
 
     private void RunDiagnosticsInBackground()
@@ -184,7 +201,7 @@ public sealed class DustPlannerPlugin : IPlugin, IDisposable
 
         menu.Items.Add(new Separator());
 
-        var exportNow = new MenuItem { Header = "Export collection, decks and rank now" };
+        var exportNow = new MenuItem { Header = "Export collection, decks, rank and active deck now" };
         exportNow.Click += (_, _) => RunInBackground("manual", manual: true);
         menu.Items.Add(exportNow);
 

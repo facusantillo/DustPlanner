@@ -21,7 +21,8 @@
       "hdt_decks": true,
       "rank": true,
       "battle_tag": true,
-      "raw_mirror_collection": true
+      "raw_mirror_collection": true,
+      "active_deck": true
     }
   },
   "dust": 640,

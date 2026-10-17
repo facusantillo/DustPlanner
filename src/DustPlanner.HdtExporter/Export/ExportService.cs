@@ -18,7 +18,9 @@ internal sealed class ExportService
     private readonly ExportWriter _writer;
     private readonly ExportThrottle _collectionThrottle;
     private readonly ExportThrottle _auxiliaryThrottle;
+    private readonly ExportThrottle _activeDeckThrottle;
     private readonly object _gate = new object();
+    private readonly object _activeDeckGate = new object();
     private readonly string _exporterVersion;
 
     public ExportService(IHdtGateway hdt, ExporterSettings settings)
@@ -29,6 +31,7 @@ internal sealed class ExportService
         var interval = TimeSpan.FromSeconds(Math.Max(1, settings.MinIntervalSeconds));
         _collectionThrottle = new ExportThrottle(interval);
         _auxiliaryThrottle = new ExportThrottle(interval);
+        _activeDeckThrottle = new ExportThrottle(interval);
         _exporterVersion = typeof(ExportService).Assembly.GetName().Version?.ToString() ?? "0.0.0";
     }
 
@@ -86,6 +89,10 @@ internal sealed class ExportService
                 _auxiliaryThrottle.MarkRan(now, null);
             }
 
+            // Content-hashed, so this is free when the selected deck did not change; the menu transitions that export
+            // are also when a streamer typically switches decks.
+            parts.Add(ExportActiveDeck(trigger, account, accountKey, now, manual));
+
             LastExportAt = now;
             return SetStatus(string.Join("; ", parts));
         }
@@ -97,6 +104,33 @@ internal sealed class ExportService
         finally
         {
             Monitor.Exit(_gate);
+        }
+    }
+
+    /// <summary>
+    /// Writes <c>active-deck.json</c> on its own (game start, deck selection). Resolves the account from HDT's cached
+    /// collection (or HearthMirror's account id while the game runs) without forcing a collection load; skipped while
+    /// nothing identifies the account yet.
+    /// </summary>
+    public string ExportActiveDeckOnly(string trigger)
+    {
+        try
+        {
+            var now = DateTimeOffset.Now;
+            var account = ResolveAccount(_hdt.GetCachedCollection());
+            if (account is null)
+            {
+                return SetStatus("Active deck not exported: no account information yet");
+            }
+
+            var status = ExportActiveDeck(trigger, account, AccountKeys.Format(account.Hi, account.Lo), now, manual: false);
+            LastExportAt = now;
+            return SetStatus(status);
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Error("Active deck export failed.", ex);
+            return SetStatus("Active deck export failed: " + ex.Message);
         }
     }
 
@@ -172,6 +206,30 @@ internal sealed class ExportService
         return "decks (" + decks.Count.ToString(CultureInfo.InvariantCulture) + ")";
     }
 
+    private string ExportActiveDeck(string trigger, AccountSnapshot account, string accountKey, DateTimeOffset now, bool manual)
+    {
+        lock (_activeDeckGate)
+        {
+            var info = _hdt.GetActiveDeck();
+            if (info is null && !_hdt.Capabilities.ActiveDeck)
+            {
+                return "active deck unavailable";
+            }
+
+            var export = ActiveDeckExportBuilder.Build(info?.ToInput(), NewMeta(ExportSchema.ActiveDeckKind, trigger, account, now));
+            var hash = ActiveDeckExportBuilder.ContentHash(export.Deck);
+            var decision = _activeDeckThrottle.Decide(now, hash, manual);
+            if (decision != ThrottleDecision.Run)
+            {
+                return "active deck skipped: " + decision;
+            }
+
+            _writer.Write(export, ExportSchema.ActiveDeckKind, accountKey, now, keepHistory: false);
+            _activeDeckThrottle.MarkRan(now, hash);
+            return export.Deck is null ? "active deck (none)" : "active deck (" + export.Deck.Name + ")";
+        }
+    }
+
     private string ExportRank(string trigger, AccountSnapshot account, string accountKey, DateTimeOffset now)
     {
         var rank = _hdt.GetRank();
@@ -226,6 +284,7 @@ internal sealed class ExportService
         Rank = source.Rank,
         BattleTag = source.BattleTag,
         RawMirrorCollection = source.RawMirrorCollection,
+        ActiveDeck = source.ActiveDeck,
     };
 
     private string SetStatus(string status)

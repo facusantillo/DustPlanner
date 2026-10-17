@@ -150,3 +150,32 @@ loading and the status line says which feature is off.
       the bar is visible), legible at 1080p, the *Session* cell changes within ~5 s after a game ends, *Rank* and
       *Dust* change after HDT's next export (leave and re-enter the collection / Play screen). Checked here only with
       headless Chromium (transparent PNG, alpha 0 outside the bar), never with OBS itself.
+
+---
+
+## K. Kick (stages K0–K8, `docs/PRD-kick.md`)
+
+- [ ] K1. **Kick app and Cloudflare prerequisites** (K0, needed before K3 can be tried for real; nothing in K1–K2
+      depends on it). From a **dedicated bot account** (proposed name *DustPlannerBot*), with 2FA enabled:
+      `kick.com/settings/developer` → create app with redirect `https://live.dustplanner.app/oauth/callback`, then
+      *Edit → Enable Webhooks* with `https://live.dustplanner.app/webhooks/kick`. Note the `client_id` (public, goes in
+      `wrangler.toml`) and the bot account's `user_id` (`GET /public/v1/users` with the bot's own token, or the
+      developer page). The `client_secret` goes **only** into `wrangler secret put KICK_CLIENT_SECRET`, never in chat,
+      files or issues. In Cloudflare (account holding `dustplanner.app`): Workers + KV + Durable Objects enabled, and
+      check that no `live` DNS record exists in the zone. In GitHub: secrets `CLOUDFLARE_API_TOKEN` and
+      `CLOUDFLARE_ACCOUNT_ID` for `worker.yml` (K3).
+- [ ] K2. **Active deck in the overlay** (K1): with the new plugin build installed and the service running, select a
+      deck in HDT and start a game. Check: `%LocalAppData%\DustPlanner\inbox\<account>\active-deck.json` appears within
+      seconds (`meta.trigger` = `active_deck_changed` or `game_start`, `deck.name` is your deck, `deck.card_class` upper
+      case), the overlay shows a **Deck** cell with the name, and after the game `dustplanner games list --limit 1`
+      (or the panel's Games page) shows the game; in `dustplanner.db`, `SELECT deck_id FROM game ORDER BY id DESC
+      LIMIT 1` is not NULL. Select an Arena deck: the file says `"deck": null` and the cell disappears. Anything that
+      differs → paste `exporter.log` lines containing `active deck`.
+- [ ] K3. **Chat commands through Streamer.bot** (K2): with the service running, open
+      `http://127.0.0.1:8765/api/chat/deck?lang=es` in a browser and read the line; then follow
+      `docs/kick-streamerbot.md` for `!deck`, `!rank` and `!wr`, type them in your Kick chat during a stream and check
+      the answers match the panel (deck name and code, rank label, today's record). Type `!deck` twice within 10 s: the
+      second one must get no answer (`204`). Type `!dust`: nothing (it is off by default) until you enable it in
+      Settings → Chat commands. Change the language in Settings to English and check `!rank` answers in English without
+      restarting anything. Anything that differs → paste the Streamer.bot action log and the URL you used.
+

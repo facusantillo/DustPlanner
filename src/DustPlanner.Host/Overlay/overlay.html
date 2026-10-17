@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=1920, height=1080">
 <style>
   /* Designed for an OBS Browser Source of 1920x1080 with a transparent background.
-     Query options: ?scale=1.25  ?align=right  ?hide=rank,dust,today,streak,last  ?theme=light */
+     Query options: ?scale=1.25  ?align=right  ?hide=rank,dust,today,streak,last,deck  ?theme=light */
   :root {
     --bg: rgba(12, 14, 18, 0.72);
     --fg: #f4f4f2;
@@ -36,6 +36,7 @@
   body[data-theme="light"] .cell + .cell { border-left-color: rgba(0, 0, 0, 0.12); }
   .label { font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   .value { font-size: 34px; font-weight: 600; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #deck { max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
   .sub { font-size: 16px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
   .win { color: var(--win); } .loss { color: var(--loss); } .accent { color: var(--accent); } .dust { color: var(--dust); }
   .hidden { display: none !important; }
@@ -50,6 +51,7 @@
   <div class="cell" id="cell-today"><div class="label">Today</div><div class="value" id="today">0 – 0</div><div class="sub" id="today-sub"></div></div>
   <div class="cell" id="cell-dust"><div class="label">Dust</div><div class="value dust" id="dust">—</div><div class="sub" id="dust-sub"></div></div>
   <div class="cell hidden" id="cell-last"><div class="label">Last game</div><div class="value" id="last">—</div><div class="sub" id="last-sub"></div></div>
+  <div class="cell hidden" id="cell-deck"><div class="label">Deck</div><div class="value" id="deck">—</div><div class="sub" id="deck-sub"></div></div>
 </div>
 <div id="offline">overlay disconnected — is dustplanner-host running?</div>
 <script>
@@ -105,6 +107,17 @@
       document.getElementById("last-sub").textContent = cls(last.player_class) + " vs " + cls(last.opponent_class) + " · " + last.turns + " turns";
     } else {
       lastCell.classList.add("hidden");
+    }
+
+    // The deck HDT is tracking with; absent until the exporter samples one (and for Arena decks).
+    const deck = state.active_deck;
+    const deckCell = document.getElementById("cell-deck");
+    if (deck && !hidden.has("deck")) {
+      deckCell.classList.remove("hidden");
+      document.getElementById("deck").textContent = deck.name || "—";
+      document.getElementById("deck-sub").textContent = [deck.card_class ? cls(deck.card_class) : null, deck.format ? cls(deck.format) : null].filter(Boolean).join(" · ");
+    } else {
+      deckCell.classList.add("hidden");
     }
   }
 

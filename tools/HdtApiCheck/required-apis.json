@@ -336,6 +336,48 @@
       "member": "Serialize",
       "signature": "String Serialize(Deck deck, Boolean includeComments)",
       "usedFor": "selected deck -> deckstring"
+    },
+    {
+      "assembly": "hdt",
+      "type": "Hearthstone_Deck_Tracker.DeckList",
+      "member": "ActiveDeckChanged",
+      "signature": "event Action`1 ActiveDeckChanged",
+      "usedFor": "active-deck export when the user selects another deck"
+    },
+    {
+      "assembly": "hdt",
+      "type": "Hearthstone_Deck_Tracker.API.GameEvents",
+      "member": "OnGameStart",
+      "signature": "ActionList OnGameStart",
+      "usedFor": "active-deck export at game start"
+    },
+    {
+      "assembly": "hdt",
+      "type": "Hearthstone_Deck_Tracker.API.ActionList",
+      "member": "Add",
+      "signature": "Void Add(Action action)",
+      "usedFor": "subscribe to OnGameStart"
+    },
+    {
+      "assembly": "hdt",
+      "type": "Hearthstone_Deck_Tracker.Hearthstone.Deck",
+      "member": "Class",
+      "signature": "String Class",
+      "usedFor": "active-deck class"
+    },
+    {
+      "assembly": "hdt",
+      "type": "Hearthstone_Deck_Tracker.Hearthstone.Deck",
+      "member": "Name",
+      "signature": "String Name",
+      "usedFor": "active-deck name"
+    },
+    {
+      "assembly": "db",
+      "type": "HearthDb.Deckstrings.Deck",
+      "member": "Format",
+      "signature": "FormatType Format",
+      "usedFor": "active-deck format (standard / wild / twist / classic)"
     }
   ],
   "absent": [

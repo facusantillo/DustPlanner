@@ -520,3 +520,96 @@ puede hacer el mantenedor; va en `VERIFICACION.md`, sección K.
 - [Streamer.bot: Kick](https://docs.streamer.bot/guide/platforms/kick) · [Streamer.bot: soporte de plataformas](https://docs.streamer.bot/faq/platform-support)
 - Repo de DustPlanner: `docs/PROPUESTA.md`, `docs/PROGRESO.md`, `docs/panel.md`, `docs/overlay.md`,
   `docs/publishing.md`, `src/DustPlanner.HdtExporter/Hdt/HdtGateway.cs`, `src/DustPlanner.Host/OverlayState.cs`.
+
+---
+
+## 11. Resultados de K0 (17/10/2026)
+
+### 11.1 Respuestas a las preguntas abiertas (§8)
+
+| # | Decisión |
+|---|---|
+| Q1 | Developer Agreement revisado (ver §11.3). Dos ajustes de diseño salen de ahí; ninguno bloquea. |
+| Q2 | `live.dustplanner.app`. Antes del primer deploy hay que comprobar que no exista un registro DNS `live` en la zona. |
+| Q3 | Las respuestas salen como **bot** (`type: bot`). La app se crea desde una cuenta dedicada; nombre propuesto *DustPlannerBot* si está libre. |
+| Q4 | `!deck`/`!mazo`, `!rank`/`!rango`, `!wr`/`!winrate`, `!last`/`!ultima` activos; `!dust`/`!polvo` apagado. |
+| Q5 | Página pública opt-in, apagada por defecto. |
+| Q6 | Se implementan `off`, `panel` y `panel+chat`; el default es `panel`. |
+| Q7 | Beta privada por `ALLOWED_SLUGS` (`tsukuru_tv`) hasta el *go live*, que decide el mantenedor. |
+| Q8 | Twitch fuera de alcance. La neutralidad del §4.8 queda como está; no se invierte en más abstracciones. |
+
+### 11.2 Verificado contra la OpenAPI de Kick
+
+Fuente: `https://api.kick.com/swagger/doc.yaml` (`info.version: 1.0.0`, leída el 17/10/2026). Resuelve los puntos
+marcados **(OpenAPI)** en §2:
+
+- **`POST /public/v1/chat`.** Campos: `content` (obligatorio), `type` (obligatorio, `user` | `bot`),
+  `broadcaster_user_id` (opcional), `reply_to_message_id` (UUID, opcional). Límite de `content`: **500 caracteres
+  percibidos (grapheme clusters) y como máximo 2.048 bytes en UTF-8**. `ChatResponder` recorta por ambos límites.
+  Con `type: user`, `broadcaster_user_id` es obligatorio; con `type: bot` "no se requiere y se ignora: el mensaje
+  siempre va al canal atado al token". **Qué cuenta aparece como remitente con `type: bot` no está en la
+  especificación**; lo esperable sigue siendo la cuenta dueña de la app y se confirma en la prueba humana de K5.
+  Scope: `chat:write`. Documenta `429`, sin cifras: rige la regla §10.5 (un mensaje por segundo y por canal).
+- **`POST /public/v1/events/subscriptions`.** Campos: `events[]` (`name`, `version`; obligatorio), `method`
+  (`webhook`), `broadcaster_user_id` (opcional). Con token de usuario, `broadcaster_user_id` **se ignora y se infiere
+  del token**; con token de app es obligatorio. Respuesta: `data[] { name, version, subscription_id, error }`.
+  `GET` admite `broadcaster_user_id` opcional; `DELETE` recibe `id` (array de `subscription_id`). Límite: 10.000
+  suscripciones por tipo de evento y app; 1.000 para `chat.message.sent` en apps sin verificar.
+- **`GET /public/v1/channels`.** Sin parámetros devuelve **el canal del usuario autenticado** (scope
+  `channel:read`). Campos: `broadcaster_user_id`, `slug`, `stream_title`, `stream { is_live, start_time, … }`.
+- **`GET /public/v1/users`.** Sin `id` devuelve el usuario del token: `user_id`, `name`, `profile_picture`,
+  `email`. El email se descarta.
+- **`GET /public/v1/public-key`.** Sin autenticación: `data.public_key` (PEM).
+- **Introspección.** `POST /oauth/token/introspect` → `data { active, client_id, exp, scope, token_type }`.
+- **Scopes.** Los cinco de §2.2 existen con esos nombres exactos. El webhook `channel.reward.redemption.updated` no
+  declara scope en la especificación ni en la tabla de eventos; los endpoints de recompensas exigen
+  `channel:rewards:read`. Se sigue pidiendo ese scope (conservador).
+- **Eventos.** Los campos de §2.3 coinciden con la tabla de eventos; además `broadcaster` y `sender` traen
+  `channel_slug`, `is_verified`, `profile_picture`, y `channel.reward.redemption.updated` trae `redeemed_at` y
+  `reward.description`. Cabeceras y firma como en §2.3 (RSA PKCS#1 v1.5 + SHA-256 sobre
+  `"{message_id}.{timestamp}.{raw_body}"`, en base64). La clave se pide al endpoint y no se hardcodea.
+
+### 11.3 Developer Agreement de Kick (Q1)
+
+Fuente: `https://dev.kick.com/terms-of-service` (incorpora por referencia los Terms of Service y las Community
+Guidelines; ley aplicable: Inglaterra y Gales, arbitraje ICC en Londres). Lo que afecta al diseño:
+
+| Cláusula | Qué exige | Cómo cumple el PRD |
+|---|---|---|
+| Sched. 1 C (almacenamiento) | Contenido de Kick solo en caché ≤ 24 h, salvo autorización del usuario que controla los derechos | No se guarda chat. `processed_message` dura 24 h. `live_state` guarda solo `is_live/title/started_at/ended_at` del propio canal. `public_deck` es dato del streamer, no de Kick |
+| §5.2, §8.4, Sched. 1 C (borrado) | Borrar todo dato de Kick y del usuario al terminar, al revocar o a pedido | `/disconnect` borra todo. **Ajuste K3:** si la renovación falla con `invalid_grant` (el usuario revocó desde Kick), el DO borra los tokens y programa el borrado del canal en 24 h, además de avisar `needs_reconnect` |
+| Sched. 1 A, §13.2 (privacidad) | Política de privacidad pública: qué se recoge, uso, retención; consentimiento | `docs/kick.md` y página de privacidad en `site/` (K8). Sin cookies ni analítica en `/d/<slug>` |
+| Sched. 1 D.2 (bots) | Nada de spam ni prácticas engañosas; respetar pedidos de bloqueo/baja | Cooldowns, 1 msg/s, comandos desactivables. El bot nunca inicia una conversación: solo responde a un comando que un viewer escribió o publica el resumen que el streamer activó. El streamer lo apaga desde Settings |
+| §10.1 (endpoints) | Solo Program Materials documentados; nada de endpoints no documentados | Pusher descartado (§2.5). Solo API pública y webhooks |
+| §3.6 (Keys, seguridad, rate limits) | Secretos en secreto; medidas de seguridad estándar; no eludir límites; reportar incidentes a Kick por mail | `wrangler secret`, tokens cifrados, tokens de dispositivo hasheados, 1 msg/s |
+| §3.2, §10.1 (open source) | No combinar Program Materials con licencias que obliguen a divulgarlos; incluir avisos | MIT sobre código propio; en el repo no hay material de Kick. Se añade atribución a Kick en `docs/kick.md` |
+| §6, Sched. 1 D.1 (atribución) | Camino claro a la fuente; marcas de Kick solo para atribuir | `/d/<slug>` enlaza a `kick.com/<slug>`; no se usa el logo de Kick salvo como atribución |
+| §3.5 (aprobación) | Kick revisa y puede retirar la app a su sola discreción | Riesgo R10 sigue. Pedir verificación al pasar los 1.000 canales |
+
+### 11.4 HDT
+
+Comprobado con `HdtApiCheck` contra los binarios 1.55.6 y con el código fuente de HearthSim (rama principal):
+
+- `DeckList.Instance.ActiveDeckChanged` es `public event Action<Deck?>`. Existe y se usa: la exportación del mazo
+  activo corre en ese evento, en `GameEvents.OnGameStart` (`ActionList` sin payload), en los cambios de modo que ya
+  exportan y en la exportación manual.
+- Añadidos a `required-apis.json`: `DeckList.ActiveDeckChanged`, `GameEvents.OnGameStart`, `ActionList.Add(Action)`,
+  `Deck.Class`, `Deck.Name` y `HearthDb.Deckstrings.Deck.Format`. Todo presente; `HdtApiCheck` verde.
+- `meta.trigger` del mazo activo: `game_start`, `active_deck_changed`, `mode_changed:<MODO>` o `manual`.
+
+### 11.5 Ajustes al PRD decididos en K0
+
+1. **Envoltorio del contrato.** `active-deck.json` usa el mismo `meta` que los demás exports (`schema_version`,
+   `kind: "active_deck"`, `exported_at`, `exporter_version`, `hdt_version`, `trigger`, `account`, `capabilities`) en
+   vez de la forma plana del ejemplo de §5.1. `reason` pasa a ser `meta.trigger`. `deck.card_class` va en
+   mayúsculas (`PRIEST`), igual que `game.player_class`, para que el enlace con las partidas sea una comparación
+   directa. `deck.format` sale de `HearthDb.Deckstrings.Deck.Format` (`standard`, `wild`, `classic`, `twist`).
+2. **Etiqueta del rango.** `RankState.Label` está solo en inglés (`Diamond 3 (5 stars)`). `ChatResponder` arma la
+   etiqueta por idioma desde `LeagueId`/`StarLevel`/`LegendRank` (`Diamante 3` / `Leyenda #1.234`).
+3. **Idioma del chat.** `chat.language` admite `null` (default): se resuelve con el idioma de la interfaz del sistema
+   (`es` → español, cualquier otro → inglés). El idioma del panel vive en el navegador, así que no sirve como default.
+4. **Pendiente humano de K0** (en `VERIFICACION.md` §K): crear la app en `kick.com/settings/developer` desde la
+   cuenta bot con 2FA, redirect `https://live.dustplanner.app/oauth/callback` y webhooks a
+   `https://live.dustplanner.app/webhooks/kick`; anotar `client_id` y el `user_id` de la cuenta bot (el
+   `client_secret` solo en `wrangler secret`); activar Workers, KV y Durable Objects en Cloudflare; comprobar que no
+   exista el registro DNS `live`. Nada de esto bloquea K1–K2.

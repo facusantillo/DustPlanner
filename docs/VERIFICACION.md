@@ -150,3 +150,18 @@ loading and the status line says which feature is off.
       the bar is visible), legible at 1080p, the *Session* cell changes within ~5 s after a game ends, *Rank* and
       *Dust* change after HDT's next export (leave and re-enter the collection / Play screen). Checked here only with
       headless Chromium (transparent PNG, alpha 0 outside the bar), never with OBS itself.
+
+---
+
+## K. Kick (stages K0–K8, `docs/PRD-kick.md`)
+
+- [ ] K1. **Kick app and Cloudflare prerequisites** (K0, needed before K3 can be tried for real; nothing in K1–K2
+      depends on it). From a **dedicated bot account** (proposed name *DustPlannerBot*), with 2FA enabled:
+      `kick.com/settings/developer` → create app with redirect `https://live.dustplanner.app/oauth/callback`, then
+      *Edit → Enable Webhooks* with `https://live.dustplanner.app/webhooks/kick`. Note the `client_id` (public, goes in
+      `wrangler.toml`) and the bot account's `user_id` (`GET /public/v1/users` with the bot's own token, or the
+      developer page). The `client_secret` goes **only** into `wrangler secret put KICK_CLIENT_SECRET`, never in chat,
+      files or issues. In Cloudflare (account holding `dustplanner.app`): Workers + KV + Durable Objects enabled, and
+      check that no `live` DNS record exists in the zone. In GitHub: secrets `CLOUDFLARE_API_TOKEN` and
+      `CLOUDFLARE_ACCOUNT_ID` for `worker.yml` (K3).
+

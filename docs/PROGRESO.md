@@ -18,6 +18,7 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | 8 | OBS overlay host | done | **C5** — check in OBS |
 | 9 | Panel (web UI) + JSON API in the service, automatic sync, plugin launches the service | done | **C6** — panel from HDT on the real machine |
 | 10 | One zip: plugin + bundled service, release workflow, docs | done | install the zip, open the panel from HDT |
+| K0 | Kick spike: API fields confirmed, Developer Agreement reviewed, HDT active-deck event (`docs/PRD-kick.md` §11) | done | **K1** — create the Kick app and the Cloudflare account pieces (not needed before K3) |
 
 124 tests, all green on Windows (maintainer's machine, via the Linux VM) and in the container. No remote configured;
 the maintainer publishes.
@@ -366,3 +367,34 @@ every locale) turn reward copies into *not craftable* with the unlock text as th
 `--json`. The list stays updatable without a release: `collection block "<name>" [--golden]` / `unblock` write
 per-card overrides to `<home>/data/non-craftable.json`, merged with the shipped file; `catalog update` brings new game
 texts. 119 tests.
+
+---
+
+## Kick — K0 — Spike and prerequisites
+
+Stages K0–K8 follow `docs/PRD-kick.md` (Spanish, like the PROPUESTA); decisions taken during implementation are
+recorded in its §11.
+
+**Done**
+
+- Kick's OpenAPI (`api.kick.com/swagger/doc.yaml`) was readable this time; every field the PRD had marked
+  **(OpenAPI)** is now confirmed in PRD §11.2: chat `content` is capped at 500 grapheme clusters *and* 2,048 UTF-8
+  bytes, `type` is required, `broadcaster_user_id` is ignored for `type: bot`; event subscriptions infer the
+  broadcaster from a user token; `GET /channels` without parameters returns the token's own channel; `DELETE
+  /events/subscriptions` takes `id[]`. Rate limits are not documented (only a `429`), so the PRD's one-message-per-second
+  rule stands. Which account a `type: bot` message is shown under is *not* in the spec: K5's human check.
+- Kick Developer Agreement (`dev.kick.com/terms-of-service`) reviewed against the design (PRD §11.3). Two
+  adjustments for K3: purge tokens and schedule channel deletion when a refresh fails with `invalid_grant` (user
+  revoked at Kick), and keep all Kick-derived caches under 24 h. The privacy page (K8) is a requirement, not a nicety.
+- HDT: `DeckList.Instance.ActiveDeckChanged` (`event Action<Deck?>`) and `GameEvents.OnGameStart` exist in 1.55.6
+  and in HearthSim's main branch; both, plus `ActionList.Add(Action)`, `Deck.Class`, `Deck.Name` and
+  `HearthDb.Deckstrings.Deck.Format`, were added to `tools/HdtApiCheck/required-apis.json`. `HdtApiCheck` is green.
+- Contract decision: `active-deck.json` reuses the `meta` envelope of the other exports (PRD §11.5).
+
+**Pending / caveats**
+
+- Needs the maintainer (VERIFICACION K1): the Kick app from a dedicated bot account, the bot's `user_id`, Cloudflare
+  Workers/KV/Durable Objects, and a free `live` DNS record. None of it blocks K1–K2.
+- The 1.59.2 source tag could not be fetched from this environment; the event was confirmed in 1.55.6 (binaries) and
+  in the current main branch, so an intermediate removal is very unlikely but not checked.
+

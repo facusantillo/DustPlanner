@@ -152,6 +152,40 @@ internal sealed class DustPlannerTools(ReadOnlyGateway gateway)
             });
         });
 
+    [McpServerTool(Name = "get_stream_sessions", ReadOnly = true, Idempotent = true),
+     Description("Streams seen by the Kick connection (one per live session): when they started and ended, the title, the record of the games " +
+                 "played while live, the ladder standing at both ends and the decks used. Nothing about chat is stored, so nothing about chat is returned.")]
+    public Task<CallToolResult> GetStreamSessions(
+        [Description("Account key; default: the account of the most recent game.")] string? account = null,
+        [Description("How many sessions, newest first (default 10, max 100).")] int limit = 10,
+        CancellationToken cancellationToken = default) =>
+        RunAsync(() =>
+        {
+            using var store = _gateway.OpenDatabase();
+            var accountKey = account ?? new GameRepository(store).LatestAccount();
+            var sessions = new StreamSessionRepository(store).List(accountKey, Math.Clamp(limit, 1, 100));
+            return Task.FromResult<object>(new
+            {
+                account_key = accountKey,
+                sessions = sessions.Select(s => new
+                {
+                    s.Id,
+                    s.Platform,
+                    s.ChannelSlug,
+                    s.StartedAt,
+                    s.EndedAt,
+                    s.IsLive,
+                    s.Title,
+                    record = StatsJson.From(s.Record),
+                    rank_start = s.RankStart?.Label,
+                    rank_end = s.RankEnd?.Label,
+                    decks = s.Decks,
+                    summary_posted_at = s.SummaryPostedAt,
+                }).ToList(),
+                note = "A session's games are the ones started between its start and its end (or now, while live); games imported later count too.",
+            });
+        });
+
     internal static DateOnly? ParseDate(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))

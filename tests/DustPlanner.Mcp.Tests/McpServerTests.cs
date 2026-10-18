@@ -55,7 +55,7 @@ public sealed class McpServerTests : IAsyncLifetime
     {
         var tools = await _client!.ListToolsAsync();
         Assert.Equal(
-            ["get_collection_summary", "get_history", "get_missing_for_deck", "get_winrate", "propose_disenchant_plan"],
+            ["get_collection_summary", "get_history", "get_missing_for_deck", "get_stream_sessions", "get_winrate", "propose_disenchant_plan"],
             tools.Select(t => t.Name).Order(StringComparer.Ordinal).ToArray());
         Assert.All(tools, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint, t.Name + " must be annotated read-only"));
         Assert.Equal("DustPlanner", _client.ServerInfo.Name);
@@ -122,6 +122,11 @@ public sealed class McpServerTests : IAsyncLifetime
         Assert.Equal(2, winrate.GetProperty("overall").GetProperty("games").GetInt32());
         Assert.Equal(1, winrate.GetProperty("overall").GetProperty("losses").GetInt32());
         Assert.Equal(3, winrate.GetProperty("recent_games").GetArrayLength()); // recent games are not filtered
+
+        // Stage K7: no stream seen yet → an empty list for the same account, never an error.
+        var sessions = await Call("get_stream_sessions", new Dictionary<string, object?>());
+        Assert.Equal("8589934592-42", sessions.GetProperty("account_key").GetString());
+        Assert.Equal(0, sessions.GetProperty("sessions").GetArrayLength());
 
         var noSnapshot = await CallRaw("get_history", new Dictionary<string, object?>());
         Assert.True(noSnapshot.IsError); // games only: no collection snapshot synced yet

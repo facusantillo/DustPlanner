@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DustPlanner — privacy: the Kick connection</title>
+<link rel="canonical" href="https://dustplanner.app/privacy.html">
+<meta name="description" content="What the Kick connection of DustPlanner stores, where, for how long, and how to remove it. No chat is stored, no card data leaves your PC, no cookies.">
+<link rel="stylesheet" href="site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23a98cff'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./"><span class="mark"></span>DustPlanner</a>
+  <nav class="nav">
+    <a href="./#how">How it works</a>
+    <a href="./#install">Install</a>
+    <a href="./#safety">Safety</a>
+    <a class="repo" href="https://github.com/facusantillo/DustPlanner/">GitHub</a>
+    <a class="lang" href="es/privacidad.html" lang="es" hreflang="es">Español</a>
+  </nav>
+</header>
+
+<section style="border-top:0">
+  <h2>Privacy: the Kick connection</h2>
+  <p class="lead">DustPlanner runs on your PC and keeps your data there. The optional Kick connection adds one small
+  service of ours in between, because Kick can only talk to a public address: <code>live.dustplanner.app</code>, a
+  Cloudflare Worker whose code is in the <a href="https://github.com/facusantillo/DustPlanner/tree/main/cloud/kick-worker" data-repo="tree/main/cloud/kick-worker">repository</a>.
+  This page says exactly what that service holds. Last updated 18 October 2026.</p>
+
+  <h3>What you authorise</h3>
+  <p>When you press <b>Connect with Kick</b>, Kick asks you to grant DustPlanner five permissions: read your user and
+  channel, subscribe to events, write chat, read channel-point rewards. Nothing else is requested — no stream keys, no
+  moderation, no channel edits. You can revoke the authorisation at any time from Kick's own settings or with
+  <b>Disconnect</b> in the panel.</p>
+
+  <h3>What is stored, and where</h3>
+  <table>
+    <thead><tr><th>Where</th><th>What</th><th>Until</th></tr></thead>
+    <tbody>
+      <tr><td><b>Your PC</b></td><td>a device token for the relay (protected with Windows DPAPI, useless on another machine), your channel's id and slug, the streams seen (start, end, title, your rank at both ends) and the preferences you set</td><td>you press Disconnect (token) or delete the data folder</td></tr>
+      <tr><td><b>The relay</b></td><td>your Kick tokens, encrypted at rest; the ids of the webhook subscriptions; a hash of each paired device; your command prefix and which commands are on; the last live status; the deck you chose to publish (name, code, class, format) while the public page is on</td><td>you press Disconnect, or 24 hours after Kick revokes the authorisation</td></tr>
+      <tr><td><b>Nowhere</b></td><td>chat messages (the relay forwards only the commands you turned on, and keeps none of them); your email; your collection, decks, record or anything else from the game; card data</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Kick sends the relay every chat line of your channel; the relay reads only whether it starts with your prefix and
+  names one of your commands, forwards those to your PC, and discards the rest without storing or logging it. The
+  relay's logs hold event types and outcomes, never message bodies.</p>
+
+  <h3>The public deck page</h3>
+  <p>Off by default. When you turn it on, <code>live.dustplanner.app/d/&lt;your-channel&gt;</code> shows the name,
+  code, class and format of the deck you are playing. The viewer's browser decodes the code and fetches card names from
+  <a href="https://hearthstonejson.com/">HearthstoneJSON</a> directly; the page sets no cookies and loads no analytics.
+  Turn the switch off and the relay forgets the deck at once.</p>
+
+  <h3>Who answers in chat</h3>
+  <p>Answers are posted as <b>@DustPlanner</b>, the bot account of the Kick app, as replies to the viewer who asked.
+  They contain only what the command is for: your current deck code, rank, record or last game.</p>
+
+  <h3>Removing everything</h3>
+  <ol>
+    <li>Panel → Settings → Kick → <b>Disconnect</b>: the relay deletes the subscriptions, revokes both tokens and forgets your channel; your PC deletes its device token.</li>
+    <li>Optionally, delete <code>%LocalAppData%\DustPlanner</code> to remove the local database, preferences and logs.</li>
+  </ol>
+  <p>Questions or concerns: <a href="https://github.com/facusantillo/DustPlanner/issues" data-repo="issues">open an issue</a> in the repository. The game-client policy is in its <a href="https://github.com/facusantillo/DustPlanner/blob/main/SECURITY.md" data-repo="blob/main/SECURITY.md">SECURITY.md</a>.</p>
+</section>
+
+<footer>
+  <p>DustPlanner is MIT licensed. Not affiliated with or endorsed by Blizzard Entertainment or Kick. Hearthstone is a trademark of Blizzard Entertainment. Hearthstone Deck Tracker is a HearthSim project.</p>
+</footer>
+</body>
+</html>

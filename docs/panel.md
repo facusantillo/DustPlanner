@@ -38,6 +38,9 @@ All answers are the snake_case JSON the CLI prints with `--json`. Bodies are JSO
 | `GET /api/history?account=&limit=` | | snapshots, plans with picks, events |
 | `GET /api/games?account=&since=&days=&type=&format=&recent=` | | overall, by class, recent games |
 | `POST /api/games/import` | `{logs?}` | files read, games parsed / inserted, warnings |
+| `GET /api/stream-sessions?account=&limit=` | | Kick streams (K7): start, end, title, record and decks of the games played while live, rank at both ends |
+| `GET /api/chat/{command}?lang=&user=` | | the chat text for `!command` (Streamer.bot path); 204 in cooldown, 404 unknown or off |
+| `GET /api/kick/status` · `POST /api/kick/connect` · `POST /api/kick/pair` · `POST /api/kick/disconnect` | `{code}` for pair | the connection's state (also streamed as `kick` events on `/events`, with `kick.reminder` and `kick.redemption` notices) |
 | `GET /api/prefs` · `PUT /api/prefs` | the `prefs.json` object (its `chat` block is validated too) | path, exists, prefs |
 | `GET /api/meta` · `PUT /api/meta` | `{text}` | text, deck_count, warnings (a line that is not a code is refused) |
 | `GET /api/cards/search?q=&limit=` | | matching collectible cards |

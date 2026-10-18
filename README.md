@@ -49,12 +49,14 @@ people who want a terminal or an AI client; they read and write the same data.
 | `src/DustPlanner.Cli` | net10.0 | Command-line interface |
 | `src/DustPlanner.LogTracker` | net10.0 | `Power.log` parser, importer, follower and win-rate queries |
 | `src/DustPlanner.Mcp` | net10.0 | Read-only MCP server (stdio) for Claude Desktop / Claude Code |
-| `src/DustPlanner.Host` | net10.0 | The DustPlanner service: panel, JSON API, OBS overlay, automatic sync (bundled with the plugin) |
+| `src/DustPlanner.Host` | net10.0 | The DustPlanner service: panel, JSON API, OBS overlay, automatic sync, Kick connector (bundled with the plugin) |
+| `src/DustPlanner.Kick` | net10.0 | Chat texts and cooldowns, the relay protocol, the connector and the command bridge |
+| `cloud/kick-worker` | TypeScript | The Kick relay (Cloudflare Worker): OAuth, webhooks, WebSocket to the service, public deck page |
 | `tests/` | net10.0 | One test project per module |
 | `tools/` | — | `HdtApiCheck`, HDT reference fetch scripts, data validation scripts |
 | `data/` | — | Format rotation, dust rules, non-craftable list, example configs |
 | `docs/` | — | Proposal, progress log, verification checklist |
-| `site/` | — | Project site (GitHub Pages): what it does, screenshots, install, FAQ — English and Spanish |
+| `site/` | — | Project site (GitHub Pages): what it does, screenshots, install, FAQ, privacy of the Kick connection — English and Spanish |
 
 ## Building
 
@@ -201,6 +203,27 @@ list: [`docs/mcp.md`](docs/mcp.md).
 The service the plugin starts (`dustplanner-host`) also serves a transparent 1920×1080 page for an OBS Browser
 Source — rank, session win rate, today's record, dust, last game — on `http://127.0.0.1:8765/overlay` (loopback only).
 Setup, options and what each cell means: [`docs/overlay.md`](docs/overlay.md).
+
+## Kick: chat commands, public deck page, stream record
+
+Optional and off until you connect. Settings → **Kick → Connect with Kick** links your channel through a small relay
+at `live.dustplanner.app` (a Cloudflare Worker in [`cloud/kick-worker`](cloud/kick-worker)); from then on:
+
+- `!deck` / `!mazo`, `!rank` / `!rango`, `!wr` / `!winrate`, `!last` / `!ultima` are answered in your chat as
+  **@DustPlanner** (the app's bot, with the bot badge), as replies, with cooldowns; texts in Spanish or English, each
+  one customisable. `!dust` exists but is off by default.
+- The **public deck page** (opt-in): `live.dustplanner.app/d/<your-slug>` shows the deck you are playing, decoded in
+  the viewer's browser, with a *Copy code* button; `!deck` links to it.
+- **Stream record** (always, once connected): one row per stream with the games played while live, the rank at both
+  ends and the decks used — in the panel's Games page and through the MCP tool `get_stream_sessions`. Optional: the
+  end-of-stream line in chat, a prediction reminder when a game ends while live, channel-point redemptions in the
+  overlay.
+
+What travels and what never does: the relay sees only the chat lines that start with your prefix and name a command,
+stores no chat, and holds no card data; nothing from the game leaves your PC except the texts the bot posts. Details in
+[`docs/kick.md`](docs/kick.md) and the [privacy page](https://dustplanner.app/privacy.html). The connection is in a
+**closed beta** (allowed channels only) while it is being tried in real streams; without the native connection,
+[`docs/kick-streamerbot.md`](docs/kick-streamerbot.md) gets the same commands answered through Streamer.bot.
 
 ## Publishing
 

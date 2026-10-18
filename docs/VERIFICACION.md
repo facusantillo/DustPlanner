@@ -206,7 +206,7 @@ loading and the status line says which feature is off.
       shows the yellow warning about a second bot. `%LocalAppData%\DustPlanner\service.log` holds the `Kick:` lines
       (one per command, with its outcome). Anything that differs → paste those lines and the relay's Logs tab entries
       (`relay: webhook chat.message.sent <action>`).
-- [ ] K7. **Public deck page** (K6): with relay ≥ 0.3.0 (tag `worker-v0.3.0`) and the 1.1.0 build from `main` installed
+- [x] K7. **Public deck page** (K6): with relay ≥ 0.3.0 (tag `worker-v0.3.0`) and the 1.1.0 build from `main` installed
       (close HDT first; the panel now reloads its own files after an update, no Ctrl+F5 needed), connect, then
       Settings → Kick → tick *Public deck page* → Save. The row under the checkbox shows your link
       (`live.dustplanner.app/d/tsukuru-tv`); open it from your phone: the deck you have selected in HDT, cards by cost
@@ -218,4 +218,29 @@ loading and the status line says which feature is off.
       First try 2026-10-18: the page did not follow a deck change made with Hearthstone closed — `exporter.log` said
       `Active deck not exported: no account information yet`. The plugin now remembers the last account
       (`last-account.txt`, seeded from the inbox); retest after that build, deliberately with the game closed.
+      ✔ 2026-10-18 with the fixed build: deck changes with the game closed reach the page.
+- [ ] K8. **Around a stream** (K7): with relay ≥ 0.3.0 and the 1.1.0 build from `main` installed (HDT closed first),
+      Settings → Kick → tick *Post the stream's record in chat* and *Show channel-point redemptions in the overlay*,
+      leave the reminder on *Private notice in the panel*, save. Then a short real stream:
+      1. Go live. Within a few seconds Panel → Games → *Streams* shows a row marked **live** with the start time and
+         your current rank; `service.log` has `Kick: stream session <id> opened`.
+      2. Play one game (vs AI is fine). When it ends: a toast in the panel ("Game over: win — resolve the prediction on
+         Kick!") and, if the `/status` page is open, the same toast there (tick *play a sound with it* first to hear
+         the beep). Nothing in chat (the reminder is on *panel*). The *Streams* row now counts the game.
+      3. Have someone redeem a channel-point reward (or redeem one yourself from another account): the OBS overlay
+         shows the card for 6 s with the reward and the viewer; a second redemption of the same reward shows again
+         (another id), the pending → accepted transition of one redemption does not.
+      4. End the stream. Within a few seconds the chat gets `Directo terminado: 1-0 (100 %) · se queda en Diamante 5`
+         (your numbers), posted by @DustPlanner, once; the *Streams* row shows the end time and length. In Claude,
+         `get_stream_sessions` returns that session with its record, rank and deck.
+      5. Set the reminder to *Panel and chat message*, save, go live again, finish a game: the toast and the chat line.
+      Anything that differs → the `Kick:` lines of `service.log` for that stretch and the relay's Logs tab
+      (`relay: webhook livestream.status.updated delivered`, `channel.reward.redemption.updated delivered`).
+- [ ] K9. **Release 1.1.0 and the beta** (K8): with K8 done, tag `v1.1.0` on `main`; the *Release HDT plugin* workflow
+      publishes `DustPlanner-v1.1.0.zip` (+ `.sha256`) and the site's download link serves it. Check
+      `https://dustplanner.app/privacy.html` and `/es/privacidad.html` render after the Pages deploy. The beta stays
+      private (`ALLOWED_SLUGS = "tsukuru-tv"`) until you decide the go-live: to invite another streamer, add their slug
+      (comma-separated, either spelling) and tag a new `worker-v0.3.x`; to open it, empty the value. The PRD's exit
+      criterion — another streamer installs from dustplanner.app and uses it in a stream without help — is the moment
+      to open it.
 

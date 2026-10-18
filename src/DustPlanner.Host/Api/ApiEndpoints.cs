@@ -90,6 +90,15 @@ internal static class ApiEndpoints
         api.MapGet("/games", (AppServices services, string? account, string? since, int? days, string? type, string? format, int? recent) =>
             Guard(() => Task.FromResult<object>(services.GamesOverview(account, AppServices.ParseSince(since, days), type, format, recent ?? 20))));
 
+        // Stage K7: the streams seen so far, newest first, with the record and decks of the games inside each one.
+        api.MapGet("/stream-sessions", (AppServices services, OverlayStateService state, string? account, int? limit) =>
+            Guard(() =>
+            {
+                using var store = DustPlanner.Store.DustStore.Open(services.Paths.Database, readOnly: true);
+                var sessions = new DustPlanner.LogTracker.StreamSessionRepository(store).List(account ?? state.Current.AccountKey, Math.Clamp(limit ?? 20, 1, 200));
+                return Task.FromResult<object>(new { account_key = account ?? state.Current.AccountKey, sessions });
+            }));
+
         api.MapPost("/games/import", async (HttpContext http, AppServices services, OverlayHostOptions options, CancellationToken ct) =>
             await Guard(async () =>
             {

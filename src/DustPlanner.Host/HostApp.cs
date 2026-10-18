@@ -70,6 +70,10 @@ public static class HostApp
         // Stage K6: the active deck travels to the relay while the public page is on.
         builder.Services.AddSingleton<KickDeckPublisher>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<KickDeckPublisher>());
+        // Stage K7: stream sessions, the end-of-stream line, the prediction reminder and the redemptions.
+        builder.Services.AddSingleton<KickNotices>();
+        builder.Services.AddSingleton<KickStreamService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<KickStreamService>());
 
         var app = builder.Build();
 
@@ -95,7 +99,7 @@ public static class HostApp
     }
 
     /// <summary>Server-sent events: the current state immediately, then every change; a comment line every 15 s keeps the connection alive.</summary>
-    private static async Task StreamEventsAsync(HttpContext context, OverlayStateService service, DustPlanner.Kick.KickConnector connector, CancellationToken ct)
+    private static async Task StreamEventsAsync(HttpContext context, OverlayStateService service, DustPlanner.Kick.KickConnector connector, KickNotices notices, CancellationToken ct)
     {
         context.Response.Headers.ContentType = "text/event-stream";
         context.Response.Headers.CacheControl = "no-cache";
@@ -112,12 +116,17 @@ public static class HostApp
         connector.StateChanged += OnKick;
         kick.Writer.TryWrite(connector.Current);
         var nextKick = kick.Reader.ReadAsync(stop.Token).AsTask();
+        // One-off notices (K7: prediction reminder, redemptions) as `kick.<type>` events; a slow reader loses the oldest.
+        var noticeQueue = System.Threading.Channels.Channel.CreateBounded<KickNotice>(new System.Threading.Channels.BoundedChannelOptions(16) { FullMode = System.Threading.Channels.BoundedChannelFullMode.DropOldest });
+        void OnNotice(KickNotice notice) => noticeQueue.Writer.TryWrite(notice);
+        notices.Published += OnNotice;
+        var nextNotice = noticeQueue.Reader.ReadAsync(stop.Token).AsTask();
         try
         {
             while (true)
             {
                 var keepAlive = Task.Delay(TimeSpan.FromSeconds(15), ct);
-                var done = await Task.WhenAny(next, nextKick, keepAlive).ConfigureAwait(false);
+                var done = await Task.WhenAny(next, nextKick, nextNotice, keepAlive).ConfigureAwait(false);
                 if (done == keepAlive)
                 {
                     await context.Response.WriteAsync(": keep-alive\n\n", ct).ConfigureAwait(false);
@@ -131,6 +140,16 @@ public static class HostApp
                     await context.Response.WriteAsync("event: kick\ndata: " + kickJson + "\n\n", ct).ConfigureAwait(false);
                     await context.Response.Body.FlushAsync(ct).ConfigureAwait(false);
                     nextKick = kick.Reader.ReadAsync(stop.Token).AsTask();
+                    continue;
+                }
+
+                if (done == nextNotice)
+                {
+                    var notice = await nextNotice.ConfigureAwait(false);
+                    var noticeJson = JsonSerializer.Serialize(new { notice.Type, notice.At, Payload = notice.Payload }, SseJson);
+                    await context.Response.WriteAsync("event: kick." + notice.Type + "\ndata: " + noticeJson + "\n\n", ct).ConfigureAwait(false);
+                    await context.Response.Body.FlushAsync(ct).ConfigureAwait(false);
+                    nextNotice = noticeQueue.Reader.ReadAsync(stop.Token).AsTask();
                     continue;
                 }
 
@@ -152,6 +171,7 @@ public static class HostApp
         finally
         {
             connector.StateChanged -= OnKick;
+            notices.Published -= OnNotice;
             // An async iterator cannot be disposed while a MoveNextAsync is pending: cancel it and let it finish first.
             await stop.CancelAsync().ConfigureAwait(false);
             try

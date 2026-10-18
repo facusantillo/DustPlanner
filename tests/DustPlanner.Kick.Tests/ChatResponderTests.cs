@@ -178,3 +178,27 @@ public class ChatResponderTests
         Assert.Equal("es", ChatResponder.ResolveLanguage(new ChatPrefs { Language = "es" }, null));
     }
 }
+
+public sealed class StreamTextsTests
+{
+    [Fact]
+    public void Stream_summary_reads_like_the_prd_example_in_both_languages()
+    {
+        var start = new ChatRank(5, 6, 3, 0, "standard");   // Diamond 5
+        var end = new ChatRank(5, 9, 1, 0, "standard");     // Diamond 2
+        Assert.Equal("Directo terminado: 12-7 (63 %) · de Diamante 5 a Diamante 2", ChatTexts.StreamSummary("es", 12, 7, 0, start, end));
+        Assert.Equal("Stream over: 12-7 (63%) · from Diamond 5 to Diamond 2", ChatTexts.StreamSummary("en", 12, 7, 0, start, end));
+        Assert.Equal("Directo terminado: 3-3-1 (50 %) · se queda en Diamante 5", ChatTexts.StreamSummary("es", 3, 3, 1, start, start));
+        Assert.Equal("Stream over: 0-0-2", ChatTexts.StreamSummary("en", 0, 0, 2, null, null)); // no ratio, no rank
+        Assert.Equal("Directo terminado: 5-2 (71 %)", ChatTexts.StreamSummary("es", 5, 2, 0, start, null)); // one end unknown: no movement
+        Assert.Equal("Stream over: 4-1 (80%) · from Diamond 5 to Legend #123", ChatTexts.StreamSummary("en", 4, 1, 0, start, new ChatRank(0, 0, 0, 123, "standard")));
+    }
+
+    [Fact]
+    public void Prediction_reminder_names_the_result()
+    {
+        Assert.Equal("Terminó: victoria — ¡resolvé la predicción!", ChatTexts.PredictionReminder("es", "win"));
+        Assert.Equal("Game over: loss — resolve the prediction!", ChatTexts.PredictionReminder("en", "loss"));
+        Assert.Equal("Game over: ? — resolve the prediction!", ChatTexts.PredictionReminder("en", null));
+    }
+}

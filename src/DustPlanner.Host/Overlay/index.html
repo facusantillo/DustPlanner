@@ -10,6 +10,12 @@
   .warn { background: #fff4d6; border-left: 4px solid #e0a300; padding: 8px 12px; margin: 6px 0; }
   .ok { color: #1f8f3a; }
   iframe { width: 100%; height: 160px; border: 1px dashed #bbb; background: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 20px 20px; }
+  /* Kick prediction reminder (stage K7): a toast that stays until dismissed, plus an optional beep. */
+  #reminder { position: fixed; right: 20px; bottom: 20px; max-width: 360px; background: #1c1e24; color: #f4f4f2; padding: 14px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); display: none; }
+  #reminder.show { display: block; }
+  #reminder b { color: #b8a1ff; }
+  #reminder button { margin-top: 10px; font: inherit; padding: 6px 12px; border-radius: 8px; border: 0; background: #6c5ce7; color: #fff; cursor: pointer; }
+  .sound { font-size: 14px; color: #555; }
 </style>
 </head>
 <body>
@@ -25,6 +31,11 @@ Nothing here talks to the game client.</p>
 </ol>
 <p>Preview (the checkerboard is this page, not the overlay — its background is transparent):</p>
 <iframe id="preview" title="overlay preview"></iframe>
+
+<h2>Kick</h2>
+<p>When the channel is live and a game ends, a reminder appears here (and in the panel) so the prediction gets resolved.
+<label class="sound"><input type="checkbox" id="reminder-sound"> play a sound with it</label></p>
+<div id="reminder" role="status"><div id="reminder-text"></div><button type="button" id="reminder-dismiss">Done</button></div>
 
 <h2>State</h2>
 <div id="warnings"></div>
@@ -43,6 +54,31 @@ Nothing here talks to the game client.</p>
   }
   refresh();
   setInterval(refresh, 3000);
+
+  // Prediction reminder over /events. The sound preference lives in this browser only.
+  const soundBox = document.getElementById("reminder-sound");
+  try { soundBox.checked = localStorage.getItem("dp.reminderSound") === "1"; } catch (e) { /* storage blocked */ }
+  soundBox.addEventListener("change", () => { try { localStorage.setItem("dp.reminderSound", soundBox.checked ? "1" : "0"); } catch (e) { /* ignore */ } });
+  document.getElementById("reminder-dismiss").addEventListener("click", () => document.getElementById("reminder").classList.remove("show"));
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = 880; gain.gain.value = 0.08;
+      osc.connect(gain); gain.connect(ctx.destination); osc.start();
+      osc.frequency.setValueAtTime(1175, ctx.currentTime + 0.12);
+      osc.stop(ctx.currentTime + 0.28);
+    } catch (e) { /* no audio */ }
+  }
+  const resultNames = { win: "won", loss: "lost", tie: "tied" };
+  const events = new EventSource("/events");
+  events.addEventListener("kick.reminder", e => {
+    let payload = {}; try { payload = JSON.parse(e.data).payload || {}; } catch (err) { return; }
+    const who = payload.opponent_class ? " vs " + payload.opponent_class.toLowerCase() : "";
+    document.getElementById("reminder-text").innerHTML = "Game over: <b>" + (resultNames[payload.result] || payload.result || "?") + "</b>" + who.replace(/</g, "&lt;") + " — resolve the prediction!";
+    document.getElementById("reminder").classList.add("show");
+    if (soundBox.checked) beep();
+  });
 </script>
 </body>
 </html>

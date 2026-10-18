@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -22,12 +23,16 @@ internal sealed class ExportService
     private readonly object _gate = new object();
     private readonly object _activeDeckGate = new object();
     private readonly string _exporterVersion;
+    private readonly string _lastAccountPath;
+    private AccountSnapshot? _rememberedAccount;
+    private bool _rememberedAccountLoaded;
 
     public ExportService(IHdtGateway hdt, ExporterSettings settings)
     {
         _hdt = hdt;
         _settings = settings;
         _writer = new ExportWriter(settings.InboxDirectory, settings.HistoryKeep);
+        _lastAccountPath = Path.Combine(settings.ResolvedRootDirectory, LastAccount.FileName);
         var interval = TimeSpan.FromSeconds(Math.Max(1, settings.MinIntervalSeconds));
         _collectionThrottle = new ExportThrottle(interval);
         _auxiliaryThrottle = new ExportThrottle(interval);
@@ -120,7 +125,7 @@ internal sealed class ExportService
             var account = ResolveAccount(_hdt.GetCachedCollection());
             if (account is null)
             {
-                return SetStatus("Active deck not exported: no account information yet");
+                return SetStatus("Active deck not exported: no account yet (open Hearthstone once; the plugin remembers the account afterwards)");
             }
 
             var status = ExportActiveDeck(trigger, account, AccountKeys.Format(account.Hi, account.Lo), now, manual: false);
@@ -246,14 +251,122 @@ internal sealed class ExportService
             : "rank (standard league " + standard.LeagueId.ToString(CultureInfo.InvariantCulture) + ", star level " + standard.StarLevel.ToString(CultureInfo.InvariantCulture) + ")";
     }
 
+    /// <summary>
+    /// The live account when HearthMirror has one (collection cache, then the running game); otherwise the last one it
+    /// reported, kept in <c>last-account.txt</c>. Without the fallback, a deck chosen in HDT while Hearthstone is closed
+    /// was never exported ("no account information yet") — found in VERIFICACION K7.
+    /// </summary>
     private AccountSnapshot? ResolveAccount(HdtCollectionSnapshot? collection)
     {
+        AccountSnapshot? live = null;
         if (collection is not null && (collection.AccountHi != 0 || collection.AccountLo != 0))
         {
-            return new AccountSnapshot { Hi = collection.AccountHi, Lo = collection.AccountLo, BattleTag = collection.BattleTag };
+            live = new AccountSnapshot { Hi = collection.AccountHi, Lo = collection.AccountLo, BattleTag = collection.BattleTag };
+        }
+        else if (_hdt.IsGameRunning)
+        {
+            live = _hdt.GetAccount();
         }
 
-        return _hdt.IsGameRunning ? _hdt.GetAccount() : null;
+        if (live is not null && (live.Hi != 0 || live.Lo != 0))
+        {
+            Remember(live);
+            return live;
+        }
+
+        return Remembered();
+    }
+
+    private void Remember(AccountSnapshot account)
+    {
+        var current = Remembered();
+        if (current is not null && current.Hi == account.Hi && current.Lo == account.Lo && string.Equals(current.BattleTag, account.BattleTag, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _rememberedAccount = account;
+        _rememberedAccountLoaded = true;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_lastAccountPath)!);
+            File.WriteAllText(_lastAccountPath, LastAccount.Serialize(account.Hi, account.Lo, account.BattleTag));
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            PluginLog.Warn("Could not remember the account: " + ex.Message);
+        }
+    }
+
+    private AccountSnapshot? Remembered()
+    {
+        if (_rememberedAccountLoaded)
+        {
+            return _rememberedAccount;
+        }
+
+        _rememberedAccountLoaded = true;
+        try
+        {
+            if (File.Exists(_lastAccountPath) && LastAccount.TryParse(File.ReadAllText(_lastAccountPath), out var hi, out var lo, out var tag))
+            {
+                _rememberedAccount = new AccountSnapshot { Hi = hi, Lo = lo, BattleTag = tag };
+            }
+            else
+            {
+                // Before the file exists (first run of this version): the inbox already names the account when there is exactly one.
+                _rememberedAccount = AccountFromInbox();
+            }
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            PluginLog.Warn("Could not read the remembered account: " + ex.Message);
+        }
+
+        if (_rememberedAccount is not null)
+        {
+            PluginLog.Info("Using the remembered account " + (_rememberedAccount.BattleTag ?? AccountKeys.Format(_rememberedAccount.Hi, _rememberedAccount.Lo)) + " while Hearthstone is not running.");
+        }
+
+        return _rememberedAccount;
+    }
+
+    private AccountSnapshot? AccountFromInbox()
+    {
+        if (!Directory.Exists(_settings.InboxDirectory))
+        {
+            return null;
+        }
+
+        AccountSnapshot? found = null;
+        foreach (var dir in Directory.GetDirectories(_settings.InboxDirectory))
+        {
+            if (!AccountKeys.TryParse(Path.GetFileName(dir), out var hi, out var lo) || !File.Exists(Path.Combine(dir, ExportSchema.CollectionFileName)))
+            {
+                continue;
+            }
+
+            if (found is not null)
+            {
+                return null; // two accounts: no guessing, the next game start settles it
+            }
+
+            found = new AccountSnapshot { Hi = hi, Lo = lo, BattleTag = ReadBattleTag(Path.Combine(dir, ExportSchema.CollectionFileName)) };
+        }
+
+        return found;
+    }
+
+    private static string? ReadBattleTag(string collectionFile)
+    {
+        try
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<CollectionExport>(File.ReadAllText(collectionFile), JsonConventions.Settings)?.Meta?.Account?.BattleTag;
+        }
+        catch (Exception ex) when (ex is Newtonsoft.Json.JsonException || ex is IOException)
+        {
+            return null;
+        }
     }
 
     private ExportMeta NewMeta(string kind, string trigger, AccountSnapshot account, DateTimeOffset now) => new ExportMeta

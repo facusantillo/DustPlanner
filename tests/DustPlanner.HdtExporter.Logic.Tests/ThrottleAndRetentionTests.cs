@@ -48,3 +48,35 @@ public class ThrottleAndRetentionTests
         Assert.Empty(HistoryRetention.FilesToPrune(files, "rank", keep: 0));
     }
 }
+
+public sealed class LastAccountTests
+{
+    [Fact]
+    public void Round_trips_the_account_and_tolerates_a_missing_tag()
+    {
+        var line = LastAccount.Serialize(8589934592, 42, "Tsukuru#2134");
+        Assert.Equal("8589934592\t42\tTsukuru#2134", line);
+        Assert.True(LastAccount.TryParse(line + "\r\n", out var hi, out var lo, out var tag));
+        Assert.Equal(8589934592UL, hi);
+        Assert.Equal(42UL, lo);
+        Assert.Equal("Tsukuru#2134", tag);
+
+        Assert.True(LastAccount.TryParse(LastAccount.Serialize(1, 2, null), out _, out _, out var none));
+        Assert.Null(none);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("garbage")]
+    [InlineData("0\t0\tnobody")]
+    [InlineData("-1\t5\tx")]
+    [InlineData("1,5\t5\tx")]
+    public void Rejects_what_it_did_not_write(string? text)
+    {
+        Assert.False(LastAccount.TryParse(text, out var hi, out var lo, out var tag));
+        Assert.Equal(0UL, hi);
+        Assert.Equal(0UL, lo);
+        Assert.Null(tag);
+    }
+}

@@ -215,4 +215,7 @@ loading and the status line says which feature is off.
       answers `Control Priest · lista: https://live.dustplanner.app/d/tsukuru-tv · AAECAa0G…`. Untick the box → Save:
       the page answers "not publishing its deck" (404) at once and `!deck` drops the link. Anything that differs →
       the `Kick:` lines of `service.log` (look for `published deck`) and what `/api/d/tsukuru-tv/deck` returns.
+      First try 2026-10-18: the page did not follow a deck change made with Hearthstone closed — `exporter.log` said
+      `Active deck not exported: no account information yet`. The plugin now remembers the last account
+      (`last-account.txt`, seeded from the inbox); retest after that build, deliberately with the game closed.
 

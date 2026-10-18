@@ -629,4 +629,8 @@ recorded in its §11.
   browser; a first open on mobile data takes a moment. Art would mean a second CDN; left out on purpose.
 - Deck changes reach the page within the service's poll (~2 s) plus the 15 s cache.
 - The relay cannot know the deck's validity: a 20-card deck under construction is published as-is.
+- Found in the first K7 try: with Hearthstone closed, HDT's `ActiveDeckChanged` fired but the plugin refused to export
+  ("no account information yet"), because the account only came from HearthMirror. `ExportService.ResolveAccount` now
+  falls back to the last account seen (`%LocalAppData%\DustPlanner\last-account.txt`, written whenever the live one
+  is known, seeded from the inbox when there is exactly one account folder). `LastAccount` (Logic) + 2 tests.
 

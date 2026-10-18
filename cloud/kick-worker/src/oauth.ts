@@ -67,6 +67,8 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
       for (const r of await subscribeEvents(tokens.access_token, EVENTS)) {
         if (r.subscription_id) {
           subscriptions.push({ id: r.subscription_id, event: r.name, version: r.version });
+        } else {
+          console.log("relay: subscription refused at callback", r.name, r.error ?? "unknown");
         }
       }
     } catch (error) {

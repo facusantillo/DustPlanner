@@ -183,11 +183,22 @@ loading and the status line says which feature is off.
       *Kick relay* workflow must end green and `https://live.dustplanner.app/health` must answer
       `{"ok":true,"version":"0.1.0","configured":true}`. ✔ 2026-10-18. In the Cloudflare dashboard: one Worker, two Durable Object
       classes, the KV namespace bound, the custom domain active. Anything that differs → paste the failing workflow step.
-- [ ] K5. **Connect from the panel** (K4): with the relay (≥ 0.1.1) deployed and the 1.1.0 build installed, open
+- [x] K5. **Connect from the panel** (K4): with the relay (≥ 0.1.1) deployed and the 1.1.0 build installed, open
       Settings → Kick → *Connect with Kick*. A Kick tab asks you to authorise the five permissions; after accepting, the
       relay's page sends the browser back and the status card says **Connected** as @tsukuru-tv (Kick's spelling of the slug) within a few seconds.
       Then: type `!deck` in your own chat — the card shows *last command: deck* (no answer yet: that is K5 of the PRD);
       `%LocalAppData%\DustPlanner\kick.json` exists with `"protection": "dpapi"` and no readable token; close the
       service and start it again: it reconnects without the browser; *Disconnect* empties the card and deletes the file.
-      Anything that differs → paste the host log lines starting with `Kick:` and the relay's `/health`.
+      Anything that differs → paste the host log lines starting with `Kick:` and the relay's `/health`. ✔ 2026-10-18
+      (found on the way: the Kick app's *Webhooks* switch must be on, or Kick refuses the subscriptions and the card says
+      *Connected* with nothing arriving — K6's warning covers that now).
+- [ ] K6. **Commands answered by the bot** (K5): with relay ≥ 0.2.0 (tag `worker-v0.2.0`) and the 1.2.0 build installed,
+      Streamer.bot closed and the channel connected, type `!deck` in your chat from any account other than the bot's. The
+      bot answers within a second or two, as a reply to your message; the card says *last command: deck · answered*.
+      Note **which account the answer is shown under** (PRD §11 leaves it open; the expectation is `dustplannerbot`).
+      Then `!deck` again at once → no second answer, card says *in cooldown*; `!dust` → nothing (off by default).
+      Open Streamer.bot with the old `!deck` action still on and type `!deck`: at most one answer in chat, and the card
+      shows the yellow warning about a second bot. `%LocalAppData%\DustPlanner\service.log` holds the `Kick:` lines
+      (one per command, with its outcome). Anything that differs → paste those lines and the relay's Logs tab entries
+      (`relay: webhook chat.message.sent <action>`).
 

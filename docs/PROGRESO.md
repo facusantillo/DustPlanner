@@ -22,10 +22,11 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | K1 | Active deck: `active-deck.json`, `OverlayState.ActiveDeck`, `active_deck` table, `game.deck_id`, overlay cell | done | **K2** — deck name in the overlay when a game starts |
 | K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
 | K3 | Kick relay: Cloudflare Worker (`cloud/kick-worker`), OAuth + PKCE, channel Durable Objects, signed webhooks, `worker.yml` | done | **K1** (app + secrets) then **K4** — first deploy and a real message reaching the service |
-| K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | **K5** — connect from the panel, see *Connected*, type a command |
+| K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | K5 ✔ 2026-10-18 (connected, command seen, reconnect, disconnect) |
+| K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, build 1.2.0 | done | **K6** — `!deck` answered by the bot with Streamer.bot closed; which account posts |
 
-189 .NET tests + 30 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. No remote configured;
-the maintainer publishes.
+198 .NET tests + 34 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
+merges and tags.
 
 ---
 
@@ -558,4 +559,37 @@ recorded in its §11.
   handlers. If a pop-up blocker interferes, the panel says so and the manual code works.
 - **Version 1.1.0.** The maintainer's rule, replacing PRD §10.6: a release that adds functionality bumps the minor
   (1.1.0 = K1–K4; the next functional PR is 1.2.0), patches are for fixes only. 1.0.1 was never published.
+
+## Kick — K5 — Commands answered by the bot
+
+**Done**
+
+- `DustPlanner.Kick.KickChatBridge` (hosted service): every `chat.command` the connector raises goes through the same
+  `ChatResponder` instance as `GET /api/chat/…` — same texts, same cooldown clocks — and leaves as `chat.send` with
+  `reply_to_message_id`, so the bot's line is a reply to the viewer's. The shared clocks mean a Streamer.bot still
+  polling cannot double an answer inside the cooldown; the panel still asks to turn it off. Outcome per command
+  (`answered`, `cooldown`, `ignored`, `send_failed`) in `KickConnectionState.LastCommandOutcome`, shown on the card
+  ("last command: deck · answered") and logged as `Kick: !deck → answered`. A broken `prefs.json` falls back to the
+  defaults, like the local endpoint.
+- Connector: the hello's `subscriptions` and the relay's new `subscriptions` message land in the state; an empty list
+  while connected means Kick refused the webhooks (the app's switch is off) and the card shows a red notice instead of
+  a silent *Connected* — exactly what happened on the first real connection. `GET /api/chat/…` marks
+  `LastLocalChatRequestAt` while connected (published at most once a minute); the card shows a yellow notice for 15 min.
+- `service.log` in `%LocalAppData%\DustPlanner` (`FileLoggerProvider`, 2 MB, one rotation to `.1`): the service the
+  plugin starts runs hidden, and until now its `Kick:` lines went nowhere. Off in tests (`quiet`).
+- Relay 0.2.0: hello carries `subscriptions`; `ensureSubscriptions` on connection announces changes with a
+  `subscriptions` frame; one log line per webhook (`relay: webhook <type> <action>`, never the body) and one per refused
+  subscription (Kick's short reason), so the Cloudflare Logs tab answers "is Kick talking to us?".
+- Tests: `KickChatBridgeTests` (7: answer as a reply, shared cooldown, disabled command, missing-data line,
+  subscriptions in hello and announced, old relay without the field, local-request throttling), host flow extended
+  (native answer over the real DI, duplicate-bot flag through SSE), `FileLoggerTests` (2), worker: hello subscriptions
+  and the announcement (34 vitest). The connector tests isolate a second pairing in its own folder: reusing the first
+  pairing from disk produced a session restart that could swallow a frame pushed by the test.
+
+**Pending / caveats**
+
+- Which account the `type: bot` message is shown under is confirmed by VERIFICACION K6.
+- `chat.send` is fire-and-forget on the service side: the relay reports `send_dropped`/`kick_rate_limited` as `error`
+  frames, which land in `LastError`, not in the command's outcome.
+- The Streamer.bot notice relies on `/api/chat` being called; a bot that caches texts would not be detected.
 

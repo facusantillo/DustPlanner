@@ -102,6 +102,23 @@ public sealed class KickEndpointsTests : IAsyncLifetime
         Assert.Equal("?", (string?)latest["prefix"]);
         Assert.True((bool?)latest["forward"]!["redemptions"]);
 
+        // Stage K5: a command from the relay is answered through the host's responder and state, as a chat.send.
+        await _relay.PushAsync(new { v = 1, type = "chat.command", message_id = "m-1", command = "deck", args = "", sender = new { user_id = "7", username = "ana", badges = Array.Empty<string>() }, at = "2026-10-18T12:00:00Z" });
+        var answer = await _relay.WaitForMessageAsync("chat.send");
+        Assert.Equal("m-1", (string?)answer["reply_to_message_id"]);
+        Assert.False(string.IsNullOrWhiteSpace((string?)answer["text"]));
+        var answered = await WaitForKickAsync(reader, s => s.TryGetProperty("last_command_outcome", out var o) && o.GetString() == "answered");
+        Assert.Equal("deck", answered.GetProperty("last_command").GetString());
+
+        // Streamer.bot still polling next to the native connection: the state says so, so the panel can warn.
+        using (var local = await _http.GetAsync("/api/chat/deck?user=ana"))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, local.StatusCode); // same responder, same cooldown
+        }
+
+        var flagged = await WaitForKickAsync(reader, s => s.TryGetProperty("last_local_chat_request_at", out var at) && at.ValueKind == JsonValueKind.String);
+        Assert.Equal("connected", flagged.GetProperty("status").GetString());
+
         var disconnected = await Post("/api/kick/disconnect", new { });
         Assert.Equal("disconnected", disconnected.GetProperty("state").GetProperty("status").GetString());
         Assert.Equal(1, _relay.DisconnectCalls);

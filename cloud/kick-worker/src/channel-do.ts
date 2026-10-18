@@ -141,6 +141,7 @@ export class ChannelDO extends DurableObject<Env> {
       missing_scopes: missing,
       live: this.liveState(),
       server_version: this.env.RELAY_VERSION,
+      subscriptions: this.subscribedEvents(),
     });
     return { missing_scopes: missing };
   }
@@ -186,9 +187,11 @@ export class ChannelDO extends DurableObject<Env> {
       missing_scopes: row?.missing_scopes ? row.missing_scopes.split(" ").filter(Boolean) : [],
       live: this.liveState(),
       server_version: this.env.RELAY_VERSION,
+      subscriptions: this.subscribedEvents(),
     });
-    // A connecting service is a good moment to make sure Kick still delivers (PRD §5.3 renewal and retries).
-    this.ctx.waitUntil(this.ensureSubscriptions().catch(() => undefined));
+    // A connecting service is a good moment to make sure Kick still delivers (PRD §5.3 renewal and retries). The
+    // service is told when the set changed, so a card that said "no chat events" clears itself.
+    this.ctx.waitUntil(this.ensureSubscriptions(true).catch(() => undefined));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -428,8 +431,19 @@ export class ChannelDO extends DurableObject<Env> {
     await this.ctx.storage.setAlarm(next);
   }
 
-  /** Re-subscribes whatever Kick dropped (it unsubscribes after a day of failures, PRD R2). Returns how many were added. */
-  async ensureSubscriptions(): Promise<number> {
+  /** The event names with a webhook right now, in a stable order (what the hello and `subscriptions` carry). */
+  private subscribedEvents(): string[] {
+    return this.ctx.storage.sql
+      .exec<{ event: string }>("SELECT DISTINCT event FROM subscription ORDER BY event")
+      .toArray()
+      .map((r) => r.event);
+  }
+
+  /**
+   * Re-subscribes whatever Kick dropped (it unsubscribes after a day of failures, PRD R2). Returns how many were added.
+   * With `announce`, connected services get a `subscriptions` message whenever the set differs from before.
+   */
+  async ensureSubscriptions(announce = false): Promise<number> {
     if (!this.tokenRow()) {
       return 0;
     }
@@ -439,6 +453,7 @@ export class ChannelDO extends DurableObject<Env> {
     } catch {
       return 0;
     }
+    const before = this.subscribedEvents().join(" ");
     const existing = await listSubscriptions(token);
     const sql = this.ctx.storage.sql;
     const present = new Set(existing.map((s) => `${s.event}@${s.version}`));
@@ -448,16 +463,22 @@ export class ChannelDO extends DurableObject<Env> {
       sql.exec("INSERT OR REPLACE INTO subscription(id, event, version) VALUES (?, ?, ?)", s.id, s.event, s.version);
     }
     const missing = EVENTS.filter((e) => !present.has(`${e.name}@${e.version}`));
-    if (missing.length === 0) {
-      return 0;
-    }
-    const results = await subscribeEvents(token, missing);
     let added = 0;
-    for (const r of results) {
-      if (r.subscription_id) {
-        sql.exec("INSERT OR REPLACE INTO subscription(id, event, version) VALUES (?, ?, ?)", r.subscription_id, r.name, r.version);
-        added++;
+    if (missing.length > 0) {
+      const results = await subscribeEvents(token, missing);
+      for (const r of results) {
+        if (r.subscription_id) {
+          sql.exec("INSERT OR REPLACE INTO subscription(id, event, version) VALUES (?, ?, ?)", r.subscription_id, r.name, r.version);
+          added++;
+        } else {
+          // Kick's reason is a short code (e.g. webhooks disabled on the app), never user content.
+          console.log("relay: subscription refused", r.name, r.error ?? "unknown");
+        }
       }
+    }
+    const after = this.subscribedEvents();
+    if (announce && after.join(" ") !== before) {
+      this.broadcast({ v: 1, type: "subscriptions", events: after });
     }
     return added;
   }

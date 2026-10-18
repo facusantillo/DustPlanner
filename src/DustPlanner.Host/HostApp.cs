@@ -22,14 +22,16 @@ public static class HostApp
         var builder = WebApplication.CreateSlimBuilder(Array.Empty<string>());
         builder.WebHost.UseUrls(options.Url);
         builder.Logging.ClearProviders();
+        var services = new AppServices(options.Paths);
         if (!quiet)
         {
             builder.Logging.AddSimpleConsole(o => o.SingleLine = true);
+            // The plugin starts the service hidden: service.log in the data folder is where its lines end up.
+            builder.Logging.AddProvider(new FileLoggerProvider(services.Paths.Root));
             builder.Logging.SetMinimumLevel(LogLevel.Information);
             builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         }
 
-        var services = new AppServices(options.Paths);
         var info = ApiEndpoints.DescribeService(options.Url, services.Paths.Root);
         builder.Services.AddSingleton(options);
         builder.Services.AddSingleton(services);
@@ -52,6 +54,15 @@ public static class HostApp
             sp.GetRequiredService<ILogger<DustPlanner.Kick.KickConnector>>(),
             clock: sp.GetRequiredService<TimeProvider>()));
         builder.Services.AddHostedService(sp => sp.GetRequiredService<DustPlanner.Kick.KickConnector>());
+        // Stage K5: commands the relay forwards are answered here, with the same responder (and cooldowns) as /api/chat.
+        builder.Services.AddSingleton(sp => new DustPlanner.Kick.KickChatBridge(
+            sp.GetRequiredService<DustPlanner.Kick.KickConnector>(),
+            sp.GetRequiredService<DustPlanner.Kick.ChatResponder>(),
+            () => ChatEndpoints.ReadChatPrefs(services),
+            () => ChatContextFactory.From(sp.GetRequiredService<OverlayStateService>().Current),
+            sp.GetRequiredService<ILogger<DustPlanner.Kick.KickChatBridge>>(),
+            sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<DustPlanner.Kick.KickChatBridge>());
 
         var app = builder.Build();
 

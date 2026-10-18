@@ -61,7 +61,10 @@ channel is deleted 24 hours later unless it reconnects. A daily alarm re-subscri
 4. **DNS** — nothing to create: `custom_domain = true` makes Cloudflare add the record for `live.dustplanner.app`. The
    apex keeps serving GitHub Pages. Make sure no `live` record exists beforehand.
 5. **Kick app** — redirect `https://live.dustplanner.app/oauth/callback`; *Enable Webhooks* with
-   `https://live.dustplanner.app/webhooks/kick`.
+   `https://live.dustplanner.app/webhooks/kick`. **With the switch off, Kick accepts the OAuth flow but refuses every
+   subscription**: the service shows *Connected*, its card a red notice about chat events, and nothing arrives. Turn it
+   on and reconnect the service (it re-subscribes on every connection); the Logs tab then shows
+   `relay: webhook chat.message.sent delivered` for each command.
 6. Tag: `git tag worker-v0.1.0 && git push origin worker-v0.1.0`. The workflow deploys, pushes the two secrets and curls
    `/health`, which must answer `"configured": true`.
 

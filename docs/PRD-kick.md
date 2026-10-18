@@ -310,7 +310,8 @@ Rutas en `https://live.dustplanner.app`:
 
 | Dirección | `type` | Campos |
 |---|---|---|
-| Worker → servicio | `hello` | `channel{user_id, slug, username}`, `needs_reconnect`, `missing_scopes[]`, `live{is_live, title, started_at, ended_at}`, `server_version` |
+| Worker → servicio | `hello` | `channel{user_id, slug, username}`, `needs_reconnect`, `missing_scopes[]`, `live{is_live, title, started_at, ended_at}`, `server_version`, `subscriptions[]` (eventos de Kick con webhook; vacío si Kick los rechazó — relay ≥ 0.2.0) |
+| Worker → servicio | `subscriptions` | `events[]`: el conjunto cambió después del `hello` (el Worker se vuelve a suscribir en cada conexión) |
 | Worker → servicio | `chat.command` | `message_id`, `command`, `args`, `sender{user_id, username, badges[]}`, `at` |
 | Worker → servicio | `stream.status` | `is_live`, `title`, `started_at`, `ended_at` |
 | Worker → servicio | `reward.redemption` | `id`, `status`, `reward{id, title, cost}`, `redeemer{username}`, `user_input` |

@@ -27,6 +27,15 @@ export interface HelloMessage {
   missing_scopes: string[];
   live: LiveState;
   server_version: string;
+  /** Kick event names the relay has webhooks for; empty when Kick refused them (webhooks off on the app). */
+  subscriptions: string[];
+}
+
+/** Sent when the set of webhooks changes after the hello (the relay re-subscribes on every connection). */
+export interface SubscriptionsMessage {
+  v: 1;
+  type: "subscriptions";
+  events: string[];
 }
 
 export interface ChatCommandMessage {
@@ -68,7 +77,7 @@ export interface PongMessage {
   type: "pong";
 }
 
-export type RelayToService = HelloMessage | ChatCommandMessage | StreamStatusMessage | RewardRedemptionMessage | ErrorMessage | PongMessage;
+export type RelayToService = HelloMessage | ChatCommandMessage | StreamStatusMessage | RewardRedemptionMessage | SubscriptionsMessage | ErrorMessage | PongMessage;
 
 // ----- service → relay -----
 

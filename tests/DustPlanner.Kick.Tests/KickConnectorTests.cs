@@ -36,10 +36,10 @@ public sealed class KickConnectorTests : IAsyncLifetime
         TempDir.Delete(_home);
     }
 
-    private KickConnector NewConnector(bool start = true)
+    private KickConnector NewConnector(bool start = true, string? home = null)
     {
         var options = new KickConnectorOptions { RelayUrl = _relay.Url, MinBackoff = TimeSpan.FromMilliseconds(50), MaxBackoff = TimeSpan.FromMilliseconds(400), PingInterval = TimeSpan.FromMilliseconds(300) };
-        var connector = new KickConnector(options, new FileDeviceTokenStore(_home), () => (_chat, _kick), NullLogger<KickConnector>.Instance);
+        var connector = new KickConnector(options, new FileDeviceTokenStore(home ?? _home), () => (_chat, _kick), NullLogger<KickConnector>.Instance);
         _connectors.Add(connector);
         if (start)
         {
@@ -81,9 +81,15 @@ public sealed class KickConnectorTests : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// A connector paired from scratch. A second one in the same test gets its own folder: otherwise it would load the
+    /// first pairing from disk, connect with it, and then restart its session when the new pairing lands — a window in
+    /// which a frame pushed by the test can land on the socket being torn down.
+    /// </summary>
     private async Task<KickConnector> PairedAndConnectedAsync()
     {
-        var connector = NewConnector();
+        var home = _connectors.Count == 0 ? _home : Directory.CreateDirectory(Path.Combine(_home, "again-" + _connectors.Count)).FullName;
+        var connector = NewConnector(home: home);
         var url = connector.BeginPairing(8766);
         var query = System.Web.HttpUtility.ParseQueryString(new Uri(url).Query);
         var code = _relay.IssueCode(query["pair"]!);

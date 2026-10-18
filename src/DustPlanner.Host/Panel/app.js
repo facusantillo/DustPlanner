@@ -558,9 +558,15 @@
     let lines = "<div>" + chip + who + "</div>";
     if (s.last_error) lines += '<div class="faint">' + esc(s.last_error) + "</div>";
     if (status === "connected" && s.connected_at) lines += '<div class="faint">' + esc(t("kick_since", { when: when(s.connected_at) })) + (s.live && s.live.is_live ? " · " + t("kick_live_now") : "") + "</div>";
-    if (s.last_command) lines += '<div class="faint">' + esc(t("kick_last_command", { cmd: s.last_command, when: when(s.last_command_at) })) + "</div>";
+    if (s.last_command) {
+      const outcome = s.last_command_outcome ? " · " + (t("kick_outcome_" + s.last_command_outcome) || s.last_command_outcome) : "";
+      lines += '<div class="faint">' + esc(t("kick_last_command", { cmd: s.last_command, when: when(s.last_command_at) }) + outcome) + "</div>";
+    }
     if (status === "connecting" && s.next_retry_at) lines += '<div class="faint">' + esc(t("kick_retry", { when: when(s.next_retry_at) })) + "</div>";
     if (status === "pairing") lines += '<div class="faint">' + esc(t("kick_pairing_hint")) + "</div>";
+    // Two things that look like "connected" but mean no answers: Kick refused the webhooks, or a second bot is answering too.
+    if (status === "connected" && Array.isArray(s.subscriptions) && !s.subscriptions.includes("chat.message.sent")) lines += '<div class="notice error">' + esc(t("kick_no_chat_subscription")) + "</div>";
+    if (status === "connected" && s.last_local_chat_request_at && Date.now() - Date.parse(s.last_local_chat_request_at) < 15 * 60 * 1000) lines += '<div class="notice">' + esc(t("kick_duplicate_bot", { when: when(s.last_local_chat_request_at) })) + "</div>";
     return '<div class="kick-card">' + lines + "</div>";
   }
 

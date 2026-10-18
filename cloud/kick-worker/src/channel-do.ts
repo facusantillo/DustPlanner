@@ -217,6 +217,10 @@ export class ChannelDO extends DurableObject<Env> {
         await this.handleChatSend(ws, message);
         return;
       case "deck.publish":
+        // Only while the page is on: a publish that races a config turning it off must not resurrect the deck.
+        if (!this.localConfig()?.public_page) {
+          return;
+        }
         this.ctx.storage.sql.exec(
           `INSERT INTO public_deck(id, name, deckstring, card_class, format, updated_at) VALUES (1, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET name = excluded.name, deckstring = excluded.deckstring, card_class = excluded.card_class, format = excluded.format, updated_at = excluded.updated_at`,
@@ -551,6 +555,12 @@ export class ChannelDO extends DurableObject<Env> {
   /** The published deck for the public page (K6); null when the page is off or nothing was published. */
   async publicDeck(): Promise<ChannelStatus["public_deck"]> {
     return (await this.status()).public_deck;
+  }
+
+  /** What `/d/<slug>` needs in one hop: the channel (for the name and the kick.com link) and the deck, or null for either. */
+  async publicPage(): Promise<{ channel: ChannelInfo; deck: NonNullable<ChannelStatus["public_deck"]> } | null> {
+    const status = await this.status();
+    return status.channel && status.public_deck ? { channel: status.channel, deck: status.public_deck } : null;
   }
 
   // ------------------------------------------------------------------------------------------------ helpers

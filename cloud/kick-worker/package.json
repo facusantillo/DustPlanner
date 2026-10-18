@@ -9,6 +9,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
+    "build:client": "node scripts/build-client.mjs",
+    "typecheck:client": "tsc -p client/tsconfig.json --noEmit",
     "typecheck": "tsc --noEmit",
     "types": "wrangler types --include-env=false"
   },

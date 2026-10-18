@@ -33,6 +33,9 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run types
       - run: npm run typecheck
+      - run: npm run typecheck:client
+      - name: Browser script is built from its sources
+        run: npm run build:client && git diff --exit-code -- src/generated
       - run: npm test
       - name: Bundle (dry run, no account needed)
         run: npx wrangler deploy --dry-run --outdir dist

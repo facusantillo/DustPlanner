@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate deckstring test vectors with python-hearthstone's reference implementation.
 
-Writes tests/DustPlanner.Core.Tests/Fixtures/deckstrings.json. The C# codec must decode every
+Writes tests/DustPlanner.Core.Tests/Fixtures/deckstrings.json and cloud/kick-worker/test/fixtures/deckstrings.json. The C# codec must decode every
 vector to the same cards/heroes/format/sideboards and re-encode it to the same canonical string.
 Card ids are arbitrary dbfIds: no card data is involved.
 
@@ -16,7 +16,12 @@ from pathlib import Path
 from hearthstone.deckstrings import write_deckstring
 from hearthstone.enums import FormatType
 
-OUT = Path(__file__).resolve().parent.parent / "tests" / "DustPlanner.Core.Tests" / "Fixtures" / "deckstrings.json"
+ROOT = Path(__file__).resolve().parent.parent
+# Two consumers of the same vectors: the C# codec and the browser decoder of the public deck page (K6).
+OUTS = [
+    ROOT / "tests" / "DustPlanner.Core.Tests" / "Fixtures" / "deckstrings.json",
+    ROOT / "cloud" / "kick-worker" / "test" / "fixtures" / "deckstrings.json",
+]
 
 ETC = 90749  # E.T.C., Band Manager
 ZILLIAX = 102983  # Zilliax Deluxe 3000 (dbfId as of 2024; only used as an owner id here)
@@ -132,9 +137,11 @@ def main() -> None:
         {"name": "truncated", "deckstring": "AAECAQcA", "reason": "truncated"},
     ]
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"vectors": vectors, "invalid": invalid}, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {len(vectors)} vectors and {len(invalid)} invalid cases to {OUT}")
+    text = json.dumps({"vectors": vectors, "invalid": invalid}, indent=2) + "\n"
+    for out in OUTS:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text, encoding="utf-8")
+        print(f"wrote {len(vectors)} vectors and {len(invalid)} invalid cases to {out}")
 
 
 if __name__ == "__main__":

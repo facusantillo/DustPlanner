@@ -18,7 +18,7 @@ BOT_USER_ID = "1000417936"
 # Comma-separated channel slugs allowed to connect while the beta is private. Empty = everyone (K8).
 ALLOWED_SLUGS = "tsukuru-tv"
 PUBLIC_BASE_URL = "https://live.dustplanner.app"
-RELAY_VERSION = "0.2.0"
+RELAY_VERSION = "0.3.0"
 
 # Secrets (wrangler secret put / GitHub Secrets, never in this file):
 #   KICK_CLIENT_SECRET    — the Kick app's client secret

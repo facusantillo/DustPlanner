@@ -1,6 +1,6 @@
 # Chat commands with Streamer.bot (Kick, Twitch or any chat it talks to)
 
-DustPlanner already knows, live, which deck you are playing, your rank, today's record and your last game. From 1.0.1
+DustPlanner already knows, live, which deck you are playing, your rank, today's record and your last game. From 1.1.0
 the service turns that into **one-line chat answers** at
 
 ```

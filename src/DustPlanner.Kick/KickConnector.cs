@@ -490,12 +490,13 @@ public sealed class KickConnector : BackgroundService
                 _lastPong = _clock.GetUtcNow();
                 return true;
             case ChatCommandMessage command:
-                Publish(s => s with { LastCommand = (command.Command + " " + command.Args).Trim(), LastCommandAt = command.At ?? _clock.GetUtcNow() });
+                // Listeners first, state second: whoever waits for the state can rely on the command having been handed over.
                 CommandReceived?.Invoke(command);
+                Publish(s => s with { LastCommand = (command.Command + " " + command.Args).Trim(), LastCommandAt = command.At ?? _clock.GetUtcNow() });
                 return true;
             case StreamStatusMessage status:
-                Publish(s => s with { Live = status.Live });
                 StreamStatusChanged?.Invoke(status);
+                Publish(s => s with { Live = status.Live });
                 return true;
             case RewardRedemptionMessage redemption:
                 RedemptionReceived?.Invoke(redemption);

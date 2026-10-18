@@ -169,21 +169,22 @@ public sealed class KickConnectorTests : IAsyncLifetime
     public async Task Commands_and_status_from_the_relay_reach_the_host()
     {
         var connector = await PairedAndConnectedAsync();
-        ChatCommandMessage? received = null;
-        connector.CommandReceived += c => received = c;
-        StreamStatusMessage? live = null;
-        connector.StreamStatusChanged += s => live = s;
+        var received = new TaskCompletionSource<ChatCommandMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        connector.CommandReceived += c => received.TrySetResult(c);
+        var live = new TaskCompletionSource<StreamStatusMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        connector.StreamStatusChanged += s => live.TrySetResult(s);
 
         await _relay.PushAsync(new { v = 1, type = "chat.command", message_id = "m-1", command = "deck", args = "por favor", sender = new { user_id = "777", username = "ana", badges = new[] { "subscriber" } }, at = "2026-10-18T20:00:00Z" });
+        var command = await received.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("ana", command.SenderUsername);
+        Assert.Equal(new[] { "subscriber" }, command.Badges);
+        Assert.Equal(new DateTimeOffset(2026, 10, 18, 20, 0, 0, TimeSpan.Zero), command.At);
         await WaitForAsync(connector, s => s.LastCommand == "deck por favor", "command in state");
-        Assert.NotNull(received);
-        Assert.Equal("ana", received.SenderUsername);
-        Assert.Equal(new[] { "subscriber" }, received.Badges);
-        Assert.Equal(new DateTimeOffset(2026, 10, 18, 20, 0, 0, TimeSpan.Zero), received.At);
 
         await _relay.PushAsync(new { v = 1, type = "stream.status", is_live = true, title = "Legend push", started_at = "2026-10-18T19:00:00Z", ended_at = (string?)null });
+        var status = await live.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("Legend push", status.Live.Title);
         await WaitForAsync(connector, s => s.Live?.IsLive == true, "live state");
-        Assert.Equal("Legend push", live!.Live.Title);
 
         // Garbage and unknown types are ignored, the connection stays up.
         await _relay.PushAsync(new { v = 2, type = "hello" });

@@ -16,7 +16,7 @@ per-card override file, the catalog cache).
 | Deck | your exported HDT decks in a picker, or a pasted code; the dust gap (have / plan gives / missing); missing cards with cost; cards the game will not craft, with the reason; companions; rotation; the plan with pain and reasons, alternatives, what was not proposed and why; the warnings | What am I missing? · Plan what to dust · Save this plan · plan for another amount · plan without saved decks |
 | History | plans with status (proposed / partial / confirmed), their picks and how many were done; detected collection changes with the plan they matched | — |
 | Games | win rate overall and per class for a period / mode / format; recent games | Import Power.log now |
-| Settings | what you play (format, classes, Wild, golden policy, guards), chat commands (prefix, language, cooldowns, aliases, custom texts — [`kick-streamerbot.md`](kick-streamerbot.md)), meta decks (`meta.txt`), cards the game refuses (search → block / allow, your overrides), card data build, language, file locations | Save preferences · Save meta decks · Block / Allow · Remove · Update card data |
+| Settings | what you play (format, classes, Wild, golden policy, guards), chat commands (prefix, language, cooldowns, aliases, custom texts — [`kick-streamerbot.md`](kick-streamerbot.md)), Kick (connect / disconnect, opt-in features — [`kick.md`](kick.md)), meta decks (`meta.txt`), cards the game refuses (search → block / allow, your overrides), card data build, language, file locations | Save preferences · Save meta decks · Block / Allow · Remove · Update card data |
 
 The plugin's **What am I missing for the selected deck?** opens `/#/deck?code=<deckstring>`; `/#/deck?key=hdt:<id>`
 works for an exported deck. The page listens to `/events` (server-sent events): after the plugin exports a new
@@ -45,6 +45,8 @@ All answers are the snake_case JSON the CLI prints with `--json`. Bodies are JSO
 | `GET /api/catalog` · `POST /api/catalog/update` | | build, locale, cards, cache info |
 | `GET /api/state` · `GET /events` | | the overlay state (rank, dust, session, today, current / last game, active deck, last sync, warnings) |
 | `GET /api/chat/{command}?lang=&user=` | | **plain text**, one line: the chat answer for `deck`, `rank`, `wr`, `last`, `dust` or an alias; `204` in cooldown, `404` unknown or disabled ([`kick-streamerbot.md`](kick-streamerbot.md)) |
+| `GET /api/kick/status` · `POST /api/kick/connect` · `POST /api/kick/pair` · `POST /api/kick/disconnect` | `{code}` for pair | the native Kick connection ([`kick.md`](kick.md)): state (`disconnected`, `pairing`, `connecting`, `connected`, `needs_reconnect`), the URL to open for *Connect with Kick*, manual code, disconnect. `/events` also carries the state as `kick` events |
+| `GET /kick/paired?code=` | | where the relay's page sends the browser after authorising; completes the pairing only while one is pending |
 
 ## Status page
 

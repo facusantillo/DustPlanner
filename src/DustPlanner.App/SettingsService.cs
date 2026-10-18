@@ -49,10 +49,11 @@ public sealed partial class AppServices
         prefs.Format = prefs.Format.ToLowerInvariant();
         prefs.ClassesPlayed = prefs.ClassesPlayed.Select(c => c.Trim().ToUpperInvariant()).Where(c => c.Length > 0).Distinct(StringComparer.Ordinal).ToList();
         prefs.Chat ??= new ChatPrefs();
-        var chatErrors = prefs.Chat.Validate();
-        if (chatErrors.Count > 0)
+        prefs.Kick ??= new KickPrefs();
+        var blockErrors = prefs.Chat.Validate().Concat(prefs.Kick.Validate()).ToList();
+        if (blockErrors.Count > 0)
         {
-            throw new AppException(string.Join(" ", chatErrors));
+            throw new AppException(string.Join(" ", blockErrors));
         }
 
         Directory.CreateDirectory(Paths.Config);

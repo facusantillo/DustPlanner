@@ -5,6 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The in-process stand-in for the Kick relay lives with the connector tests; linked here for the endpoint tests. -->
+    <Compile Include="../DustPlanner.Kick.Tests/FakeRelay.cs" Link="FakeRelay.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="../DustPlanner.Core.Tests/Fixtures/cards.synthetic.json" Link="Fixtures/cards.synthetic.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../DustPlanner.Core.Tests/Fixtures/collection.synthetic.json" Link="Fixtures/collection.synthetic.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../DustPlanner.LogTracker.Tests/Fixtures/synthetic_edge_cases.power.log" Link="Fixtures/synthetic_edge_cases.power.log" CopyToOutputDirectory="PreserveNewest" />

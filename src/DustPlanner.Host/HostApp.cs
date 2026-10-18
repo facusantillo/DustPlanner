@@ -37,6 +37,21 @@ public static class HostApp
         builder.Services.AddHostedService(sp => sp.GetRequiredService<OverlayStateService>());
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<DustPlanner.Kick.ChatResponder>();
+        builder.Services.AddSingleton<DustPlanner.Kick.IDeviceTokenStore>(new DustPlanner.Kick.FileDeviceTokenStore(services.Paths.Root));
+        builder.Services.AddSingleton(new DustPlanner.Kick.KickConnectorOptions { RelayUrl = options.RelayUrl });
+        builder.Services.AddSingleton(sp => new DustPlanner.Kick.KickConnector(
+            sp.GetRequiredService<DustPlanner.Kick.KickConnectorOptions>(),
+            sp.GetRequiredService<DustPlanner.Kick.IDeviceTokenStore>(),
+            () =>
+            {
+                var prefs = services.ReadPrefs();
+                prefs.Chat.Validate();
+                prefs.Kick.Validate();
+                return (prefs.Chat, prefs.Kick);
+            },
+            sp.GetRequiredService<ILogger<DustPlanner.Kick.KickConnector>>(),
+            clock: sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<DustPlanner.Kick.KickConnector>());
 
         var app = builder.Build();
 
@@ -54,12 +69,13 @@ public static class HostApp
 
         ApiEndpoints.Map(app, info);
         ChatEndpoints.Map(app);
+        KickEndpoints.Map(app);
 
         return app;
     }
 
     /// <summary>Server-sent events: the current state immediately, then every change; a comment line every 15 s keeps the connection alive.</summary>
-    private static async Task StreamEventsAsync(HttpContext context, OverlayStateService service, CancellationToken ct)
+    private static async Task StreamEventsAsync(HttpContext context, OverlayStateService service, DustPlanner.Kick.KickConnector connector, CancellationToken ct)
     {
         context.Response.Headers.ContentType = "text/event-stream";
         context.Response.Headers.CacheControl = "no-cache";
@@ -69,15 +85,32 @@ public static class HostApp
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var states = service.Subscribe(stop.Token).GetAsyncEnumerator(stop.Token);
         var next = states.MoveNextAsync().AsTask();
+
+        // The Kick connection travels on the same stream as `kick` events: current state first, then every change.
+        var kick = System.Threading.Channels.Channel.CreateBounded<DustPlanner.Kick.KickConnectionState>(new System.Threading.Channels.BoundedChannelOptions(1) { FullMode = System.Threading.Channels.BoundedChannelFullMode.DropOldest });
+        void OnKick(DustPlanner.Kick.KickConnectionState state) => kick.Writer.TryWrite(state);
+        connector.StateChanged += OnKick;
+        kick.Writer.TryWrite(connector.Current);
+        var nextKick = kick.Reader.ReadAsync(stop.Token).AsTask();
         try
         {
             while (true)
             {
                 var keepAlive = Task.Delay(TimeSpan.FromSeconds(15), ct);
-                if (await Task.WhenAny(next, keepAlive).ConfigureAwait(false) == keepAlive)
+                var done = await Task.WhenAny(next, nextKick, keepAlive).ConfigureAwait(false);
+                if (done == keepAlive)
                 {
                     await context.Response.WriteAsync(": keep-alive\n\n", ct).ConfigureAwait(false);
                     await context.Response.Body.FlushAsync(ct).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (done == nextKick)
+                {
+                    var kickJson = JsonSerializer.Serialize(await nextKick.ConfigureAwait(false), SseJson);
+                    await context.Response.WriteAsync("event: kick\ndata: " + kickJson + "\n\n", ct).ConfigureAwait(false);
+                    await context.Response.Body.FlushAsync(ct).ConfigureAwait(false);
+                    nextKick = kick.Reader.ReadAsync(stop.Token).AsTask();
                     continue;
                 }
 
@@ -98,6 +131,7 @@ public static class HostApp
         }
         finally
         {
+            connector.StateChanged -= OnKick;
             // An async iterator cannot be disposed while a MoveNextAsync is pending: cancel it and let it finish first.
             await stop.CancelAsync().ConfigureAwait(false);
             try

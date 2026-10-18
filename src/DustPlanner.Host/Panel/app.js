@@ -104,8 +104,15 @@
         }
       }
     });
+    es.addEventListener("kick", ev => {
+      let state; try { state = JSON.parse(ev.data); } catch (e) { return; }
+      kickState = state;
+      const card = $("#kick-status");
+      if (card) card.innerHTML = kickStatusHtml(state);
+    });
     es.onerror = () => { live.className = "live off"; $("#hdr-live-text").textContent = t("live_disconnected"); };
   }
+  let kickState = null;
 
   // ---------- home ---------------------------------------------------------------------------------------------------
   async function renderHome() {
@@ -376,10 +383,11 @@
   async function renderSettings() {
     const page = $("#page-settings");
     page.innerHTML = '<p class="muted">' + t("loading") + "</p>";
-    let prefs, meta, overrides, catalog, service;
+    let prefs, meta, overrides, catalog, service, kick;
     try {
-      [prefs, meta, overrides, catalog, service] = await Promise.all([api("/api/prefs"), api("/api/meta"), api("/api/cards/overrides"), api("/api/catalog"), api("/api/service")]);
+      [prefs, meta, overrides, catalog, service, kick] = await Promise.all([api("/api/prefs"), api("/api/meta"), api("/api/cards/overrides"), api("/api/catalog"), api("/api/service"), api("/api/kick/status")]);
     } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
+    kickState = kick.state;
     const p = prefs.prefs;
     let html = '<div class="settings-grid"><div>';
     html += "<h2>" + t("set_play") + "</h2>" +
@@ -405,8 +413,30 @@
     html += "</div></div>";
     // Full width below the grid: the command table needs the room.
     html += chatSettings(p.chat || {}, service) + '<div class="row"><button class="btn primary" id="btn-prefs-chat">' + t("set_save") + "</button></div>";
+    html += kickSettings(p.kick || {}, kick);
     page.innerHTML = html;
     $("#btn-prefs-chat").addEventListener("click", () => $("#btn-prefs").click());
+    $("#btn-prefs-kick").addEventListener("click", () => $("#btn-prefs").click());
+    $("#btn-kick-connect").addEventListener("click", async () => {
+      const b = $("#btn-kick-connect"); busy(b, true);
+      try {
+        const r = await post("/api/kick/connect", {});
+        const w = window.open(r.connect_url, "_blank", "noopener");
+        if (!w) toast(t("kick_popup_blocked"), "error");
+        $("#kick-manual").hidden = false;
+      } catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
+    });
+    $("#btn-kick-pair").addEventListener("click", async () => {
+      const b = $("#btn-kick-pair"); busy(b, true);
+      try { await post("/api/kick/pair", { code: $("#kick-code").value }); $("#kick-code").value = ""; toast(t("kick_paired"), "ok"); }
+      catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
+    });
+    $("#btn-kick-disconnect").addEventListener("click", async () => {
+      if (!confirm(t("kick_confirm_disconnect"))) return;
+      const b = $("#btn-kick-disconnect"); busy(b, true);
+      try { await post("/api/kick/disconnect", {}); toast(t("kick_disconnected"), "ok"); }
+      catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
+    });
 
     $("#btn-prefs").addEventListener("click", async () => {
       const b = $("#btn-prefs"); busy(b, true);
@@ -418,8 +448,9 @@
         require_known_decks: $("#p-require").checked,
         max_snapshot_age_days: Number($("#p-age").value) || p.max_snapshot_age_days,
         chat: readChatSettings(p.chat || {}),
+        kick: readKickSettings(p.kick || {}),
       });
-      try { const r = await put("/api/prefs", body); p.chat = r.prefs.chat; toast(t("set_saved"), "ok"); } catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
+      try { const r = await put("/api/prefs", body); p.chat = r.prefs.chat; p.kick = r.prefs.kick; toast(t("set_saved"), "ok"); } catch (e) { toast(t("error_prefix") + e.message, "error"); } finally { busy(b, false); }
     });
     $("#btn-meta").addEventListener("click", async () => {
       const b = $("#btn-meta"); busy(b, true);
@@ -500,6 +531,47 @@
     html += "</tbody></table>" +
       '<details class="why"><summary>' + t("chat_placeholders") + "</summary><p>" + CHAT_PLACEHOLDERS.map(x => "<code>{" + x + "}</code>").join(" ") + "</p></details>";
     return html;
+  }
+
+  /** Settings → Kick: the connection (status, connect / disconnect, manual code) and the opt-in features. */
+  function kickSettings(k, kick) {
+    const s = kick.state || {};
+    const reminder = k.prediction_reminder || "panel";
+    return "<h2>" + t("set_kick") + '</h2><p class="why">' + esc(t("set_kick_hint")) + "</p>" +
+      '<div id="kick-status">' + kickStatusHtml(s) + "</div>" +
+      '<div class="row"><button class="btn primary" id="btn-kick-connect">' + t("kick_connect") + '</button><button class="btn" id="btn-kick-disconnect">' + t("kick_disconnect") + "</button></div>" +
+      '<div class="row" id="kick-manual"' + (kick.pairing_pending ? "" : " hidden") + '><label class="field grow"><span>' + t("kick_code") + '</span><input type="text" id="kick-code" autocomplete="off" spellcheck="false"></label><button class="btn" id="btn-kick-pair">' + t("kick_pair") + "</button></div>" +
+      "<h3>" + t("kick_features") + '</h3><p class="why">' + esc(t("kick_features_hint")) + "</p>" +
+      '<div class="row"><label class="check"><input type="checkbox" id="k-page"' + (k.public_page ? " checked" : "") + "> " + t("kick_public_page") + "</label></div>" +
+      '<div class="row"><label class="check"><input type="checkbox" id="k-summary"' + (k.post_stream_summary ? " checked" : "") + "> " + t("kick_summary") + "</label></div>" +
+      '<div class="row"><label class="field"><span>' + t("kick_reminder") + '</span><select id="k-reminder"><option value="off"' + (reminder === "off" ? " selected" : "") + ">" + t("kick_reminder_off") + '</option><option value="panel"' + (reminder === "panel" ? " selected" : "") + ">" + t("kick_reminder_panel") + '</option><option value="panel+chat"' + (reminder === "panel+chat" ? " selected" : "") + ">" + t("kick_reminder_chat") + "</option></select></label></div>" +
+      '<div class="row"><label class="check"><input type="checkbox" id="k-redemptions"' + (k.show_redemptions ? " checked" : "") + "> " + t("kick_redemptions") + "</label>" +
+      '<label class="field grow"><span>' + t("kick_redemption_filter") + '</span><input type="text" id="k-redemption-filter" value="' + esc((k.redemption_filter || []).join(", ")) + '" placeholder="' + esc(t("kick_redemption_filter_hint")) + '"></label></div>' +
+      '<div class="row"><button class="btn primary" id="btn-prefs-kick">' + t("set_save") + "</button></div>";
+  }
+
+  function kickStatusHtml(s) {
+    const status = s.status || "disconnected";
+    const label = t("kick_status_" + status) || status;
+    const chip = '<span class="chip kick-' + status + '">' + esc(label) + "</span>";
+    const who = s.channel && s.channel.slug ? ' <a href="https://kick.com/' + encodeURIComponent(s.channel.slug) + '" target="_blank" rel="noopener">@' + esc(s.channel.slug) + "</a>" : "";
+    let lines = "<div>" + chip + who + "</div>";
+    if (s.last_error) lines += '<div class="faint">' + esc(s.last_error) + "</div>";
+    if (status === "connected" && s.connected_at) lines += '<div class="faint">' + esc(t("kick_since", { when: when(s.connected_at) })) + (s.live && s.live.is_live ? " · " + t("kick_live_now") : "") + "</div>";
+    if (s.last_command) lines += '<div class="faint">' + esc(t("kick_last_command", { cmd: s.last_command, when: when(s.last_command_at) })) + "</div>";
+    if (status === "connecting" && s.next_retry_at) lines += '<div class="faint">' + esc(t("kick_retry", { when: when(s.next_retry_at) })) + "</div>";
+    if (status === "pairing") lines += '<div class="faint">' + esc(t("kick_pairing_hint")) + "</div>";
+    return '<div class="kick-card">' + lines + "</div>";
+  }
+
+  function readKickSettings(k) {
+    return Object.assign({}, k, {
+      public_page: $("#k-page").checked,
+      post_stream_summary: $("#k-summary").checked,
+      prediction_reminder: $("#k-reminder").value,
+      show_redemptions: $("#k-redemptions").checked,
+      redemption_filter: $("#k-redemption-filter").value.split(",").map(x => x.trim()).filter(Boolean),
+    });
   }
 
   function readChatSettings(c) {

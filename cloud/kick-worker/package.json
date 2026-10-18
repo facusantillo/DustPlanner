@@ -1,0 +1,21 @@
+{
+  "name": "dustplanner-kick-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DustPlanner's relay between Kick and the local service: OAuth, webhooks, chat sending. Never sees rank, record or collection.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types --include-env=false"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.151.1"
+  }
+}

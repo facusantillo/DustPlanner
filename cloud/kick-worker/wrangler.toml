@@ -1,0 +1,44 @@
+# DustPlanner Kick relay (docs/PRD-kick.md §4–§5.3). No secrets here: see README.md and .dev.vars.example.
+name = "dustplanner-kick-relay"
+main = "src/index.ts"
+compatibility_date = "2026-10-18"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+workers_dev = false
+
+[[routes]]
+pattern = "live.dustplanner.app"
+custom_domain = true
+
+[vars]
+# Public values of the Kick app (VERIFICACION K1 done 2026-10-18). The secret never lives here.
+KICK_CLIENT_ID = "01M576EATT3TQ1P5TM37APJCJS"
+# user_id of the dedicated bot account that owns the Kick app: its own chat messages are ignored.
+BOT_USER_ID = "1000417936"
+# Comma-separated channel slugs allowed to connect while the beta is private. Empty = everyone (K8).
+ALLOWED_SLUGS = "tsukuru_tv"
+PUBLIC_BASE_URL = "https://live.dustplanner.app"
+RELAY_VERSION = "0.1.0"
+
+# Secrets (wrangler secret put / GitHub Secrets, never in this file):
+#   KICK_CLIENT_SECRET    — the Kick app's client secret
+#   TOKEN_ENCRYPTION_KEY  — 32 random bytes, base64 (openssl rand -base64 32); encrypts the stored Kick tokens
+
+[[kv_namespaces]]
+binding = "CONFIG"
+id = "1d42a5c80f5a4d2abaa1f7d0ffc70ae5"
+
+[[durable_objects.bindings]]
+name = "CHANNEL"
+class_name = "ChannelDO"
+
+[[durable_objects.bindings]]
+name = "PENDING"
+class_name = "PendingDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChannelDO", "PendingDO"]
+
+[observability]
+enabled = true

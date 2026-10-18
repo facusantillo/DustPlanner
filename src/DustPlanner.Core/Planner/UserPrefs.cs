@@ -109,6 +109,9 @@ public sealed class UserPrefs
     /// <summary>Stream-chat commands (prefix, aliases, templates, cooldowns). Defaults answer in the system language.</summary>
     public ChatPrefs Chat { get; set; } = new();
 
+    /// <summary>What the native Kick connection may do (public page, summary, reminders, redemptions). All off by default.</summary>
+    public KickPrefs Kick { get; set; } = new();
+
     public bool IsStandardPlayer => !string.Equals(Format, "wild", StringComparison.OrdinalIgnoreCase) && !PlaysWild;
 
     public bool PlaysClass(CardDef card)

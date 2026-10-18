@@ -29,6 +29,9 @@ public sealed record OverlayHostOptions
     /// <summary>Open the panel in the default browser once listening (<c>--open</c>).</summary>
     public bool OpenBrowser { get; init; }
 
+    /// <summary>The Kick relay (<c>--relay</c> or <c>DUSTPLANNER_RELAY_URL</c>); tests point it at an in-process fake.</summary>
+    public string RelayUrl { get; init; } = Environment.GetEnvironmentVariable("DUSTPLANNER_RELAY_URL") is { Length: > 0 } relay ? relay : DustPlanner.Kick.KickConnectorOptions.DefaultRelayUrl;
+
     public AppPaths Paths => Home is null ? AppPaths.Default() : new AppPaths(Path.GetFullPath(Home));
 
     public string Url => $"http://127.0.0.1:{Port}";
@@ -48,8 +51,9 @@ public sealed record OverlayHostOptions
                 case "--account": options = options with { Account = Next() }; break;
                 case "--poll-seconds": options = options with { PollInterval = TimeSpan.FromSeconds(double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture)) }; break;
                 case "--open": options = options with { OpenBrowser = true }; break;
+                case "--relay": options = options with { RelayUrl = Next() }; break;
                 case "--help" or "-h":
-                    throw new ArgumentException("usage: dustplanner-host [--home <folder>] [--port 8765] [--logs <Hearthstone\\Logs>] [--account <key|BattleTag>] [--poll-seconds 2] [--open]");
+                    throw new ArgumentException("usage: dustplanner-host [--home <folder>] [--port 8765] [--logs <Hearthstone\\Logs>] [--account <key|BattleTag>] [--poll-seconds 2] [--relay <url>] [--open]");
                 default:
                     throw new ArgumentException($"Unknown option {args[i]}");
             }

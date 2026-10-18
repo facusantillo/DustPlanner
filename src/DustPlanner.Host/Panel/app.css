@@ -177,4 +177,9 @@ summary:hover { color: var(--ink); }
 .chat-commands td:first-child { width: 28px; }
 .chat-commands td:nth-child(2) { white-space: nowrap; width: 1%; padding-right: 14px; }
 .chat-commands td:nth-child(3) { width: 26%; }
+.kick-card { padding: 10px 12px; border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 10px; margin: 6px 0 4px; display: grid; gap: 4px; }
+.chip.kick-connected { background: rgba(125, 216, 125, .18); color: #7dd87d; }
+.chip.kick-connecting, .chip.kick-pairing { background: rgba(159, 197, 255, .18); color: #9fc5ff; }
+.chip.kick-needs_reconnect { background: rgba(232, 111, 111, .18); color: #e86f6f; }
+.chip.kick-disconnected { background: rgba(255,255,255,.08); }
 

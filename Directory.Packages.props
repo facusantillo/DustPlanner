@@ -17,6 +17,7 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
 
     <!-- Tooling -->
     <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="10.0.13" />

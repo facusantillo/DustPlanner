@@ -21,8 +21,10 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | K0 | Kick spike: API fields confirmed, Developer Agreement reviewed, HDT active-deck event (`docs/PRD-kick.md` §11) | done | **K1** — create the Kick app and the Cloudflare account pieces (not needed before K3) |
 | K1 | Active deck: `active-deck.json`, `OverlayState.ActiveDeck`, `active_deck` table, `game.deck_id`, overlay cell | done | **K2** — deck name in the overlay when a game starts |
 | K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
+| K3 | Kick relay: Cloudflare Worker (`cloud/kick-worker`), OAuth + PKCE, channel Durable Objects, signed webhooks, `worker.yml` | done | **K1** (app + secrets) then **K4** — first deploy and a real message reaching the service |
+| K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | **K5** — connect from the panel, see *Connected*, type a command |
 
-175 tests, all green in the container (Linux, .NET 10 SDK); the Windows run is the maintainer's. No remote configured;
+189 .NET tests + 30 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. No remote configured;
 the maintainer publishes.
 
 ---
@@ -467,4 +469,91 @@ recorded in its §11.
   Channel`), but the maintainer does not use Streamer.bot yet: VERIFICACION K3 is the first real run.
 - `{deck_url}` / `{deck_link}` stay empty until K6 publishes the deck page.
 - `ChatResponder` has no state about who is live: that arrives with K7 (stream sessions).
+
+---
+
+## Kick — K3 — The relay (Cloudflare Worker)
+
+**Done**
+
+- `cloud/kick-worker/` (TypeScript, wrangler 4, vitest 4 with `@cloudflare/vitest-plugin`). Routes of PRD §5.3:
+  `/connect` (pair hash + loopback port 8765–8774 under a random state, PKCE S256, the five scopes), `/oauth/callback`
+  (code exchange with the secret and the verifier, `GET /users` and `GET /channels` of the token, email discarded,
+  `ALLOWED_SLUGS` gate that revokes the tokens of anyone else, three webhook subscriptions, pairing code bound to the pair
+  hash, page that sends the browser to `127.0.0.1:<port>/kick/paired` with the code visible), `/pair/exchange`
+  (single use, verifier hash compared in constant time, device token `<user_id>.<random>` stored as SHA-256), `/ws`,
+  `/webhooks/kick`, `/disconnect`, `/health`. `/d/<slug>` answers 404 until K6.
+- `PendingDO` (one, SQLite): OAuth states for 10 min, pairing codes for 2 min, both single use.
+- `ChannelDO` (one per channel, SQLite, hibernating WebSockets with the ping/pong auto-responder): AES-256-GCM encrypted
+  tokens, scope check → `needs_reconnect` + `missing_scopes`, `hello` / `config` (replicated to KV) / `chat.send`
+  (`type: bot`, 1 per second per channel, `401` → one serialised refresh and one retry, `429` → `kick_rate_limited`,
+  `5xx` → `kick_unavailable`, no queue) / `deck.publish` / `ping`. Refresh 5 min before expiry, serialised because Kick
+  rotates the refresh token; `invalid_grant` purges the tokens, warns the service and schedules the channel's deletion
+  24 h later (Developer Agreement §5.2, PRD §11.3). Daily alarm: re-subscribe what Kick dropped (its list is the truth),
+  prune dedupe tables. `/disconnect`: delete subscriptions by id, revoke both tokens, wipe storage, KV config and slug.
+- Webhooks: RSA PKCS#1 v1.5 / SHA-256 over `id.timestamp.body` with the key from `/public/v1/public-key` (cached in
+  memory and KV; after a failure it is fetched again at most once per 5 min, a cold start does not count), events older
+  than 10 min acknowledged and dropped, dedupe by message id in the DO (24 h) and by redemption id (1 h), filter by the
+  channel's KV config *before* the DO (declared commands and aliases only, never the bot's own lines, nothing for a
+  channel without config except the live status), `broadcaster.channel_slug` keeps the slug index current.
+  `200` whenever the signature is valid.
+- Tests (30): crypto vectors (RFC 7636 PKCE), signature valid / rotated / garbage with a generated key, the refetch
+  window, OAuth end to end with a mocked Kick (the `fetchMock` of the old pool no longer exists: outbound `fetch` is
+  stubbed in the shared isolate), closed beta with revocation, one-time code and wrong verifier, forged device tokens,
+  hello / ping / config → KV, `chat.send` rate limit and the `401`/`429`/`5xx` paths, serialised refresh,
+  `invalid_grant`, `/disconnect`, webhook filter table, stale and duplicate events, live state stored for the hello,
+  redemption filter and dedupe, alarm re-subscription and grace-period deletion. `wrangler deploy --dry-run` clean.
+- `.github/workflows/worker.yml`: tests on every change under `cloud/kick-worker`, deploy on `worker-v*` tags with
+  `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, then `KICK_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` pushed as
+  wrangler secrets, then `/health`. `cloud/kick-worker/README.md`: what is stored and for how long, routes, set-up.
+- The KV namespace `dustplanner-kick-relay-CONFIG` was created in the account; its id is in `wrangler.toml`.
+
+**Pending / caveats**
+
+- `KICK_CLIENT_ID` and `BOT_USER_ID` are placeholders until the Kick app exists (VERIFICACION K1); `/health` reports
+  `configured: false` and `/connect` answers 503 until then.
+- Which account a `type: bot` message is shown under, and Kick's real rate limits, are still K5's human check.
+- `worker-configuration.d.ts` is generated (`npm run types`) and git-ignored; npm needs `--legacy-peer-deps` because npm
+  10.9's resolver trips on vitest 4's optional peers (documented in the README and the workflow).
+
+---
+
+## Kick — K4 — The connector in the service
+
+**Done**
+
+- `DustPlanner.Kick.KickConnector` (hosted service): `BeginPairing(port)` (verifier, SHA-256 → the `/connect` URL,
+  10 min), `CompletePairingAsync(code)` (`POST /pair/exchange`, device token saved by `FileDeviceTokenStore` —
+  `%LocalAppData%\DustPlanner\kick.json`, DPAPI for the current user on Windows, in clear with `protection: none`
+  elsewhere), outbound `ClientWebSocket` with `Authorization: Bearer`, `hello` → `Connected` (or `NeedsReconnect`),
+  `config` sent after every hello and after each prefs save, application pings every 30 s (the exact frame the relay
+  auto-answers), reconnection with exponential backoff 1–60 s and jitter, `needs_reconnect` (hello or error frame) stops
+  the loop until the streamer pairs again, `401` on `/ws` and close code 4000 forget the pairing, `DisconnectAsync`
+  calls `/disconnect` and wipes the token. Events for the host: `StateChanged`, `CommandReceived`, `StreamStatusChanged`,
+  `RedemptionReceived`; `SendChatAsync` / `PublishDeckAsync` for K5/K6. `RelayProtocol` parses the v1 frames leniently.
+- `kick` block in `prefs.json` (`KickPrefs`: `public_page`, `post_stream_summary`, `prediction_reminder`
+  `off|panel|panel+chat`, `show_redemptions`, `redemption_filter`), validated with the rest; it feeds the `config`
+  message (`stream_status` always forwarded — K7 needs it — redemptions only when shown).
+- Host: `GET /kick/paired?code=` (bilingual page; refuses when no pairing is pending, so a replayed link cannot pair
+  the service), `GET /api/kick/status`, `POST /api/kick/connect` (returns the URL; the panel opens the tab), `POST
+  /api/kick/pair {code}`, `POST /api/kick/disconnect`; `/events` carries `kick` events next to `state`. `--relay <url>`
+  / `DUSTPLANNER_RELAY_URL` point the service at another relay (tests use an in-process fake). `PUT /api/prefs` resets
+  the chat cooldowns and pushes the new config.
+- Panel: **Settings → Kick** — status card updated live (not connected / waiting for Kick / connecting / connected as
+  @slug with "since" and "live now" / connect again, last error, last command received, next attempt), *Connect with
+  Kick* (opens the relay in a new tab, shows the manual-code row), *Use code*, *Disconnect* (with confirmation), and the
+  opt-in features of K6/K7 (labelled as arriving later). English and Spanish.
+- Tests: `FakeRelay` (Kestrel, the three routes, protocol frames, knobs to misbehave) shared by both test projects.
+  Connector (12): pairing and config contents, pairing restored from disk, reconnection with a second config,
+  commands / live status / unknown frames, outgoing chat and deck frames and config refresh, `needs_reconnect` in the
+  hello and as an error frame (no hammering, resumes after re-pairing), `401` forgets the pairing, close 4000, disconnect,
+  refusals without a pending flow / bad / foreign code, protocol parsing. Host (2): the whole panel flow over HTTP and
+  SSE, manual code, `kick` prefs validation. 189 .NET tests.
+
+**Pending / caveats**
+
+- Commands are shown ("last command: deck") but not answered: that is K5, one PR away (`ChatResponder` already exists).
+- DPAPI is exercised only on Windows; the container runs the in-clear branch. VERIFICACION K5 checks the file there.
+- The service does not open the browser itself: the panel does, which keeps the service free of shell-outs from request
+  handlers. If a pop-up blocker interferes, the panel says so and the manual code works.
 

@@ -209,6 +209,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
     private static async Task<JsonElement> ReadEvent(StreamReader reader)
     {
         var deadline = Task.Delay(TimeSpan.FromSeconds(20));
+        string? eventName = null;
         while (true)
         {
             var read = reader.ReadLineAsync();
@@ -218,8 +219,13 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
             }
 
             var line = await read ?? throw new EndOfStreamException("event stream closed");
-            if (line.StartsWith("data: ", StringComparison.Ordinal))
+            if (line.StartsWith("event: ", StringComparison.Ordinal))
             {
+                eventName = line["event: ".Length..];
+            }
+            else if (line.StartsWith("data: ", StringComparison.Ordinal) && eventName == "state")
+            {
+                // The stream also carries `kick` events (the native Kick connection); this test reads the overlay state only.
                 return JsonDocument.Parse(line["data: ".Length..]).RootElement.Clone();
             }
         }

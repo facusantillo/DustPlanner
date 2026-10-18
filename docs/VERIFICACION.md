@@ -178,4 +178,16 @@ loading and the status line says which feature is off.
       second one must get no answer (`204`). Type `!dust`: nothing (it is off by default) until you enable it in
       Settings → Chat commands. Change the language in Settings to English and check `!rank` answers in English without
       restarting anything. Anything that differs → paste the Streamer.bot action log and the URL you used.
+- [ ] K4. **First deploy of the relay** (K3): with K1 done and the four GitHub secrets in place, fill `KICK_CLIENT_ID`
+      and `BOT_USER_ID` in `cloud/kick-worker/wrangler.toml`, merge, tag `worker-v0.1.0` and push the tag. The
+      *Kick relay* workflow must end green and `https://live.dustplanner.app/health` must answer
+      `{"ok":true,"version":"0.1.0","configured":true}`. In the Cloudflare dashboard: one Worker, two Durable Object
+      classes, the KV namespace bound, the custom domain active. Anything that differs → paste the failing workflow step.
+- [ ] K5. **Connect from the panel** (K4): with the relay deployed and the 1.0.x build from this branch installed, open
+      Settings → Kick → *Connect with Kick*. A Kick tab asks you to authorise the five permissions; after accepting, the
+      relay's page sends the browser back and the status card says **Connected** as @tsukuru_tv within a few seconds.
+      Then: type `!deck` in your own chat — the card shows *last command: deck* (no answer yet: that is K5 of the PRD);
+      `%LocalAppData%\DustPlanner\kick.json` exists with `"protection": "dpapi"` and no readable token; close the
+      service and start it again: it reconnects without the browser; *Disconnect* empties the card and deletes the file.
+      Anything that differs → paste the host log lines starting with `Kick:` and the relay's `/health`.
 

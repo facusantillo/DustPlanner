@@ -155,7 +155,7 @@ loading and the status line says which feature is off.
 
 ## K. Kick (stages K0–K8, `docs/PRD-kick.md`)
 
-- [ ] K1. **Kick app and Cloudflare prerequisites** (K0, needed before K3 can be tried for real; nothing in K1–K2
+- [x] K1. **Kick app and Cloudflare prerequisites** (K0, needed before K3 can be tried for real; nothing in K1–K2
       depends on it). From a **dedicated bot account** (proposed name *DustPlannerBot*), with 2FA enabled:
       `kick.com/settings/developer` → create app with redirect `https://live.dustplanner.app/oauth/callback`, then
       *Edit → Enable Webhooks* with `https://live.dustplanner.app/webhooks/kick`. Note the `client_id` (public, goes in
@@ -163,7 +163,8 @@ loading and the status line says which feature is off.
       developer page). The `client_secret` goes **only** into `wrangler secret put KICK_CLIENT_SECRET`, never in chat,
       files or issues. In Cloudflare (account holding `dustplanner.app`): Workers + KV + Durable Objects enabled, and
       check that no `live` DNS record exists in the zone. In GitHub: secrets `CLOUDFLARE_API_TOKEN` and
-      `CLOUDFLARE_ACCOUNT_ID` for `worker.yml` (K3).
+      `CLOUDFLARE_ACCOUNT_ID` for `worker.yml` (K3). Done 2026-10-18: app created from the bot account (`client_id`
+      and `BOT_USER_ID` in `cloud/kick-worker/wrangler.toml`), the four GitHub secrets set, KV namespace created.
 - [ ] K2. **Active deck in the overlay** (K1): with the new plugin build installed and the service running, select a
       deck in HDT and start a game. Check: `%LocalAppData%\DustPlanner\inbox\<account>\active-deck.json` appears within
       seconds (`meta.trigger` = `active_deck_changed` or `game_start`, `deck.name` is your deck, `deck.card_class` upper
@@ -178,8 +179,7 @@ loading and the status line says which feature is off.
       second one must get no answer (`204`). Type `!dust`: nothing (it is off by default) until you enable it in
       Settings → Chat commands. Change the language in Settings to English and check `!rank` answers in English without
       restarting anything. Anything that differs → paste the Streamer.bot action log and the URL you used.
-- [ ] K4. **First deploy of the relay** (K3): with K1 done and the four GitHub secrets in place, fill `KICK_CLIENT_ID`
-      and `BOT_USER_ID` in `cloud/kick-worker/wrangler.toml`, merge, tag `worker-v0.1.0` and push the tag. The
+- [ ] K4. **First deploy of the relay** (K3): with K1 done, merge PR #2, tag `worker-v0.1.0` on `main` and push the tag. The
       *Kick relay* workflow must end green and `https://live.dustplanner.app/health` must answer
       `{"ok":true,"version":"0.1.0","configured":true}`. In the Cloudflare dashboard: one Worker, two Durable Object
       classes, the KV namespace bound, the custom domain active. Anything that differs → paste the failing workflow step.

@@ -11,10 +11,10 @@ pattern = "live.dustplanner.app"
 custom_domain = true
 
 [vars]
-# Public values. Fill them in once the Kick app exists (VERIFICACION K1); the relay answers 503 on /connect until then.
-KICK_CLIENT_ID = "REPLACE_ME"
+# Public values of the Kick app (VERIFICACION K1 done 2026-10-18). The secret never lives here.
+KICK_CLIENT_ID = "01M576EATT3TQ1P5TM37APJCJS"
 # user_id of the dedicated bot account that owns the Kick app: its own chat messages are ignored.
-BOT_USER_ID = "0"
+BOT_USER_ID = "1000417936"
 # Comma-separated channel slugs allowed to connect while the beta is private. Empty = everyone (K8).
 ALLOWED_SLUGS = "tsukuru_tv"
 PUBLIC_BASE_URL = "https://live.dustplanner.app"

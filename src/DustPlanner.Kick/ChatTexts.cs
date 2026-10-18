@@ -75,6 +75,33 @@ public static class ChatTexts
 
     public static string DeckLink(string language, string url) => language == Spanish ? " · lista: " + url : " · list: " + url;
 
+    /// <summary>
+    /// The end-of-stream line (PRD §5.6): record of the session and, when both ends are known, the ladder movement.
+    /// <c>Directo terminado: 12-7 (63 %) · de Diamante 5 a Diamante 2</c>. Ties are shown only when there were any.
+    /// </summary>
+    public static string StreamSummary(string language, int wins, int losses, int ties, ChatRank? rankStart, ChatRank? rankEnd)
+    {
+        var record = ChatFormat.Number(language, wins) + "-" + ChatFormat.Number(language, losses) + (ties > 0 ? "-" + ChatFormat.Number(language, ties) : string.Empty);
+        var ratio = wins + losses == 0 ? (double?)null : (double)wins / (wins + losses);
+        var text = (language == Spanish ? "Directo terminado: " : "Stream over: ") + record + (ratio is null ? string.Empty : " (" + ChatFormat.Percent(language, ratio) + ")");
+        if (rankStart is not null && rankEnd is not null)
+        {
+            var from = RankLabel(language, rankStart);
+            var to = RankLabel(language, rankEnd);
+            text += from == to
+                ? (language == Spanish ? " · se queda en " : " · still at ") + to
+                : (language == Spanish ? " · de " + from + " a " + to : " · from " + from + " to " + to);
+        }
+
+        return text;
+    }
+
+    /// <summary>The optional chat line of the prediction reminder: <c>Terminó: victoria — ¡resolvé la predicción!</c>.</summary>
+    public static string PredictionReminder(string language, string? result) =>
+        language == Spanish
+            ? "Terminó: " + Result(language, result) + " — ¡resolvé la predicción!"
+            : "Game over: " + Result(language, result) + " — resolve the prediction!";
+
     public static string StreakText(string language, int streak)
     {
         if (Math.Abs(streak) < 2)

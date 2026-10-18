@@ -55,6 +55,7 @@ claude mcp add dustplanner -- dotnet C:\Repos\DustPlanner\src\DustPlanner.Mcp\bi
 | `propose_disenchant_plan(deck, account?, need?, protectDeckCodes?, allowNoDecks?, asOf?)` | inbox, catalog, rules, `prefs.json`, `meta.txt`, `refunds.json`, database (saved decks) | the least painful disenchant set, alternatives, what was excluded and why, warnings (packs first) |
 | `get_history(account?, limit?)` | database | snapshots, stored plans and their status, detected card changes, latest rank |
 | `get_winrate(account?, since?, days?, gameType?, format?, recent?)` | database | win rate overall and per class, recent games |
+| `get_stream_sessions(account?, limit?)` | database | Kick streams: start/end, title, record of the games played while live, rank at both ends, decks used |
 
 `deck` accepts a deck code (`AAECA…`) or the deck block the game copies to the clipboard. Results are the same
 snake_case JSON the CLI prints with `--json`. A bad input (invalid deck code, nothing exported yet, no database)

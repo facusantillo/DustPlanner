@@ -42,6 +42,14 @@
   .hidden { display: none !important; }
   #last { transition: opacity 0.6s; }
   #offline { position: absolute; top: 120px; left: 24px; font-size: 16px; color: var(--muted); display: none; }
+  /* Kick redemptions (stage K7): one card at a time under the bar, 6 s, then gone. */
+  #redemption { position: absolute; top: 150px; left: 24px; max-width: 640px; padding: 14px 22px; background: var(--bg); border-radius: var(--radius);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); backdrop-filter: blur(6px); transform-origin: top left; opacity: 0; transform: translateY(-8px) scale(var(--rscale, 1)); transition: opacity 0.35s, transform 0.35s; pointer-events: none; }
+  #redemption.show { opacity: 1; transform: scale(var(--rscale, 1)); }
+  body[data-align="right"] #redemption { left: auto; right: 24px; transform-origin: top right; }
+  #redemption .label { margin-bottom: 2px; }
+  #redemption .value { font-size: 26px; white-space: normal; }
+  #redemption .sub { white-space: normal; }
 </style>
 </head>
 <body>
@@ -53,12 +61,19 @@
   <div class="cell hidden" id="cell-last"><div class="label">Last game</div><div class="value" id="last">—</div><div class="sub" id="last-sub"></div></div>
   <div class="cell hidden" id="cell-deck"><div class="label">Deck</div><div class="value" id="deck">—</div><div class="sub" id="deck-sub"></div></div>
 </div>
+<div id="redemption" aria-live="polite"><div class="label">Channel points</div><div class="value dust" id="redemption-title"></div><div class="sub" id="redemption-sub"></div>
+</div>
 <div id="offline">overlay disconnected — is dustplanner-host running?</div>
 <script>
 (function () {
   const params = new URLSearchParams(location.search);
   const scale = parseFloat(params.get("scale") || "1");
-  if (scale !== 1) document.getElementById("bar").style.transform = "scale(" + scale + ")";
+  if (scale !== 1) {
+    document.getElementById("bar").style.transform = "scale(" + scale + ")";
+    const redemption = document.getElementById("redemption");
+    redemption.style.setProperty("--rscale", String(scale));
+    redemption.style.top = Math.round(24 + 126 * scale) + "px";
+  }
   if (params.get("align") === "right") document.body.dataset.align = "right";
   if (params.get("theme") === "light") document.body.dataset.theme = "light";
   const hidden = new Set((params.get("hide") || "").split(",").map(s => s.trim()).filter(Boolean));
@@ -121,9 +136,29 @@
     }
   }
 
+  // Kick channel-point redemptions (stage K7): title and viewer, 6 s. Queued so two in a row both get seen.
+  const redemptionQueue = [];
+  let redemptionTimer = null;
+  function showRedemption(payload) {
+    redemptionQueue.push(payload);
+    if (!redemptionTimer) nextRedemption();
+  }
+  function nextRedemption() {
+    const card = document.getElementById("redemption");
+    const payload = redemptionQueue.shift();
+    if (!payload) { card.classList.remove("show"); redemptionTimer = null; return; }
+    document.getElementById("redemption-title").textContent = payload.reward_title || "Redemption";
+    const who = payload.username ? "@" + payload.username : "";
+    const input = payload.user_input ? " — " + payload.user_input : "";
+    document.getElementById("redemption-sub").textContent = who + (payload.cost ? " · " + payload.cost : "") + input;
+    card.classList.add("show");
+    redemptionTimer = setTimeout(() => { card.classList.remove("show"); redemptionTimer = setTimeout(nextRedemption, 400); }, 6000);
+  }
+
   function connect() {
     const source = new EventSource("/events");
     source.addEventListener("state", e => { document.getElementById("offline").style.display = "none"; render(JSON.parse(e.data)); });
+    source.addEventListener("kick.redemption", e => { try { showRedemption(JSON.parse(e.data).payload || {}); } catch (err) { /* ignore */ } });
     source.onerror = () => { document.getElementById("offline").style.display = "block"; };
   }
   fetch("/api/state").then(r => r.json()).then(render).catch(() => {});

@@ -104,6 +104,11 @@
         }
       }
     });
+    es.addEventListener("kick.reminder", ev => {
+      let data; try { data = JSON.parse(ev.data); } catch (e) { return; }
+      const p = data.payload || {};
+      toast(t("kick_reminder_toast", { result: t("result_" + p.result) || p.result || "?" }), "ok");
+    });
     es.addEventListener("kick", ev => {
       let state; try { state = JSON.parse(ev.data); } catch (e) { return; }
       kickState = state;
@@ -345,7 +350,7 @@
         '<label class="field"><span>' + t("games_period") + '</span><select id="g-days"><option value="1">' + t("period_today") + '</option><option value="7" selected>' + t("period_7") + '</option><option value="30">' + t("period_30") + '</option><option value="">' + t("period_all") + "</option></select></label>" +
         '<label class="field"><span>' + t("games_type") + '</span><select id="g-type"><option value="">' + t("type_all") + '</option><option value="GT_RANKED">' + t("type_ranked") + '</option><option value="GT_CASUAL">' + t("type_casual") + '</option><option value="GT_ARENA">' + t("type_arena") + '</option><option value="GT_VS_AI">' + t("type_ai") + "</option></select></label>" +
         '<label class="field"><span>' + t("games_format") + '</span><select id="g-format"><option value="">' + t("format_all") + '</option><option value="FT_STANDARD">' + t("format_standard") + '</option><option value="FT_WILD">' + t("format_wild") + "</option></select></label>" +
-        '</div><div id="games-result"></div>';
+        '</div><div id="games-result"></div><div id="streams"></div>';
       ["#g-days", "#g-type", "#g-format"].forEach(sel => $(sel).addEventListener("change", loadGames));
       $("#btn-import").addEventListener("click", async () => {
         const b = $("#btn-import"); busy(b, true);
@@ -355,6 +360,27 @@
       });
     }
     loadGames();
+    loadStreams();
+  }
+  // Kick stage K7: the streams seen so far, with the record and decks of the games played inside each one.
+  async function loadStreams() {
+    const out = $("#streams");
+    let r;
+    try { r = await api(withAccount("/api/stream-sessions?limit=20")); } catch (e) { out.innerHTML = ""; return; }
+    if (!r.sessions || r.sessions.length === 0) { out.innerHTML = ""; return; }
+    const rows = r.sessions.map(s => {
+      const rec = s.record;
+      const rate = rec.wins + rec.losses > 0 ? pct(rec.wins / (rec.wins + rec.losses)) + "%" : "—";
+      const rank = s.rank_start || s.rank_end ? esc((s.rank_start ? s.rank_start.label : "?") + " → " + (s.rank_end ? s.rank_end.label : (s.is_live ? "…" : "?"))) : "—";
+      const decks = s.decks.length ? s.decks.map(d => esc(d.name) + (d.games > 1 ? " ×" + d.games : "")).join(", ") : "—";
+      const length = s.ended_at ? duration(Date.parse(s.ended_at) - Date.parse(s.started_at)) : '<span class="chip kick-connected">' + t("streams_live") + "</span>";
+      return "<tr><td>" + when(s.started_at) + "</td><td>" + length + "</td><td>" + esc(s.title || "") + '</td><td class="num"><span class="win">' + rec.wins + '</span>–<span class="loss">' + rec.losses + "</span>" + (rec.ties ? "–" + rec.ties : "") + '</td><td class="num">' + rate + "</td><td>" + rank + "</td><td>" + decks + "</td></tr>";
+    }).join("");
+    out.innerHTML = "<h3>" + t("streams_title") + '</h3><p class="why">' + esc(t("streams_hint")) + "</p><table><thead><tr><th>" + t("col_started") + "</th><th>" + t("streams_length") + "</th><th>" + t("streams_stream_title") + '</th><th class="num">' + t("streams_record") + '</th><th class="num">' + t("col_rate") + "</th><th>" + t("streams_rank") + "</th><th>" + t("streams_decks") + "</th></tr></thead><tbody>" + rows + "</tbody></table>";
+  }
+  function duration(ms) {
+    const minutes = Math.max(0, Math.round(ms / 60000));
+    return minutes < 60 ? minutes + " min" : Math.floor(minutes / 60) + " h " + String(minutes % 60).padStart(2, "0");
   }
   async function loadGames() {
     const out = $("#games-result");

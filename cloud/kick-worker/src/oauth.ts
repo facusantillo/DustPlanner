@@ -1,7 +1,7 @@
 /** `/connect`, `/oauth/callback`, `/pair/exchange`: the OAuth 2.1 + PKCE flow and the hand-over to the local service (PRD §5.3). */
 import { indexSlug } from "./config";
 import { constantTimeEqual, pkceChallenge, randomToken, sha256Hex } from "./crypto";
-import { HOST_PORT_MAX, HOST_PORT_MIN, allowedSlugs, isConfigured, type Env } from "./env";
+import { HOST_PORT_MAX, HOST_PORT_MIN, isAllowedChannel, isConfigured, type Env } from "./env";
 import { EVENTS, KickApiError, authorizeUrl, exchangeCode, getCurrentUser, getOwnChannel, revokeToken, subscribeEvents, type SubscriptionRecord } from "./kick-api";
 import { closedBetaPage, errorPage, pairedPage } from "./pages";
 
@@ -55,8 +55,7 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
     const tokens = await exchangeCode(env, code, pendingState.verifier);
     const user = await getCurrentUser(tokens.access_token);
     const channel = await getOwnChannel(tokens.access_token);
-    const allowed = allowedSlugs(env);
-    if (allowed.length > 0 && !allowed.includes(channel.slug)) {
+    if (!isAllowedChannel(env, channel.slug)) {
       await revokeToken(tokens.access_token, "access_token");
       await revokeToken(tokens.refresh_token, "refresh_token");
       return closedBetaPage(channel.slug);

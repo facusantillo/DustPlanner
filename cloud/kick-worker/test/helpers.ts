@@ -89,7 +89,8 @@ export const TOKENS = {
   token_type: "Bearer",
 };
 
-export const CHANNEL = { userId: "12345", slug: "tsukuru_tv", username: "Tsukuru" };
+// Kick spells the slug with a hyphen; vitest.config.ts lists it with an underscore on purpose (both must match).
+export const CHANNEL = { userId: "12345", slug: "tsukuru-tv", username: "Tsukuru_TV" };
 
 /** The usual happy-path Kick: token exchange, user, channel, three subscriptions, a public key. */
 export function mockKickHappyPath(options: { slug?: string; tokens?: typeof TOKENS; subscriptionErrors?: boolean } = {}): void {

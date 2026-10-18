@@ -131,6 +131,17 @@ describe("callback and pairing", () => {
     expect((await channelStubFor(CHANNEL.userId).status()).installed).toBe(false);
   });
 
+  // vitest.config.ts lists "tsukuru_tv" and "other_allowed"; Kick reports slugs with hyphens.
+  it.each(["tsukuru-tv", "other-allowed", "Other_Allowed"])("matches the allowed list however the slug is spelled (%s)", async (slug) => {
+    mockKickHappyPath({ slug });
+    const pair = await sha256Hex("pair-" + slug);
+    const connect = await SELF.fetch(`${RELAY}/connect?pair=${pair}&port=8765`, { redirect: "manual" });
+    const state = new URL(connect.headers.get("location")!).searchParams.get("state")!;
+    const callback = await SELF.fetch(`${RELAY}/oauth/callback?code=c&state=${state}`);
+    expect(callback.status).toBe(200);
+    expect(await env.CONFIG.get("slug:" + slug.toLowerCase().replace(/_/g, "-"))).toBe(CHANNEL.userId);
+  });
+
   it("burns the pairing code on a wrong verifier and never serves it twice", async () => {
     mockKickHappyPath();
     const pairVerifier = "v-" + crypto.randomUUID();

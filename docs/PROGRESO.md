@@ -456,7 +456,7 @@ recorded in its §11.
   text, the placeholder list), saved with *Save preferences*.
 - `docs/kick-streamerbot.md`: command + action + *Fetch URL* + *Send Message to Channel*, the `204` rule, testing from
   the browser. `docs/panel.md` lists the endpoint.
-- Version 1.0.1 (an intermediate 1.0.x, as the PRD allows): the plugin and the service both changed.
+- Version bumped for the release that carries this (1.1.0 — see K4: new functionality is a minor bump, never a patch).
 - Tests: the PRD's example lines in both languages, aliases, fallbacks on empty and partial state, dust off by default,
   cooldown rules (global, per viewer, case-insensitive viewer, unknown words do not count), custom templates and the
   prefix rule, deck link only with a public page, grapheme and byte limits, number / streak / class / rank formatting,
@@ -556,4 +556,6 @@ recorded in its §11.
 - DPAPI is exercised only on Windows; the container runs the in-clear branch. VERIFICACION K5 checks the file there.
 - The service does not open the browser itself: the panel does, which keeps the service free of shell-outs from request
   handlers. If a pop-up blocker interferes, the panel says so and the manual code works.
+- **Version 1.1.0.** The maintainer's rule, replacing PRD §10.6: a release that adds functionality bumps the minor
+  (1.1.0 = K1–K4; the next functional PR is 1.2.0), patches are for fixes only. 1.0.1 was never published.
 

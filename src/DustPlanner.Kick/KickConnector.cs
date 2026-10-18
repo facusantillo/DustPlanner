@@ -51,6 +51,21 @@ public sealed record KickConnectionState
 
     public DateTimeOffset? LastCommandAt { get; init; }
 
+    /// <summary>What happened to the last command: <c>answered</c>, <c>cooldown</c>, <c>ignored</c> (unknown or disabled) or <c>send_failed</c>. Null until stage K5's bridge reports.</summary>
+    public string? LastCommandOutcome { get; init; }
+
+    /// <summary>
+    /// The Kick event names the relay has webhooks for. Null until a relay that reports them says hello; an empty list
+    /// while connected means Kick refused the subscriptions (the app's webhooks are off) and no command can arrive.
+    /// </summary>
+    public IReadOnlyList<string>? Subscriptions { get; init; }
+
+    /// <summary>
+    /// When something on this PC last asked <c>GET /api/chat/…</c> (Streamer.bot) while connected: both paths answering
+    /// means duplicated lines in chat, and the panel says so.
+    /// </summary>
+    public DateTimeOffset? LastLocalChatRequestAt { get; init; }
+
     public DateTimeOffset? NextRetryAt { get; init; }
 
     public string RelayVersion { get; init; } = string.Empty;
@@ -128,6 +143,31 @@ public sealed class KickConnector : BackgroundService
     public event Action<RewardRedemptionMessage>? RedemptionReceived;
 
     public string RelayUrl => _options.RelayUrl.TrimEnd('/');
+
+    /// <summary>The event the relay must be subscribed to for commands to arrive at all.</summary>
+    public const string ChatSubscription = "chat.message.sent";
+
+    /// <summary>True while connected to a relay that reported its subscriptions and chat is not among them.</summary>
+    public static bool ChatSubscriptionMissing(KickConnectionState state) =>
+        state is { Status: KickStatus.Connected, Subscriptions: { } subscriptions } && !subscriptions.Contains(ChatSubscription, StringComparer.Ordinal);
+
+    /// <summary>Stage K5's bridge reports what it did with the last command, for the panel.</summary>
+    public void ReportCommandOutcome(string outcome) => Publish(s => s with { LastCommandOutcome = outcome });
+
+    /// <summary>
+    /// The local chat endpoint calls this on every request: while connected, the panel can then warn that a second bot
+    /// (Streamer.bot) is answering too. Published at most once a minute so the event stream stays quiet.
+    /// </summary>
+    public void NoteLocalChatRequest()
+    {
+        var now = _clock.GetUtcNow();
+        if (_state.Status != KickStatus.Connected || (_state.LastLocalChatRequestAt is { } last && now - last < TimeSpan.FromMinutes(1)))
+        {
+            return;
+        }
+
+        Publish(s => s with { LastLocalChatRequestAt = now });
+    }
 
     // ------------------------------------------------------------------------------------------------ pairing
 
@@ -474,9 +514,11 @@ public sealed class KickConnector : BackgroundService
             MissingScopes = Array.Empty<string>(),
             Live = hello.Live,
             RelayVersion = hello.ServerVersion,
+            Subscriptions = hello.Subscriptions,
             LastError = null,
             ConnectedAt = _clock.GetUtcNow(),
             NextRetryAt = null,
+            LastLocalChatRequestAt = null,
         });
         await SendConfigAsync(ct).ConfigureAwait(false);
     }
@@ -490,13 +532,16 @@ public sealed class KickConnector : BackgroundService
                 _lastPong = _clock.GetUtcNow();
                 return true;
             case ChatCommandMessage command:
-                // Listeners first, state second: whoever waits for the state can rely on the command having been handed over.
+                // State first, listeners second: the bridge reports the outcome of *this* command, so the command must already be in the state.
+                Publish(s => s with { LastCommand = (command.Command + " " + command.Args).Trim(), LastCommandAt = command.At ?? _clock.GetUtcNow(), LastCommandOutcome = null });
                 CommandReceived?.Invoke(command);
-                Publish(s => s with { LastCommand = (command.Command + " " + command.Args).Trim(), LastCommandAt = command.At ?? _clock.GetUtcNow() });
                 return true;
             case StreamStatusMessage status:
                 StreamStatusChanged?.Invoke(status);
                 Publish(s => s with { Live = status.Live });
+                return true;
+            case SubscriptionsMessage subscriptions:
+                Publish(s => s with { Subscriptions = subscriptions.Events });
                 return true;
             case RewardRedemptionMessage redemption:
                 RedemptionReceived?.Invoke(redemption);
@@ -576,7 +621,7 @@ public sealed class KickConnector : BackgroundService
             _pairing = null;
         }
 
-        Publish(s => s with { Status = status, Channel = status == KickStatus.Disconnected ? null : s.Channel, LastError = error, ConnectedAt = null, NextRetryAt = null, Live = null, LastCommand = null, LastCommandAt = null });
+        Publish(s => s with { Status = status, Channel = status == KickStatus.Disconnected ? null : s.Channel, LastError = error, ConnectedAt = null, NextRetryAt = null, Live = null, LastCommand = null, LastCommandAt = null, LastCommandOutcome = null, Subscriptions = null, LastLocalChatRequestAt = null });
     }
 
     private async Task RestartSessionAsync()

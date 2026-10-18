@@ -1,8 +1,8 @@
 # Kick: the native connection
 
-> Work in progress: this page grows with the stages of [`PRD-kick.md`](PRD-kick.md). Today it covers connecting and
-> disconnecting (K4). Answers in chat without Streamer.bot (K5), the public deck page (K6) and the stream events (K7)
-> arrive in the next updates; until then, [`kick-streamerbot.md`](kick-streamerbot.md) is the way to get `!deck` answered.
+> Work in progress: this page grows with the stages of [`PRD-kick.md`](PRD-kick.md). Today it covers connecting,
+> disconnecting (K4) and the commands answered by the bot (K5). The public deck page (K6) and the stream events (K7)
+> arrive in the next updates. [`kick-streamerbot.md`](kick-streamerbot.md) stays for those who prefer Streamer.bot.
 
 ## What it is
 
@@ -24,6 +24,18 @@ the relay as the bot account. Nothing from the game ever leaves your PC except t
 
 While the beta is private, only channels on the relay's allowed list can connect; others see a "closed beta" page and
 nothing about them is stored.
+
+## Commands in chat
+
+Once connected, the commands you turned on under Settings → **Chat commands** are answered in your chat by the bot, as
+a reply to the viewer's message: `!deck` / `!mazo`, `!rank` / `!rango`, `!wr` / `!winrate`, `!last` / `!ultima`
+(`!dust` is off by default). Same texts, prefix, language and cooldowns as the Streamer.bot path — they are the same
+code — so what you customise applies to both. The card under Settings → Kick shows the last command and what happened
+to it: *answered*, *in cooldown*, *turned off* or *could not be sent*.
+
+**If you were using Streamer.bot**, turn those commands off there: with both on, the chat gets two answers (the shared
+cooldown blocks the second one only when it arrives within the cooldown). The card warns you when something on this
+PC keeps asking `/api/chat` while the channel is connected.
 
 ## Disconnecting
 
@@ -48,4 +60,9 @@ Details, routes and the deploy procedure of the relay: [`cloud/kick-worker/READM
   *Connect with Kick*; the previous pairing is discarded.
 - **A link to `127.0.0.1:8765/kick/paired` answers "No pairing is in progress"** — expected: the service only accepts a
   code during the ten minutes after you pressed Connect. Press it again.
-- Logs: the service prints lines starting with `Kick:`; the relay's `/health` shows whether it is configured.
+- **The card says Connected but nothing arrives** — if it also shows a red notice about chat events, Kick refused the
+  webhook subscriptions: the relay asks again every time the service connects, and the maintainer must have the Kick
+  app's *Webhooks* switch on with the URL `https://live.dustplanner.app/webhooks/kick`. Without the notice, check that
+  the message starts with your prefix and names a command that is turned on: the relay forwards nothing else.
+- Logs: `%LocalAppData%\DustPlanner\service.log` holds the service's lines (the ones starting with `Kick:` are the
+  connection and one per command with its outcome); the relay's `/health` shows whether it is configured.

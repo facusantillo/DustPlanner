@@ -30,6 +30,7 @@ describe("websocket between the relay and the local service", () => {
     const hello = await socket.next();
     expect(hello).toMatchObject({ v: 1, type: "hello", channel: { user_id: CHANNEL.userId, slug: CHANNEL.slug, username: CHANNEL.username }, needs_reconnect: false, missing_scopes: [], server_version: env.RELAY_VERSION });
     expect(hello["live"]).toEqual({ is_live: false, title: null, started_at: null, ended_at: null });
+    expect(hello["subscriptions"]).toEqual(["channel.reward.redemption.updated", "chat.message.sent", "livestream.status.updated"]);
 
     socket.sendRaw(PING_FRAME);
     expect(JSON.stringify(await socket.next())).toBe(PONG_FRAME);
@@ -44,6 +45,30 @@ describe("websocket between the relay and the local service", () => {
     socket.sendRaw("not json");
     expect(await socket.next()).toMatchObject({ type: "error", code: "bad_message" });
     socket.close();
+  });
+
+  it("says hello with no subscriptions when Kick refused them, and announces them once Kick accepts", async () => {
+    mockKickHappyPath({ subscriptionErrors: true });
+    const paired = await pairDevice();
+    const socket = await RelaySocket.open(paired.deviceToken);
+    const hello = await socket.next();
+    expect(hello["subscriptions"]).toEqual([]);
+    // Still refused on this connection: nothing to announce.
+    expect(await socket.silence(300)).toBe(true);
+    socket.close();
+
+    // The maintainer turns webhooks on in the Kick app; the next connection re-subscribes and tells the service.
+    mockKickHappyPath();
+    const again = await RelaySocket.open(paired.deviceToken);
+    expect((await again.next())["subscriptions"]).toEqual([]);
+    const announced = await again.next();
+    expect(announced).toEqual({ v: 1, type: "subscriptions", events: ["channel.reward.redemption.updated", "chat.message.sent", "livestream.status.updated"] });
+    // Reconnecting with nothing changed stays quiet.
+    again.close();
+    const third = await RelaySocket.open(paired.deviceToken);
+    expect((await third.next())["subscriptions"]).toEqual(["channel.reward.redemption.updated", "chat.message.sent", "livestream.status.updated"]);
+    expect(await third.silence(300)).toBe(true);
+    third.close();
   });
 
   it("posts chat.send to Kick as the bot, one per second per channel", async () => {

@@ -17,21 +17,11 @@ internal static class ChatEndpoints
 {
     public static void Map(WebApplication app)
     {
-        app.MapGet("/api/chat/{command}", (string command, string? lang, string? user, AppServices services, OverlayStateService state, ChatResponder responder, TimeProvider clock) =>
+        app.MapGet("/api/chat/{command}", (string command, string? lang, string? user, AppServices services, OverlayStateService state, ChatResponder responder, KickConnector connector, TimeProvider clock) =>
         {
-            ChatPrefs prefs;
-            try
-            {
-                prefs = services.ReadPrefs().Chat ?? new ChatPrefs();
-                prefs.Validate();
-            }
-            catch (Exception ex) when (ex is System.Text.Json.JsonException || ex is IOException)
-            {
-                // A broken prefs.json must not silence the chat: answer with the defaults.
-                prefs = new ChatPrefs();
-            }
-
-            var reply = responder.Respond(prefs, command, user, lang, ChatContextFactory.From(state.Current), clock.GetUtcNow());
+            // Lets the Kick card warn when a second bot is answering next to the native connection (PRD §5.4).
+            connector.NoteLocalChatRequest();
+            var reply = responder.Respond(ReadChatPrefs(services), command, user, lang, ChatContextFactory.From(state.Current), clock.GetUtcNow());
             return reply.Status switch
             {
                 ChatReplyStatus.Ok => Results.Text(reply.Text!, "text/plain; charset=utf-8"),
@@ -39,6 +29,22 @@ internal static class ChatEndpoints
                 _ => Results.NotFound(),
             };
         });
+    }
+
+    /// <summary>The saved chat settings, validated; a broken <c>prefs.json</c> must not silence the chat, so it falls back to the defaults.</summary>
+    public static ChatPrefs ReadChatPrefs(AppServices services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        try
+        {
+            var prefs = services.ReadPrefs().Chat ?? new ChatPrefs();
+            prefs.Validate();
+            return prefs;
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException || ex is IOException)
+        {
+            return new ChatPrefs();
+        }
     }
 }
 

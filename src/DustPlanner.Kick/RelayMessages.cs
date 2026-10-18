@@ -91,9 +91,12 @@ public static class RelayProtocol
                 return new HelloMessage(
                     ReadChannel(o["channel"]),
                     (bool?)o["needs_reconnect"] ?? false,
-                    o["missing_scopes"] is JsonArray scopes ? scopes.Select(s => (string?)s ?? string.Empty).Where(s => s.Length > 0).ToArray() : Array.Empty<string>(),
+                    ReadStrings(o["missing_scopes"]),
                     ReadLive(o["live"]),
-                    (string?)o["server_version"] ?? string.Empty);
+                    (string?)o["server_version"] ?? string.Empty,
+                    o["subscriptions"] is JsonArray ? ReadStrings(o["subscriptions"]) : null);
+            case "subscriptions":
+                return new SubscriptionsMessage(ReadStrings(o["events"]));
             case "chat.command":
                 var sender = o["sender"] as JsonObject;
                 return new ChatCommandMessage(
@@ -125,6 +128,9 @@ public static class RelayProtocol
         }
     }
 
+    private static string[] ReadStrings(JsonNode? node) =>
+        node is JsonArray items ? items.Select(s => (string?)s ?? string.Empty).Where(s => s.Length > 0).ToArray() : Array.Empty<string>();
+
     private static RelayChannel ReadChannel(JsonNode? node) =>
         node is JsonObject c
             ? new RelayChannel((string?)c["user_id"] ?? string.Empty, (string?)c["slug"] ?? string.Empty, (string?)c["username"] ?? string.Empty)
@@ -147,7 +153,11 @@ public sealed record RelayChannel(string UserId, string Slug, string Username);
 
 public sealed record LiveStatus(bool IsLive, string? Title, DateTimeOffset? StartedAt, DateTimeOffset? EndedAt);
 
-public sealed record HelloMessage(RelayChannel Channel, bool NeedsReconnect, IReadOnlyList<string> MissingScopes, LiveStatus Live, string ServerVersion) : RelayMessage;
+/// <summary><c>Subscriptions</c>: the Kick event names the relay currently has webhooks for (relay ≥ 0.2.0): null from older relays, empty when Kick refused them.</summary>
+public sealed record HelloMessage(RelayChannel Channel, bool NeedsReconnect, IReadOnlyList<string> MissingScopes, LiveStatus Live, string ServerVersion, IReadOnlyList<string>? Subscriptions) : RelayMessage;
+
+/// <summary>Sent by the relay when the set of webhooks changes after the hello (it re-subscribes on every connection).</summary>
+public sealed record SubscriptionsMessage(IReadOnlyList<string> Events) : RelayMessage;
 
 public sealed record ChatCommandMessage(string MessageId, string Command, string Args, string SenderUserId, string SenderUsername, IReadOnlyList<string> Badges, DateTimeOffset? At) : RelayMessage;
 

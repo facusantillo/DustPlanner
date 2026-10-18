@@ -57,6 +57,9 @@ public sealed class FakeRelay : IAsyncDisposable
     /// <summary>Send <c>needs_reconnect: true</c> in the hello.</summary>
     public bool HelloNeedsReconnect { get; set; }
 
+    /// <summary>What the hello reports as subscribed events (relay ≥ 0.2.0); null leaves the field out like an old relay.</summary>
+    public string[]? HelloSubscriptions { get; set; } = new[] { "channel.reward.redemption.updated", "chat.message.sent", "livestream.status.updated" };
+
     public int Connections { get; private set; }
 
     public int DisconnectCalls { get; private set; }
@@ -201,17 +204,22 @@ public sealed class FakeRelay : IAsyncDisposable
         }
 
         _connectedSignal.Release();
-        var hello = new
+        var hello = new JsonObject
         {
-            v = 1,
-            type = "hello",
-            channel = new { user_id = ChannelUserId, slug = Slug, username = Username },
-            needs_reconnect = HelloNeedsReconnect,
-            missing_scopes = HelloNeedsReconnect ? new[] { "chat:write" } : Array.Empty<string>(),
-            live = new { is_live = false, title = (string?)null, started_at = (string?)null, ended_at = (string?)null },
-            server_version = "fake-0.1",
+            ["v"] = 1,
+            ["type"] = "hello",
+            ["channel"] = new JsonObject { ["user_id"] = ChannelUserId, ["slug"] = Slug, ["username"] = Username },
+            ["needs_reconnect"] = HelloNeedsReconnect,
+            ["missing_scopes"] = HelloNeedsReconnect ? new JsonArray("chat:write") : new JsonArray(),
+            ["live"] = new JsonObject { ["is_live"] = false, ["title"] = null, ["started_at"] = null, ["ended_at"] = null },
+            ["server_version"] = "fake-0.1",
         };
-        await socket.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(hello, RelayProtocol.Json)), WebSocketMessageType.Text, true, http.RequestAborted);
+        if (HelloSubscriptions is { } subscribed)
+        {
+            hello["subscriptions"] = new JsonArray(subscribed.Select(s => (JsonNode?)s).ToArray());
+        }
+
+        await socket.SendAsync(Encoding.UTF8.GetBytes(hello.ToJsonString(RelayProtocol.Json)), WebSocketMessageType.Text, true, http.RequestAborted);
 
         var buffer = new byte[16 * 1024];
         try

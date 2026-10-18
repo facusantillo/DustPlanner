@@ -54,7 +54,9 @@ tools\package-exporter.ps1 -Install -NoService   # plugin only (the service is s
 - Settings: `%LocalAppData%\DustPlanner\exporter-settings.json`
   (`output_directory`, `history_keep`, `min_interval_seconds`, `export_on_mode_change`, `include_hdt_decks`,
   `start_service`, `service_port`, `service_path`).
-- Log: `%LocalAppData%\DustPlanner\exporter.log`. The first line after start says which HDT events were hooked.
+- Logs: `%LocalAppData%\DustPlanner\exporter.log` (the plugin; the first line after start says which HDT events were
+  hooked) and `%LocalAppData%\DustPlanner\service.log` (the service it starts: panel, sync, Kick connection; 2 MB,
+  one previous copy kept as `service.log.1`).
 
 ## Compatibility
 

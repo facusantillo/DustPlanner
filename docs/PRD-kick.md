@@ -310,7 +310,8 @@ Rutas en `https://live.dustplanner.app`:
 
 | Dirección | `type` | Campos |
 |---|---|---|
-| Worker → servicio | `hello` | `channel{user_id, slug, username}`, `needs_reconnect`, `missing_scopes[]`, `live{is_live, title, started_at, ended_at}`, `server_version` |
+| Worker → servicio | `hello` | `channel{user_id, slug, username}`, `needs_reconnect`, `missing_scopes[]`, `live{is_live, title, started_at, ended_at}`, `server_version`, `subscriptions[]` (eventos de Kick con webhook; vacío si Kick los rechazó — relay ≥ 0.2.0) |
+| Worker → servicio | `subscriptions` | `events[]`: el conjunto cambió después del `hello` (el Worker se vuelve a suscribir en cada conexión) |
 | Worker → servicio | `chat.command` | `message_id`, `command`, `args`, `sender{user_id, username, badges[]}`, `at` |
 | Worker → servicio | `stream.status` | `is_live`, `title`, `started_at`, `ended_at` |
 | Worker → servicio | `reward.redemption` | `id`, `status`, `reward{id, title, cost}`, `redeemer{username}`, `user_input` |
@@ -608,8 +609,10 @@ Comprobado con `HdtApiCheck` contra los binarios 1.55.6 y con el código fuente 
    etiqueta por idioma desde `LeagueId`/`StarLevel`/`LegendRank` (`Diamante 3` / `Leyenda #1.234`).
 3. **Idioma del chat.** `chat.language` admite `null` (default): se resuelve con el idioma de la interfaz del sistema
    (`es` → español, cualquier otro → inglés). El idioma del panel vive en el navegador, así que no sirve como default.
-4. **Versionado.** Corrección a la regla §10.6: cada entrega que suma funcionalidad sube el *minor* (1.1.0 = K1–K4, la
-   siguiente funcional 1.2.0, etc.); los *patch* quedan para arreglos. Decidido por el mantenedor el 18/10/2026.
+4. **Versionado.** Corrección a la regla §10.6: cada entrega que suma funcionalidad sube el *minor*; los *patch*
+   quedan para arreglos. **El número lo fija la release publicada en GitHub, no el PR**: mientras el tag `v1.1.0` no
+   exista, todo lo que se mergea sigue siendo 1.1.0 (hoy K1–K5), y el minor sube recién con la primera entrega funcional
+   posterior a esa release. Lo mismo para el relay con `worker-v*`. Decidido por el mantenedor el 18/10/2026.
 5. **Pendiente humano de K0** (en `VERIFICACION.md` §K): crear la app en `kick.com/settings/developer` desde la
    cuenta bot con 2FA, redirect `https://live.dustplanner.app/oauth/callback` y webhooks a
    `https://live.dustplanner.app/webhooks/kick`; anotar `client_id` y el `user_id` de la cuenta bot (el

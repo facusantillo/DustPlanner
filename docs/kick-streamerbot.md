@@ -72,5 +72,6 @@ post. Then type `!deck` in your own chat.
 - Custom texts: in Settings you can replace any built-in text with your own one-liner using placeholders like
   `{deck_name}`, `{deckstring}`, `{rank}`, `{today_w}`, `{today_l}`, `{today_wr}`, `{session_w}`, `{session_l}`,
   `{streak_text}`, `{last_result}`, `{opponent_class}`, `{turns}`, `{dust}`, `{user}`. The full list is in the panel.
-- When the native Kick connection arrives (stage K5), the panel will warn you to turn these Streamer.bot commands off so
-  the chat does not get two answers.
+- With the native connection (Settings → Kick → *Connect with Kick*, see [`kick.md`](kick.md)) the bot answers these
+  commands itself: turn the Streamer.bot actions off, or the chat gets two answers. Both paths share the cooldown
+  clocks, so inside the cooldown only the first one posts; the panel warns when both are active.

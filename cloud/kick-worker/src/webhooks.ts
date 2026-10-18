@@ -70,6 +70,8 @@ export interface WebhookOutcome {
 
 export async function handleWebhook(request: Request, env: Env, now = Date.now()): Promise<Response> {
   const outcome = await processWebhook(request, env, now);
+  // One line per delivery so the dashboard shows whether Kick talks to us and what we did; never the body.
+  console.log("relay: webhook", request.headers.get("kick-event-type") ?? "-", outcome.action);
   return new Response(JSON.stringify(outcome), { status: outcome.status, headers: { "content-type": "application/json" } });
 }
 

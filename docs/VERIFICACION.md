@@ -158,7 +158,10 @@ loading and the status line says which feature is off.
 - [x] K1. **Kick app and Cloudflare prerequisites** (K0, needed before K3 can be tried for real; nothing in K1–K2
       depends on it). From a **dedicated bot account** (proposed name *DustPlannerBot*), with 2FA enabled:
       `kick.com/settings/developer` → create app with redirect `https://live.dustplanner.app/oauth/callback`, then
-      *Edit → Enable Webhooks* with `https://live.dustplanner.app/webhooks/kick`. Note the `client_id` (public, goes in
+      *Edit → Enable Webhooks* with `https://live.dustplanner.app/webhooks/kick` **and create the app's bot user** (same
+      *Edit* page). Without webhooks Kick accepts the OAuth flow but refuses every subscription (the card shows
+      *Connected* plus a red notice, nothing arrives); without the bot user `POST /public/v1/chat` answers `404` (the
+      card shows `send_dropped … (404: …)`). Both bit us on 2026-10-18. Note the `client_id` (public, goes in
       `wrangler.toml`) and the bot account's `user_id` (`GET /public/v1/users` with the bot's own token, or the
       developer page). The `client_secret` goes **only** into `wrangler secret put KICK_CLIENT_SECRET`, never in chat,
       files or issues. In Cloudflare (account holding `dustplanner.app`): Workers + KV + Durable Objects enabled, and
@@ -192,13 +195,24 @@ loading and the status line says which feature is off.
       Anything that differs → paste the host log lines starting with `Kick:` and the relay's `/health`. ✔ 2026-10-18
       (found on the way: the Kick app's *Webhooks* switch must be on, or Kick refuses the subscriptions and the card says
       *Connected* with nothing arriving — K6's warning covers that now).
-- [ ] K6. **Commands answered by the bot** (K5): with relay ≥ 0.2.0 (tag `worker-v0.2.0`) and the 1.1.0 build from `main` installed,
+- [x] K6. **Commands answered by the bot** (K5): with relay ≥ 0.2.0 (tag `worker-v0.2.0`) and the 1.1.0 build from `main` installed,
       Streamer.bot closed and the channel connected, type `!deck` in your chat from any account other than the bot's. The
       bot answers within a second or two, as a reply to your message; the card says *last command: deck · answered*.
       Note **which account the answer is shown under** (PRD §11 leaves it open; the expectation is `dustplannerbot`).
+      ✔ 2026-10-18: answers appear as **@DustPlanner with the bot badge** (the app's bot user, named after the app), as
+      replies; cooldown and aliases as designed. Streamer.bot was never installed, so that sub-check did not apply.
       Then `!deck` again at once → no second answer, card says *in cooldown*; `!dust` → nothing (off by default).
       Open Streamer.bot with the old `!deck` action still on and type `!deck`: at most one answer in chat, and the card
       shows the yellow warning about a second bot. `%LocalAppData%\DustPlanner\service.log` holds the `Kick:` lines
       (one per command, with its outcome). Anything that differs → paste those lines and the relay's Logs tab entries
       (`relay: webhook chat.message.sent <action>`).
+- [ ] K7. **Public deck page** (K6): with relay ≥ 0.3.0 (tag `worker-v0.3.0`) and the 1.1.0 build from `main` installed
+      (close HDT first; the panel now reloads its own files after an update, no Ctrl+F5 needed), connect, then
+      Settings → Kick → tick *Public deck page* → Save. The row under the checkbox shows your link
+      (`live.dustplanner.app/d/tsukuru-tv`); open it from your phone: the deck you have selected in HDT, cards by cost
+      with names in your phone's language, *Copy code* puts the code in the clipboard, "Updated just now". Select
+      another deck in HDT (or start a game with it): the page shows the new one within ~15 s. In chat, `!deck` now
+      answers `Control Priest · lista: https://live.dustplanner.app/d/tsukuru-tv · AAECAa0G…`. Untick the box → Save:
+      the page answers "not publishing its deck" (404) at once and `!deck` drops the link. Anything that differs →
+      the `Kick:` lines of `service.log` (look for `published deck`) and what `/api/d/tsukuru-tv/deck` returns.
 

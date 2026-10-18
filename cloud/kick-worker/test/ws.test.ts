@@ -125,6 +125,12 @@ describe("websocket between the relay and the local service", () => {
     socket.send({ v: 1, type: "chat.send", text: "down" });
     expect(await socket.next()).toMatchObject({ type: "error", code: "kick_unavailable" });
     expect(outbound.called("POST", "/public/v1/chat")).toHaveLength(4); // no retries on 429 / 5xx
+
+    // A refusal carries Kick's reason, which is what tells a maintainer the app has no bot user.
+    await sleep(1050);
+    outbound.json("POST", KICK.api, "/public/v1/chat", 404, { data: null, message: "bot user not found" }, 1);
+    socket.send({ v: 1, type: "chat.send", text: "who" });
+    expect(await socket.next()).toMatchObject({ type: "error", code: "send_dropped", detail: "Kick refused the message (404: bot user not found)" });
     socket.close();
   });
 

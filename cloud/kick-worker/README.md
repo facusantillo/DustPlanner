@@ -34,7 +34,9 @@ Logs carry no message content and no tokens.
 | `POST /webhooks/kick` | Kick | RSA PKCS#1 v1.5 / SHA-256 signature with the fetched public key (re-fetched at most once per 5 min after a failure), events older than 10 min dropped, dedupe by message id, filter by KV config, 200 whenever the signature is valid |
 | `POST /disconnect` (Bearer device token) | dustplanner-host | deletes the subscriptions, revokes both tokens, wipes the Durable Object and the KV entries |
 | `GET /health` | monitoring | `{ok, version, configured}` — no channel data |
-| `GET /d/<slug>` | viewers | 404 until stage K6 |
+| `GET /d/<slug>` | viewers | the public deck page (K6): HTML in Spanish or English (`Accept-Language`, `?lang=` forces), the deck embedded as JSON, decoded in the browser by `/d/_/deck-page.js`; 404 page when the channel is unknown or its page is off. Slug in Kick's spelling or the username's |
+| `GET /api/d/<slug>/deck` | anything | `{channel{slug, username}, deck{name, deckstring, card_class, format, updated_at}}`, 15 s cache, CORS `*`; 404 `no_deck` otherwise |
+| `GET /d/_/deck-page.js` | browsers | the bundled page script (`src/generated/deck-page.js.txt`, built from `client/` by `npm run build:client`; CI fails if it is stale) |
 
 Renewal: the Durable Object refreshes the access token 5 minutes before it expires, serialised (Kick rotates the refresh
 token). `chat.send`: one per second per channel; `401` → one refresh and one retry; `429` / `5xx` → an `error` frame,
@@ -61,10 +63,12 @@ channel is deleted 24 hours later unless it reconnects. A daily alarm re-subscri
 4. **DNS** — nothing to create: `custom_domain = true` makes Cloudflare add the record for `live.dustplanner.app`. The
    apex keeps serving GitHub Pages. Make sure no `live` record exists beforehand.
 5. **Kick app** — redirect `https://live.dustplanner.app/oauth/callback`; *Enable Webhooks* with
-   `https://live.dustplanner.app/webhooks/kick`. **With the switch off, Kick accepts the OAuth flow but refuses every
-   subscription**: the service shows *Connected*, its card a red notice about chat events, and nothing arrives. Turn it
-   on and reconnect the service (it re-subscribes on every connection); the Logs tab then shows
-   `relay: webhook chat.message.sent delivered` for each command.
+   `https://live.dustplanner.app/webhooks/kick`; **create the app's bot user** (same *Edit* page). With webhooks off,
+   Kick accepts the OAuth flow but refuses every subscription: the service shows *Connected*, its card a red notice
+   about chat events, and nothing arrives — turn it on and reconnect the service (it re-subscribes on every connection);
+   the Logs tab then shows `relay: webhook chat.message.sent delivered` for each command. Without the bot user,
+   `POST /public/v1/chat` answers `404` and the card says `send_dropped: Kick refused the message (404: …)`. Answers
+   appear in chat as **@<app name>** with the bot badge.
 6. Tag: `git tag worker-v0.1.0 && git push origin worker-v0.1.0`. The workflow deploys, pushes the two secrets and curls
    `/health`, which must answer `"configured": true`.
 
@@ -78,6 +82,7 @@ npm install --legacy-peer-deps        # npm 10.9's peer resolver trips on vitest
 npm run types                         # generates worker-configuration.d.ts (runtime types, git-ignored)
 cp .dev.vars.example .dev.vars        # fake values; the tests use their own
 npm test                              # vitest with the Workers runtime: no network, Kick is mocked
+npm run build:client                  # rebuilds src/generated/deck-page.js.txt from client/ (commit the result)
 npm run typecheck
 npx wrangler dev                      # local relay on http://localhost:8787 (OAuth needs the real app; webhooks need a public URL)
 ```
@@ -86,4 +91,7 @@ Tests cover: signature valid / invalid / stale with a generated RSA key, the onc
 the command filter (prefix, aliases, the bot's own messages, undeclared commands), the OAuth flow with a mocked Kick,
 the closed-beta refusal with token revocation, the one-time pairing code and the wrong verifier, `hello` and the config
 replication, `chat.send` with its rate limit, `401` → refresh → retry, `429` / `5xx` errors, serialised refresh,
-`invalid_grant` purge, the daily re-subscription and the grace-period deletion, and `/disconnect` wiping everything.
+`invalid_grant` purge, the daily re-subscription and the grace-period deletion, `/disconnect` wiping everything, the
+subscriptions reported in the `hello` and announced when they change, Kick's reason on a refused message, the public
+deck page (JSON and HTML, either slug spelling, off → 404, disconnect → 404) and the browser deckstring decoder against
+the python-hearthstone vectors shared with the C# codec (`tools/gen_deckstring_vectors.py`).

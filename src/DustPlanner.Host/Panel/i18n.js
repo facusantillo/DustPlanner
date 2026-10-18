@@ -94,7 +94,7 @@ window.DP_STRINGS = {
     kick_no_chat_subscription: "Kick is not delivering the chat events for this channel, so no command can arrive. The relay asks again every time it connects; if this does not clear, the Kick app has its webhooks turned off (see the relay's README).",
     kick_duplicate_bot: "Something on this PC asked /api/chat at {when} — Streamer.bot, most likely. With the channel connected, both bots answer: turn off the duplicated commands in Streamer.bot.",
     kick_features: "What the connection may do", kick_features_hint: "Everything is off by default. The commands themselves follow the Chat commands section above.",
-    kick_public_page: "Public deck page (live.dustplanner.app/d/&lt;channel&gt;) — arrives with a later update", kick_summary: "Post the session record in chat when the stream ends — later update",
+    kick_public_page: "Public deck page: the deck you are playing, with its code, at a link viewers can open", kick_public_page_url: "Your page:", kick_public_page_off_hint: "The link appears here once the channel is connected.", kick_summary: "Post the session record in chat when the stream ends — later update",
     kick_reminder: "Prediction reminder when a game ends while live — later update", kick_reminder_off: "Off", kick_reminder_panel: "Private notice in the panel", kick_reminder_chat: "Panel and chat message",
     kick_redemptions: "Show channel-point redemptions in the overlay — later update", kick_redemption_filter: "Only these reward ids", kick_redemption_filter_hint: "empty = every reward",
     // misc
@@ -190,7 +190,7 @@ window.DP_STRINGS = {
     kick_no_chat_subscription: "Kick no está entregando los eventos del chat de este canal, así que ningún comando puede llegar. El relay vuelve a pedirlos cada vez que se conecta; si esto no desaparece, la app de Kick tiene los webhooks apagados (ver el README del relay).",
     kick_duplicate_bot: "Algo en esta PC pidió /api/chat a las {when} — seguramente Streamer.bot. Con el canal conectado responden los dos bots: apagá los comandos duplicados en Streamer.bot.",
     kick_features: "Qué puede hacer la conexión", kick_features_hint: "Todo apagado por defecto. Los comandos en sí siguen la sección Comandos del chat de arriba.",
-    kick_public_page: "Página pública del mazo (live.dustplanner.app/d/&lt;canal&gt;) — llega en una actualización posterior", kick_summary: "Publicar el récord de la sesión en el chat al cortar — actualización posterior",
+    kick_public_page: "Página pública del mazo: el mazo que estás jugando, con su código, en un link que los viewers pueden abrir", kick_public_page_url: "Tu página:", kick_public_page_off_hint: "El link aparece acá cuando el canal esté conectado.", kick_summary: "Publicar el récord de la sesión en el chat al cortar — actualización posterior",
     kick_reminder: "Aviso de predicción al terminar una partida en vivo — actualización posterior", kick_reminder_off: "Apagado", kick_reminder_panel: "Aviso privado en el panel", kick_reminder_chat: "Panel y mensaje en el chat",
     kick_redemptions: "Mostrar canjes de puntos en el overlay — actualización posterior", kick_redemption_filter: "Solo estos ids de recompensa", kick_redemption_filter_hint: "vacío = todas",
     kind_regular: "normal", kind_golden: "dorada", kind_unknown: "desconocida",

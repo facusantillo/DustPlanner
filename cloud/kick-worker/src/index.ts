@@ -9,6 +9,7 @@
 import { isConfigured, type Env } from "./env";
 import { authenticateDevice, channelStub, handleCallback, handleConnect, handlePairExchange, json } from "./oauth";
 import { deleteConfig } from "./config";
+import { handleDeckApi, handleDeckPage, handleDeckScript, slugFromPath } from "./public-page";
 import { handleWebhook } from "./webhooks";
 
 export { ChannelDO } from "./channel-do";
@@ -36,11 +37,16 @@ export default {
           return handleWebSocket(request, env);
         case "/disconnect":
           return request.method === "POST" ? handleDisconnect(request, env) : methodNotAllowed();
-        default:
-          if (path.startsWith("/d/") || path.startsWith("/api/d/")) {
-            return json({ error: "not_yet", detail: "the public deck page arrives with stage K6" }, 404);
+        case "/d/_/deck-page.js":
+          return handleDeckScript();
+        default: {
+          // The public deck page (K6): /d/<slug> for people, /api/d/<slug>/deck for anything else.
+          const slug = slugFromPath(path);
+          if (slug && (request.method === "GET" || request.method === "HEAD")) {
+            return path.startsWith("/api/") ? handleDeckApi(request, env, slug) : handleDeckPage(request, env, slug);
           }
           return json({ error: "not_found" }, 404);
+        }
       }
     } catch (error) {
       // Never leak internals; the message is enough to find the log line.

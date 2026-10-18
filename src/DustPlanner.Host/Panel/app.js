@@ -109,10 +109,13 @@
       kickState = state;
       const card = $("#kick-status");
       if (card) card.innerHTML = kickStatusHtml(state);
+      const pageUrl = $("#kick-page-url");
+      if (pageUrl) pageUrl.innerHTML = kickPageUrlHtml(state, kickRelayUrl);
     });
     es.onerror = () => { live.className = "live off"; $("#hdr-live-text").textContent = t("live_disconnected"); };
   }
   let kickState = null;
+  let kickRelayUrl = null;
 
   // ---------- home ---------------------------------------------------------------------------------------------------
   async function renderHome() {
@@ -388,6 +391,7 @@
       [prefs, meta, overrides, catalog, service, kick] = await Promise.all([api("/api/prefs"), api("/api/meta"), api("/api/cards/overrides"), api("/api/catalog"), api("/api/service"), api("/api/kick/status")]);
     } catch (e) { page.innerHTML = notice(t("error_prefix") + e.message, "error"); return; }
     kickState = kick.state;
+    kickRelayUrl = kick.relay_url;
     const p = prefs.prefs;
     let html = '<div class="settings-grid"><div>';
     html += "<h2>" + t("set_play") + "</h2>" +
@@ -543,11 +547,18 @@
       '<div class="row" id="kick-manual"' + (kick.pairing_pending ? "" : " hidden") + '><label class="field grow"><span>' + t("kick_code") + '</span><input type="text" id="kick-code" autocomplete="off" spellcheck="false"></label><button class="btn" id="btn-kick-pair">' + t("kick_pair") + "</button></div>" +
       "<h3>" + t("kick_features") + '</h3><p class="why">' + esc(t("kick_features_hint")) + "</p>" +
       '<div class="row"><label class="check"><input type="checkbox" id="k-page"' + (k.public_page ? " checked" : "") + "> " + t("kick_public_page") + "</label></div>" +
+      '<div class="row faint" id="kick-page-url">' + kickPageUrlHtml(s, kick.relay_url) + "</div>" +
       '<div class="row"><label class="check"><input type="checkbox" id="k-summary"' + (k.post_stream_summary ? " checked" : "") + "> " + t("kick_summary") + "</label></div>" +
       '<div class="row"><label class="field"><span>' + t("kick_reminder") + '</span><select id="k-reminder"><option value="off"' + (reminder === "off" ? " selected" : "") + ">" + t("kick_reminder_off") + '</option><option value="panel"' + (reminder === "panel" ? " selected" : "") + ">" + t("kick_reminder_panel") + '</option><option value="panel+chat"' + (reminder === "panel+chat" ? " selected" : "") + ">" + t("kick_reminder_chat") + "</option></select></label></div>" +
       '<div class="row"><label class="check"><input type="checkbox" id="k-redemptions"' + (k.show_redemptions ? " checked" : "") + "> " + t("kick_redemptions") + "</label>" +
       '<label class="field grow"><span>' + t("kick_redemption_filter") + '</span><input type="text" id="k-redemption-filter" value="' + esc((k.redemption_filter || []).join(", ")) + '" placeholder="' + esc(t("kick_redemption_filter_hint")) + '"></label></div>' +
       '<div class="row"><button class="btn primary" id="btn-prefs-kick">' + t("set_save") + "</button></div>";
+  }
+
+  function kickPageUrlHtml(s, relayUrl) {
+    if (s.status !== "connected" || !s.channel || !s.channel.slug || !relayUrl) return esc(t("kick_public_page_off_hint"));
+    const url = relayUrl.replace(/\/$/, "") + "/d/" + encodeURIComponent(s.channel.slug);
+    return esc(t("kick_public_page_url")) + ' <a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url.replace(/^https?:\/\//, "")) + "</a>";
   }
 
   function kickStatusHtml(s) {

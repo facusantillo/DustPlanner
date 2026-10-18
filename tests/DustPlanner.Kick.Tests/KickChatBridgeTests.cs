@@ -55,7 +55,7 @@ public sealed class KickChatBridgeTests : IAsyncLifetime
         await _relay.PushAsync(Command("m-1", "deck", "ana"));
 
         var sent = await _relay.WaitForMessageAsync("chat.send");
-        Assert.Equal("Priest Control · AAECAa0GAA== · copialo y pegalo en Hearthstone", (string?)sent["text"]);
+        Assert.Equal("Priest Control · AAECAa0GAA==", (string?)sent["text"]);
         Assert.Equal("m-1", (string?)sent["reply_to_message_id"]);
         await WaitForOutcomeAsync(CommandOutcomes.Answered);
     }

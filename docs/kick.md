@@ -1,8 +1,8 @@
 # Kick: the native connection
 
 > Work in progress: this page grows with the stages of [`PRD-kick.md`](PRD-kick.md). Today it covers connecting,
-> disconnecting (K4) and the commands answered by the bot (K5). The public deck page (K6) and the stream events (K7)
-> arrive in the next updates. [`kick-streamerbot.md`](kick-streamerbot.md) stays for those who prefer Streamer.bot.
+> disconnecting (K4), the commands answered by the bot (K5) and the public deck page (K6). The stream events (K7)
+> arrive in the next update. [`kick-streamerbot.md`](kick-streamerbot.md) stays for those who prefer Streamer.bot.
 
 ## What it is
 
@@ -37,6 +37,18 @@ to it: *answered*, *in cooldown*, *turned off* or *could not be sent*.
 cooldown blocks the second one only when it arrives within the cooldown). The card warns you when something on this
 PC keeps asking `/api/chat` while the channel is connected.
 
+## The public deck page
+
+Off by default. Settings → Kick → **Public deck page** → Save, and the row under the checkbox shows your address:
+`live.dustplanner.app/d/<your-slug>`. Whoever opens it sees the deck you have selected in HDT — name, class, format,
+the cards by cost with their names in the viewer's language, a **Copy code** button and when it was last updated —
+and `!deck` in chat gains the link before the code: `Control Priest · lista: https://live.dustplanner.app/d/tsukuru-tv ·
+AAECAa0G…`. Every time the active deck changes, the service sends the new one; the page refreshes itself within about
+15 seconds. Untick the box and save: the relay forgets the deck immediately and the address answers "not publishing".
+
+What travels: the deck's name, its code, class and format. Nothing else — no card data, which the viewer's browser
+reads from HearthstoneJSON on its own, exactly like the panel does. The page sets no cookies and loads no analytics.
+
 ## Disconnecting
 
 Settings → Kick → **Disconnect**. The relay deletes the webhook subscriptions, revokes both Kick tokens and forgets the
@@ -64,5 +76,11 @@ Details, routes and the deploy procedure of the relay: [`cloud/kick-worker/READM
   webhook subscriptions: the relay asks again every time the service connects, and the maintainer must have the Kick
   app's *Webhooks* switch on with the URL `https://live.dustplanner.app/webhooks/kick`. Without the notice, check that
   the message starts with your prefix and names a command that is turned on: the relay forwards nothing else.
+- **Commands arrive but the answer never shows up** — the card says `send_dropped: Kick refused the message (404: …)`:
+  the Kick app has no bot user yet (the maintainer creates it from the app's *Edit* page). Other reasons appear in the
+  same line, as Kick words them.
+- **The public page says "not publishing"** — the box under Settings → Kick is off, the channel is not connected, or
+  HDT has not reported a selected deck yet (select one, or start a game). The page also empties itself the moment the
+  box is turned off.
 - Logs: `%LocalAppData%\DustPlanner\service.log` holds the service's lines (the ones starting with `Kick:` are the
   connection and one per command with its outcome); the relay's `/health` shows whether it is configured.

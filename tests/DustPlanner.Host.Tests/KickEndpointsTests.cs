@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using DustPlanner.Contracts;
+using DustPlanner.Core.Json;
 using DustPlanner.Host;
 using DustPlanner.Kick.Tests;
 using Microsoft.AspNetCore.Builder;
@@ -118,6 +120,38 @@ public sealed class KickEndpointsTests : IAsyncLifetime
 
         var flagged = await WaitForKickAsync(reader, s => s.TryGetProperty("last_local_chat_request_at", out var at) && at.ValueKind == JsonValueKind.String);
         Assert.Equal("connected", flagged.GetProperty("status").GetString());
+
+        // Stage K6: an active deck exported by HDT reaches the relay only once the public page is on, and !deck then links to it.
+        var inbox = Path.Combine(_home, "inbox", "8589934592-42");
+        Directory.CreateDirectory(inbox);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "collection.synthetic.json"), Path.Combine(inbox, ExportSchema.CollectionFileName));
+        var activeDeck = new ActiveDeckExport
+        {
+            Meta = new ExportMeta { Kind = ExportSchema.ActiveDeckKind, ExportedAt = DateTimeOffset.UtcNow, Trigger = "manual", Account = new AccountRef { Hi = 8589934592, Lo = 42, BattleTag = "Synthetic#0001", Region = "EU" } },
+            Deck = new ActiveDeck { Name = "Synthetic Priest", Deckstring = "AAECAa0GAA==", HdtDeckId = "6f0c2a1e-5b7d-4e3a-9c21-0f8d6a4b2c11", CardClass = "PRIEST", Format = "standard" },
+        };
+        File.WriteAllText(Path.Combine(inbox, ExportSchema.ActiveDeckFileName), JsonSerializer.Serialize(activeDeck, CoreJson.Options));
+        var seen = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (DateTime.UtcNow < seen && (await Get("/api/state")).GetProperty("active_deck").ValueKind != JsonValueKind.Object)
+        {
+            await Task.Delay(100);
+        }
+
+        Assert.Equal(JsonValueKind.Object, (await Get("/api/state")).GetProperty("active_deck").ValueKind);
+        await Task.Delay(300);
+        Assert.DoesNotContain(_relay.Received, m => (string?)m["type"] == "deck.publish"); // page still off
+
+        await Put("/api/prefs", new { chat = new { prefix = "!" }, kick = new { public_page = true } });
+        var published = await _relay.WaitForMessageAsync("deck.publish");
+        Assert.Equal("Synthetic Priest", (string?)published["name"]);
+        Assert.Equal("AAECAa0GAA==", (string?)published["deckstring"]);
+        Assert.Equal("PRIEST", (string?)published["card_class"]);
+        var pageOn = _relay.Received.Last(m => (string?)m["type"] == "config");
+        Assert.True((bool?)pageOn["public_page"]);
+
+        // Saving the preferences reset the cooldowns, so the local endpoint answers again — now with the page's address before the code.
+        var withLink = await _http.GetStringAsync("/api/chat/deck?lang=es&user=bruno");
+        Assert.Equal("Synthetic Priest · lista: " + _relay.Url.TrimEnd('/') + "/d/tsukuru_tv · AAECAa0GAA==", withLink);
 
         var disconnected = await Post("/api/kick/disconnect", new { });
         Assert.Equal("disconnected", disconnected.GetProperty("state").GetProperty("status").GetString());

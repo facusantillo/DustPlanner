@@ -43,12 +43,13 @@ public static class ChatTexts
 
     public static string Template(string language, string command) => (language, command) switch
     {
-        (Spanish, CommandNames.Deck) => "{deck_name} · {deckstring} · copialo y pegalo en Hearthstone{deck_link}",
+        // The code goes last: whoever asked knows what to do with it, and a trailing phrase only gets in the way of selecting it.
+        (Spanish, CommandNames.Deck) => "{deck_name}{deck_link} · {deckstring}",
         (Spanish, CommandNames.Rank) => "{rank} · {rank_format}",
         (Spanish, CommandNames.WinRate) => "Hoy {today_w}-{today_l} ({today_wr}) · sesión {session_w}-{session_l}{streak_text}",
         (Spanish, CommandNames.Last) => "Última: {last_result} contra {opponent_class} en {turns} turnos",
         (Spanish, CommandNames.Dust) => "{dust} de polvo",
-        (_, CommandNames.Deck) => "{deck_name} · {deckstring} · copy and paste it in Hearthstone{deck_link}",
+        (_, CommandNames.Deck) => "{deck_name}{deck_link} · {deckstring}",
         (_, CommandNames.Rank) => "{rank} · {rank_format}",
         (_, CommandNames.WinRate) => "Today {today_w}-{today_l} ({today_wr}) · session {session_w}-{session_l}{streak_text}",
         (_, CommandNames.Last) => "Last: {last_result} vs {opponent_class} in {turns} turns",

@@ -193,6 +193,8 @@ export async function deleteSubscriptions(accessToken: string, ids: string[]): P
 
 export interface ChatSendOutcome {
   status: number;
+  /** Kick's short reason on a 4xx (e.g. the app has no bot user), so the streamer sees why; never the message content. */
+  reason?: string;
 }
 
 /** `POST /public/v1/chat` as the bot: the message goes to the channel attached to the token (confirmed in K0). */
@@ -206,9 +208,21 @@ export async function sendChat(accessToken: string, content: string, replyToMess
     headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify(payload),
   });
-  // The body is irrelevant to the relay and must never be logged.
-  await response.body?.cancel().catch(() => undefined);
-  return { status: response.status };
+  if (response.ok) {
+    // The body echoes nothing the relay needs.
+    await response.body?.cancel().catch(() => undefined);
+    return { status: response.status };
+  }
+  // On a refusal, Kick's `message` is the only field worth keeping: short, and about the request, not the chat.
+  let reason: string | undefined;
+  try {
+    const body = (await response.json()) as { message?: unknown; error?: unknown };
+    const text = typeof body.message === "string" ? body.message : typeof body.error === "string" ? body.error : undefined;
+    reason = text?.trim().slice(0, 120) || undefined;
+  } catch {
+    // not JSON; nothing to say
+  }
+  return { status: response.status, reason };
 }
 
 /** The PEM public key Kick signs webhooks with. Fetched, never hard-coded: Kick may rotate it. */

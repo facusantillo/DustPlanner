@@ -12,6 +12,7 @@ import {
   revokeToken,
   sendChat,
   subscribeEvents,
+  type ChatSendOutcome,
   type SubscriptionRecord,
   type TokenSet,
 } from "./kick-api";
@@ -217,6 +218,10 @@ export class ChannelDO extends DurableObject<Env> {
         await this.handleChatSend(ws, message);
         return;
       case "deck.publish":
+        // Only while the page is on: a publish that races a config turning it off must not resurrect the deck.
+        if (!this.localConfig()?.public_page) {
+          return;
+        }
         this.ctx.storage.sql.exec(
           `INSERT INTO public_deck(id, name, deckstring, card_class, format, updated_at) VALUES (1, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET name = excluded.name, deckstring = excluded.deckstring, card_class = excluded.card_class, format = excluded.format, updated_at = excluded.updated_at`,
@@ -271,7 +276,7 @@ export class ChannelDO extends DurableObject<Env> {
     }
 
     let outcome = await this.trySend(token, message);
-    if (outcome === 401) {
+    if (outcome.status === 401) {
       try {
         token = await this.accessToken(true);
       } catch (error) {
@@ -280,20 +285,22 @@ export class ChannelDO extends DurableObject<Env> {
       }
       outcome = await this.trySend(token, message);
     }
-    if (outcome === 429) {
+    const status = outcome.status;
+    if (status === 429) {
       this.send(ws, { v: 1, type: "error", code: "kick_rate_limited", detail: "Kick answered 429; message dropped" });
-    } else if (outcome >= 500 || outcome === 0) {
-      this.send(ws, { v: 1, type: "error", code: "kick_unavailable", detail: `Kick answered ${outcome || "network error"}; message dropped` });
-    } else if (outcome >= 400) {
-      this.send(ws, { v: 1, type: "error", code: "send_dropped", detail: `Kick refused the message (${outcome})` });
+    } else if (status >= 500 || status === 0) {
+      this.send(ws, { v: 1, type: "error", code: "kick_unavailable", detail: `Kick answered ${status || "network error"}; message dropped` });
+    } else if (status >= 400) {
+      // The reason is what turns "404" into "no bot user on the app" for whoever reads the card.
+      this.send(ws, { v: 1, type: "error", code: "send_dropped", detail: `Kick refused the message (${status}${outcome.reason ? ": " + outcome.reason : ""})` });
     }
   }
 
-  private async trySend(token: string, message: ChatSendMessage): Promise<number> {
+  private async trySend(token: string, message: ChatSendMessage): Promise<ChatSendOutcome> {
     try {
-      return (await sendChat(token, message.text, message.reply_to_message_id)).status;
+      return await sendChat(token, message.text, message.reply_to_message_id);
     } catch {
-      return 0;
+      return { status: 0 };
     }
   }
 
@@ -551,6 +558,12 @@ export class ChannelDO extends DurableObject<Env> {
   /** The published deck for the public page (K6); null when the page is off or nothing was published. */
   async publicDeck(): Promise<ChannelStatus["public_deck"]> {
     return (await this.status()).public_deck;
+  }
+
+  /** What `/d/<slug>` needs in one hop: the channel (for the name and the kick.com link) and the deck, or null for either. */
+  async publicPage(): Promise<{ channel: ChannelInfo; deck: NonNullable<ChannelStatus["public_deck"]> } | null> {
+    const status = await this.status();
+    return status.channel && status.public_deck ? { channel: status.channel, deck: status.public_deck } : null;
   }
 
   // ------------------------------------------------------------------------------------------------ helpers

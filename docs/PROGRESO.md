@@ -23,7 +23,7 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
 | K3 | Kick relay: Cloudflare Worker (`cloud/kick-worker`), OAuth + PKCE, channel Durable Objects, signed webhooks, `worker.yml` | done | **K1** (app + secrets) then **K4** — first deploy and a real message reaching the service |
 | K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | K5 ✔ 2026-10-18 (connected, command seen, reconnect, disconnect) |
-| K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, build 1.2.0 | done | **K6** — `!deck` answered by the bot with Streamer.bot closed; which account posts |
+| K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, still build 1.1.0 (unreleased) | done | **K6** — `!deck` answered by the bot with Streamer.bot closed; which account posts |
 
 198 .NET tests + 34 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
 merges and tags.
@@ -558,7 +558,9 @@ recorded in its §11.
 - The service does not open the browser itself: the panel does, which keeps the service free of shell-outs from request
   handlers. If a pop-up blocker interferes, the panel says so and the manual code works.
 - **Version 1.1.0.** The maintainer's rule, replacing PRD §10.6: a release that adds functionality bumps the minor
-  (1.1.0 = K1–K4; the next functional PR is 1.2.0), patches are for fixes only. 1.0.1 was never published.
+  patches are for fixes only. The number belongs to the GitHub release, not to the PR: until the `v1.1.0` tag exists,
+  every merge stays 1.1.0 (K1–K5 so far) and the minor moves with the first functional delivery after that release;
+  the relay follows the same rule with `worker-v*`. 1.0.1 was never published.
 
 ## Kick — K5 — Commands answered by the bot
 

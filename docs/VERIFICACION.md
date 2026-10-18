@@ -192,7 +192,7 @@ loading and the status line says which feature is off.
       Anything that differs → paste the host log lines starting with `Kick:` and the relay's `/health`. ✔ 2026-10-18
       (found on the way: the Kick app's *Webhooks* switch must be on, or Kick refuses the subscriptions and the card says
       *Connected* with nothing arriving — K6's warning covers that now).
-- [ ] K6. **Commands answered by the bot** (K5): with relay ≥ 0.2.0 (tag `worker-v0.2.0`) and the 1.2.0 build installed,
+- [ ] K6. **Commands answered by the bot** (K5): with relay ≥ 0.2.0 (tag `worker-v0.2.0`) and the 1.1.0 build from `main` installed,
       Streamer.bot closed and the channel connected, type `!deck` in your chat from any account other than the bot's. The
       bot answers within a second or two, as a reply to your message; the card says *last command: deck · answered*.
       Note **which account the answer is shown under** (PRD §11 leaves it open; the expectation is `dustplannerbot`).

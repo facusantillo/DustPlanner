@@ -24,9 +24,11 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | K3 | Kick relay: Cloudflare Worker (`cloud/kick-worker`), OAuth + PKCE, channel Durable Objects, signed webhooks, `worker.yml` | done | **K1** (app + secrets) then **K4** — first deploy and a real message reaching the service |
 | K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | K5 ✔ 2026-10-18 (connected, command seen, reconnect, disconnect) |
 | K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, still build 1.1.0 (unreleased) | done | K6 ✔ 2026-10-18: answers as **@DustPlanner** (the app's bot, badge), replies, cooldown |
-| K6 | Public deck page: `KickDeckPublisher` (`deck.publish` on deck change / connect / page switched on), `{deck_link}` before the code in `!deck`, relay `/d/<slug>` + `/api/d/<slug>/deck` + browser decoder, panel link + cache-busting, Kick's reason on refused sends; relay 0.3.0 | done | **K7** — open your page from a phone, change deck, untick → 404 |
+| K6 | Public deck page: `KickDeckPublisher` (`deck.publish` on deck change / connect / page switched on), `{deck_link}` before the code in `!deck`, relay `/d/<slug>` + `/api/d/<slug>/deck` + browser decoder, panel link + cache-busting, Kick's reason on refused sends; relay 0.3.0 | done | K7 ✔ 2026-10-18 (after the last-account fix) |
+| K7 | Stream events: `stream_session` + `StreamSessionRepository`, `KickStreamService` (sessions, end-of-stream line, prediction reminder, redemptions), `kick.reminder` / `kick.redemption` on `/events`, overlay card, status-page toast + sound, panel *Streams* table, MCP `get_stream_sessions` | done | **K8** — a short real stream: row live, reminder on game end, redemption card, summary in chat |
+| K8 | Beta and publication: `site/privacy.html` + `es/privacidad.html`, README section, `kick.md` complete; beta list stays `tsukuru-tv` until the go-live | done | **K9** — tag `v1.1.0`; invite a second streamer when ready |
 
-198 .NET tests + 67 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
+210 .NET tests + 67 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
 merges and tags.
 
 ---
@@ -633,4 +635,54 @@ recorded in its §11.
   ("no account information yet"), because the account only came from HearthMirror. `ExportService.ResolveAccount` now
   falls back to the last account seen (`%LocalAppData%\DustPlanner\last-account.txt`, written whenever the live one
   is known, seeded from the inbox when there is exactly one account folder). `LastAccount` (Logic) + 2 tests.
+
+## Kick — K7 — Around the stream
+
+**Done**
+
+- Store: migration `003_stream_session.sql` (`stream_session`: account, platform, slug, start, end, title, rank at both
+  ends as a label plus format/league/star level/legend, `summary_posted_at`; unique per account + platform + start).
+  `StreamSessionRepository` (LogTracker): `Open` is idempotent per start and closes a still-open session at the new
+  start; `Close` ignores repeats; `List`/`Get`/`LatestOpen` compute the record and the decks from the games started
+  inside the window (open window = until now), so games imported later count.
+- Host: `KickStreamService` — on the connector's live state (hello and `stream.status`): open with the latest
+  `rank_sample` of the overlay's format, close with the same, then the end-of-stream line via `ChatTexts.StreamSummary`
+  when `post_stream_summary` is on, once per session (`summary_posted_at`) and only with games. A session that could not
+  open for lack of an account retries when the inbox names one. On the overlay's `LastGame` changing while live (the
+  game already finished at start is ignored): `kick.reminder` notice and, with `panel+chat`, the chat line. On
+  `RedemptionReceived`: filter by `show_redemptions` / `redemption_filter`, once per id for an hour, `kick.redemption`
+  notice. `KickNotices` fans notices out; `/events` writes them as `event: kick.<type>` with `{type, at, payload}`.
+  `GET /api/stream-sessions`.
+- UI: overlay card (6 s, queued, `--rscale` follows `?scale=`, `?align=right` honoured); `/status` toast with a
+  dismiss button and an optional WebAudio beep (`dp.reminderSound` in that browser); panel toast on `kick.reminder`
+  and a *Streams* table under Games (start, length or *live*, title, record, rate, rank start → end, decks ×games);
+  Settings → Kick labels describe the live features. MCP `get_stream_sessions(account?, limit?)`.
+- Texts: `StreamSummary` (`Directo terminado: 12-7 (63 %) · de Diamante 5 a Diamante 2`; `se queda en` when both ends
+  match; ties shown only when present; no ratio without decided games) and `PredictionReminder`.
+- Tests: `StreamSessionRepositoryTests` (2), `KickStreamTests` (the whole K7 chain over the fake relay and a
+  Power.log), `StreamTextsTests` (2), MCP tool listed and callable, schema version 3. 210 .NET + 67 vitest.
+
+**Pending / caveats**
+
+- Sessions are per the relay's `stream.status`; a stream that started before the service connected is opened at the
+  `started_at` Kick reports in the hello, so its earlier games count.
+- The reminder fires on every finished game while live, including vs AI; the stream itself is the filter.
+- The overlay card has no sound by design (OBS); the `/status` page beep is for the streamer's own screen.
+
+## Kick — K8 — Beta and publication
+
+**Done**
+
+- `site/privacy.html` and `site/es/privacidad.html`: what you authorise, what is stored where and until when, the public
+  page, who answers in chat, how to remove everything. Linked from both home pages (safety section and footer).
+- README: a *Kick* section and the two new rows in the layout table; `docs/kick.md` covers the whole connection and
+  links the privacy page; `docs/panel.md` and `docs/overlay.md` list the new endpoints and the redemption card.
+- The beta stays private: `ALLOWED_SLUGS = "tsukuru-tv"` until the maintainer decides the go-live (VERIFICACION K9
+  says how to invite or open).
+
+**Pending / caveats**
+
+- Release `v1.1.0` is the maintainer's tag, after VERIFICACION K8.
+- The PRD's exit criterion for K8 (another streamer installs from the site and streams without help) is a human check
+  that only the go-live can run.
 

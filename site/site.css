@@ -81,3 +81,10 @@ footer p { max-width: none; }
   .hero .shot { transition: transform 0.4s ease; }
   .hero .shot:hover { transform: rotate(0deg); }
 }
+
+/* privacy page */
+section .lead { font-size: 17px; color: var(--muted); max-width: var(--measure); }
+table { border-collapse: collapse; width: 100%; max-width: 100%; margin: 12px 0 8px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+td b { color: var(--ink); }

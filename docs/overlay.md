@@ -54,6 +54,13 @@ What the cells mean:
   HDT, and on the menu transitions that already export). Hidden until the exporter has written one, and for Arena.
   The same sample links each stored game to its deck (`game.deck_id`), which is what per-deck win rates rest on.
 
+## Kick redemptions (K7)
+
+With the Kick connection on and *Show channel-point redemptions in the overlay* ticked (Settings → Kick), a card
+appears under the bar for 6 seconds whenever a viewer redeems a reward: the reward's title, the viewer and what they
+typed. Several in a row queue up. Each redemption shows once, even if Kick reports it twice (pending, then accepted);
+the optional filter keeps only the reward ids you list. The card follows `?scale=` and `?align=right`.
+
 ## How it updates
 
 The host polls every 2 seconds: new lines of the newest `Power.log` session folder, and the modification time of the

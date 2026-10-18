@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DustPlanner — privacidad: la conexión con Kick</title>
+<link rel="canonical" href="https://dustplanner.app/es/privacidad.html">
+<meta name="description" content="Qué guarda la conexión con Kick de DustPlanner, dónde, por cuánto tiempo y cómo borrarlo. No se guarda chat, no salen datos de cartas de tu PC, sin cookies.">
+<link rel="stylesheet" href="../site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23a98cff'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./"><span class="mark"></span>DustPlanner</a>
+  <nav class="nav">
+    <a href="./#how">Cómo funciona</a>
+    <a href="./#install">Instalar</a>
+    <a href="./#safety">Seguridad</a>
+    <a class="repo" href="https://github.com/facusantillo/DustPlanner/">GitHub</a>
+    <a class="lang" href="../privacy.html" lang="en" hreflang="en">English</a>
+  </nav>
+</header>
+
+<section style="border-top:0">
+  <h2>Privacidad: la conexión con Kick</h2>
+  <p class="lead">DustPlanner corre en tu PC y tus datos se quedan ahí. La conexión opcional con Kick suma un servicio
+  pequeño nuestro en el medio, porque Kick solo puede hablar con una dirección pública: <code>live.dustplanner.app</code>,
+  un Worker de Cloudflare cuyo código está en el <a href="https://github.com/facusantillo/DustPlanner/tree/main/cloud/kick-worker" data-repo="tree/main/cloud/kick-worker">repositorio</a>.
+  Esta página dice exactamente qué guarda ese servicio. Última actualización: 18 de octubre de 2026.</p>
+
+  <h3>Qué autorizás</h3>
+  <p>Al pulsar <b>Conectar con Kick</b>, Kick te pide conceder cinco permisos a DustPlanner: leer tu usuario y tu canal,
+  suscribirse a eventos, escribir en el chat y leer las recompensas de puntos del canal. No se pide nada más — ni
+  claves de stream, ni moderación, ni edición del canal. Podés revocar la autorización cuando quieras desde los ajustes
+  de Kick o con <b>Desconectar</b> en el panel.</p>
+
+  <h3>Qué se guarda, y dónde</h3>
+  <table>
+    <thead><tr><th>Dónde</th><th>Qué</th><th>Hasta</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tu PC</b></td><td>un token de dispositivo para el relay (protegido con DPAPI de Windows, inútil en otra máquina), el id y el slug de tu canal, los directos vistos (inicio, fin, título, tu rango en ambos extremos) y las preferencias que elegiste</td><td>que pulses Desconectar (token) o borres la carpeta de datos</td></tr>
+      <tr><td><b>El relay</b></td><td>tus tokens de Kick, cifrados en reposo; los ids de las suscripciones a webhooks; un hash de cada dispositivo emparejado; tu prefijo y qué comandos tenés activos; el último estado del directo; el mazo que elegiste publicar (nombre, código, clase, formato) mientras la página pública esté activa</td><td>que pulses Desconectar, o 24 horas después de que Kick revoque la autorización</td></tr>
+      <tr><td><b>En ningún lado</b></td><td>los mensajes del chat (el relay reenvía solo los comandos que activaste y no guarda ninguno); tu email; tu colección, mazos, récord ni nada más del juego; datos de cartas</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Kick le manda al relay cada línea del chat de tu canal; el relay mira únicamente si empieza con tu prefijo y
+  nombra uno de tus comandos, reenvía esos a tu PC y descarta el resto sin guardarlo ni registrarlo. Los logs del relay
+  guardan tipos de evento y resultados, nunca el contenido de los mensajes.</p>
+
+  <h3>La página pública del mazo</h3>
+  <p>Apagada por defecto. Al activarla, <code>live.dustplanner.app/d/&lt;tu-canal&gt;</code> muestra el nombre, el
+  código, la clase y el formato del mazo que estás jugando. El navegador del viewer decodifica el código y pide los
+  nombres de las cartas directamente a <a href="https://hearthstonejson.com/">HearthstoneJSON</a>; la página no pone
+  cookies ni carga analítica. Apagá el interruptor y el relay olvida el mazo al instante.</p>
+
+  <h3>Quién responde en el chat</h3>
+  <p>Las respuestas las publica <b>@DustPlanner</b>, la cuenta bot de la app de Kick, como respuesta al viewer que
+  preguntó. Contienen solo aquello para lo que sirve el comando: tu código de mazo actual, rango, récord o última
+  partida.</p>
+
+  <h3>Borrar todo</h3>
+  <ol>
+    <li>Panel → Settings → Kick → <b>Desconectar</b>: el relay borra las suscripciones, revoca ambos tokens y olvida tu canal; tu PC borra su token de dispositivo.</li>
+    <li>Si querés, borrá <code>%LocalAppData%\DustPlanner</code> para eliminar la base local, las preferencias y los logs.</li>
+  </ol>
+  <p>Preguntas o dudas: <a href="https://github.com/facusantillo/DustPlanner/issues" data-repo="issues">abrí un issue</a> en el repositorio. La política sobre el cliente del juego está en su <a href="https://github.com/facusantillo/DustPlanner/blob/main/SECURITY.md" data-repo="blob/main/SECURITY.md">SECURITY.md</a>.</p>
+</section>
+
+<footer>
+  <p>DustPlanner es MIT. Sin afiliación ni respaldo de Blizzard Entertainment ni de Kick. Hearthstone es una marca de Blizzard Entertainment. Hearthstone Deck Tracker es un proyecto de HearthSim.</p>
+</footer>
+</body>
+</html>

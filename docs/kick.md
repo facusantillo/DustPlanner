@@ -1,8 +1,8 @@
 # Kick: the native connection
 
-> Work in progress: this page grows with the stages of [`PRD-kick.md`](PRD-kick.md). Today it covers connecting,
-> disconnecting (K4), the commands answered by the bot (K5) and the public deck page (K6). The stream events (K7)
-> arrive in the next update. [`kick-streamerbot.md`](kick-streamerbot.md) stays for those who prefer Streamer.bot.
+> This page covers the whole Kick connection: connecting and disconnecting, the commands answered by the bot, the
+> public deck page and what happens around a stream. [`kick-streamerbot.md`](kick-streamerbot.md) stays for those
+> who prefer Streamer.bot. What is stored and where, in one page: [dustplanner.app/privacy.html](https://dustplanner.app/privacy.html).
 
 ## What it is
 
@@ -49,6 +49,25 @@ AAECAa0G…`. Every time the active deck changes, the service sends the new one;
 What travels: the deck's name, its code, class and format. Nothing else — no card data, which the viewer's browser
 reads from HearthstoneJSON on its own, exactly like the panel does. The page sets no cookies and loads no analytics.
 
+## Around the stream
+
+Once connected, the service also hears when your stream starts and ends, and:
+
+- **keeps a record of each stream** — always on. One row per stream (start, end, title) with the games played while
+  live, your rank at the start and the end, and the decks used. Panel → Games → *Streams*; or ask an AI client through
+  the MCP tool `get_stream_sessions`. Games imported later still count: a stream's games are the ones started between
+  its start and its end.
+- **posts the record when the stream ends** — off by default (Settings → Kick → *Post the stream's record in chat*):
+  `Directo terminado: 12-7 (63 %) · de Diamante 5 a Diamante 2` (or in English). Posted once per stream, and only when
+  at least one game was played.
+- **reminds you to resolve the prediction** — when a game ends while you are live: a toast in the panel and on the
+  service's `/status` page (tick *play a sound with it* there if you want a beep). Default: the private notice only;
+  *Panel and chat message* also posts `Terminó: victoria — ¡resolvé la predicción!` in chat; *Off* does nothing.
+- **shows channel-point redemptions in the overlay** — off by default; a 6 s card with the reward and the viewer, once
+  per redemption. *Only these reward ids* limits it to the rewards you list (empty = all).
+
+None of these touch the game or the system: they write one table on your PC and show notices.
+
 ## Disconnecting
 
 Settings → Kick → **Disconnect**. The relay deletes the webhook subscriptions, revokes both Kick tokens and forgets the
@@ -60,7 +79,7 @@ data 24 hours later.
 
 | On your PC | At the relay | Nowhere |
 |---|---|---|
-| a device token for the relay (DPAPI-protected, useless on another machine), your channel's id and slug | your Kick tokens, encrypted; the webhook subscription ids; a hash of each paired device; the last live status; the published deck when the public page is on | chat messages, your email, anything about the game |
+| a device token for the relay (DPAPI-protected, useless on another machine), your channel's id and slug, the streams seen (start, end, title, your rank at both ends), your preferences | your Kick tokens, encrypted; the webhook subscription ids; a hash of each paired device; your prefix and which commands are on; the last live status; the published deck while the public page is on | chat messages, your email, your collection or anything else about the game, card data |
 
 Details, routes and the deploy procedure of the relay: [`cloud/kick-worker/README.md`](../cloud/kick-worker/README.md).
 

@@ -631,3 +631,12 @@ Comprobado con `HdtApiCheck` contra los binarios 1.55.6 y con el código fuente 
    decodifica en el navegador con el mismo algoritmo que `DeckstringCodec` (verificado con los mismos vectores) y pide
    nombres y costos a HearthstoneJSON en el idioma del navegador. Sin cookies ni analítica; `noindex` mientras dure la
    beta. El Worker guarda el `deck.publish` solo mientras la configuración diga `public_page: true`.
+8. **Eventos del directo (K7).** `stream_session` lleva, además de las etiquetas `rank_start`/`rank_end` del §6, el
+   formato, la liga, el nivel de estrellas y el rango de leyenda de cada extremo, para que el resumen salga en el idioma
+   del chat. Las partidas no se enlazan por id: son las que empezaron dentro de la ventana del directo (hasta ahora,
+   mientras esté en vivo), así cuentan también las importadas después. El resumen se publica una sola vez por sesión
+   y solo si hubo partidas. El aviso de predicción ignora la partida que ya estaba terminada al arrancar el servicio.
+   Los canjes se deduplican por id una hora también en el host.
+9. **Beta (K8).** La lista permitida sigue siendo `tsukuru-tv` hasta el *go live*; invitar a otro streamer es añadir su
+   slug y desplegar el relay (`worker-v0.3.x`); abrirla es vaciar el valor. La página de privacidad vive en
+   `dustplanner.app/privacy.html` (y `/es/privacidad.html`).

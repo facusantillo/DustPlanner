@@ -260,7 +260,7 @@ mazo activo"). Otros casos:
 
 | Comando | Alias por defecto | Ejemplo (es) |
 |---|---|---|
-| `deck` | `mazo` | `Priest Control · AAECAa0G… · copialo y pegalo en Hearthstone` (+ ` · lista: https://live.dustplanner.app/d/tsukuru-tv` si la página está activa; el slug lo conoce el host por el `hello` del Worker) |
+| `deck` | `mazo` | `Priest Control · AAECAa0G…` (con la página pública activa: `Priest Control · lista: https://live.dustplanner.app/d/tsukuru-tv · AAECAa0G…`; el código va siempre al final — el que lo pide ya sabe qué hacer con él — y el slug lo conoce el host por el `hello` del Worker) |
 | `rank` | `rango` | `Diamante 3 · Standard` / `Leyenda #1.234` |
 | `wr` | `winrate` | `Hoy 7-3 (70 %) · sesión 4-1 · racha de 3 victorias` |
 | `last` | `ultima` | `Última: victoria contra Mage en 9 turnos` |

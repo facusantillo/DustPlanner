@@ -17,7 +17,7 @@ Nothing here touches the game: the service reads the files HDT and the game writ
 
 | Command | Aliases (default) | Example answer (Spanish) | When data is missing |
 |---|---|---|---|
-| `deck` | `mazo` | `Priest Control · AAECAa0G… · copialo y pegalo en Hearthstone` | `Todavía no hay mazo activo` |
+| `deck` | `mazo` | `Priest Control · AAECAa0G…` (with the public page on: `Priest Control · lista: https://live.dustplanner.app/d/<slug> · AAECAa0G…`; the code always goes last) | `Todavía no hay mazo activo` |
 | `rank` | `rango` | `Diamante 3 · Estándar` / `Leyenda #1.234 · Estándar` | `Todavía no hay rango exportado` |
 | `wr` | `winrate` | `Hoy 7-3 (70 %) · sesión 4-1 · racha de 3 victorias` | `Todavía no hay partidas hoy` |
 | `last` | `ultima` | `Última: victoria contra Mago en 9 turnos` | `Todavía no terminó ninguna partida` |

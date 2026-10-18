@@ -178,7 +178,7 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         Assert.Equal(HttpStatusCode.OK, deck.StatusCode);
         Assert.Equal("text/plain", deck.Content.Headers.ContentType!.MediaType);
         Assert.Equal("utf-8", deck.Content.Headers.ContentType!.CharSet);
-        Assert.Equal("Synthetic Priest · AAECAa0GAA== · copialo y pegalo en Hearthstone", await deck.Content.ReadAsStringAsync());
+        Assert.Equal("Synthetic Priest · AAECAa0GAA==", await deck.Content.ReadAsStringAsync());
 
         // Same command right away: cooling down → 204 and nothing to post. Another command is fine.
         var again = await _http.GetAsync("/api/chat/mazo?lang=es&user=bob");

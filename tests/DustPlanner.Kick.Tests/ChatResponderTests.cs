@@ -28,9 +28,9 @@ public class ChatResponderTests
     };
 
     [Theory]
-    [InlineData("deck", "es", "Priest Control · AAECAa0GAA== · copialo y pegalo en Hearthstone")]
-    [InlineData("mazo", "es", "Priest Control · AAECAa0GAA== · copialo y pegalo en Hearthstone")]
-    [InlineData("deck", "en", "Priest Control · AAECAa0GAA== · copy and paste it in Hearthstone")]
+    [InlineData("deck", "es", "Priest Control · AAECAa0GAA==")]
+    [InlineData("mazo", "es", "Priest Control · AAECAa0GAA==")]
+    [InlineData("deck", "en", "Priest Control · AAECAa0GAA==")]
     [InlineData("rank", "es", "Diamante 3 · Estándar")]
     [InlineData("rango", "es", "Diamante 3 · Estándar")]
     [InlineData("rank", "en", "Diamond 3 · Standard")]
@@ -127,7 +127,7 @@ public class ChatResponderTests
     {
         var context = Full() with { DeckUrl = "https://live.dustplanner.app/d/tsukuru_tv" };
         var reply = new ChatResponder().Respond(Prefs(), "deck", null, null, context, T0);
-        Assert.Equal("Priest Control · AAECAa0GAA== · copialo y pegalo en Hearthstone · lista: https://live.dustplanner.app/d/tsukuru_tv", reply.Text);
+        Assert.Equal("Priest Control · lista: https://live.dustplanner.app/d/tsukuru_tv · AAECAa0GAA==", reply.Text);
     }
 
     [Fact]

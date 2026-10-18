@@ -507,6 +507,9 @@ public sealed class KickConnector : BackgroundService
             return;
         }
 
+        // Config first, state second: whoever reacts to "connected" (the deck publisher) then sends after the config,
+        // and the relay applies public_page before it sees a deck.publish.
+        await SendConfigAsync(ct).ConfigureAwait(false);
         Publish(s => s with
         {
             Status = KickStatus.Connected,
@@ -520,7 +523,6 @@ public sealed class KickConnector : BackgroundService
             NextRetryAt = null,
             LastLocalChatRequestAt = null,
         });
-        await SendConfigAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>Returns false when the session must stop (the relay asked for a new authorisation).</summary>

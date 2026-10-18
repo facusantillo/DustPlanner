@@ -12,6 +12,7 @@ import {
   revokeToken,
   sendChat,
   subscribeEvents,
+  type ChatSendOutcome,
   type SubscriptionRecord,
   type TokenSet,
 } from "./kick-api";
@@ -275,7 +276,7 @@ export class ChannelDO extends DurableObject<Env> {
     }
 
     let outcome = await this.trySend(token, message);
-    if (outcome === 401) {
+    if (outcome.status === 401) {
       try {
         token = await this.accessToken(true);
       } catch (error) {
@@ -284,20 +285,22 @@ export class ChannelDO extends DurableObject<Env> {
       }
       outcome = await this.trySend(token, message);
     }
-    if (outcome === 429) {
+    const status = outcome.status;
+    if (status === 429) {
       this.send(ws, { v: 1, type: "error", code: "kick_rate_limited", detail: "Kick answered 429; message dropped" });
-    } else if (outcome >= 500 || outcome === 0) {
-      this.send(ws, { v: 1, type: "error", code: "kick_unavailable", detail: `Kick answered ${outcome || "network error"}; message dropped` });
-    } else if (outcome >= 400) {
-      this.send(ws, { v: 1, type: "error", code: "send_dropped", detail: `Kick refused the message (${outcome})` });
+    } else if (status >= 500 || status === 0) {
+      this.send(ws, { v: 1, type: "error", code: "kick_unavailable", detail: `Kick answered ${status || "network error"}; message dropped` });
+    } else if (status >= 400) {
+      // The reason is what turns "404" into "no bot user on the app" for whoever reads the card.
+      this.send(ws, { v: 1, type: "error", code: "send_dropped", detail: `Kick refused the message (${status}${outcome.reason ? ": " + outcome.reason : ""})` });
     }
   }
 
-  private async trySend(token: string, message: ChatSendMessage): Promise<number> {
+  private async trySend(token: string, message: ChatSendMessage): Promise<ChatSendOutcome> {
     try {
-      return (await sendChat(token, message.text, message.reply_to_message_id)).status;
+      return await sendChat(token, message.text, message.reply_to_message_id);
     } catch {
-      return 0;
+      return { status: 0 };
     }
   }
 

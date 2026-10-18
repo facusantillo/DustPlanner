@@ -58,19 +58,28 @@ public static class HostApp
         builder.Services.AddSingleton(sp => new DustPlanner.Kick.KickChatBridge(
             sp.GetRequiredService<DustPlanner.Kick.KickConnector>(),
             sp.GetRequiredService<DustPlanner.Kick.ChatResponder>(),
-            () => ChatEndpoints.ReadChatPrefs(services),
-            () => ChatContextFactory.From(sp.GetRequiredService<OverlayStateService>().Current),
+            () => ChatEndpoints.ReadPrefs(services).Chat,
+            () =>
+            {
+                var connector = sp.GetRequiredService<DustPlanner.Kick.KickConnector>();
+                return ChatContextFactory.From(sp.GetRequiredService<OverlayStateService>().Current, KickDeckPublisher.PublicDeckUrl(connector, ChatEndpoints.ReadPrefs(services).Kick));
+            },
             sp.GetRequiredService<ILogger<DustPlanner.Kick.KickChatBridge>>(),
             sp.GetRequiredService<TimeProvider>()));
         builder.Services.AddHostedService(sp => sp.GetRequiredService<DustPlanner.Kick.KickChatBridge>());
+        // Stage K6: the active deck travels to the relay while the public page is on.
+        builder.Services.AddSingleton<KickDeckPublisher>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<KickDeckPublisher>());
 
         var app = builder.Build();
 
-        // The panel (what the HDT plugin opens) and its assets.
-        app.MapGet("/", () => Results.Content(Resource("Panel.index.html"), "text/html; charset=utf-8"));
-        app.MapGet("/panel/app.css", () => Results.Content(Resource("Panel.app.css"), "text/css; charset=utf-8"));
-        app.MapGet("/panel/app.js", () => Results.Content(Resource("Panel.app.js"), "text/javascript; charset=utf-8"));
-        app.MapGet("/panel/i18n.js", () => Results.Content(Resource("Panel.i18n.js"), "text/javascript; charset=utf-8"));
+        // The panel (what the HDT plugin opens) and its assets. The assets carry the service version in their URL and are
+        // never cached blindly: after an update the browser must not keep showing the previous panel (VERIFICACION K6).
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+        app.MapGet("/", () => Asset(Resource("Panel.index.html").Replace("{{version}}", version, StringComparison.Ordinal), "text/html; charset=utf-8"));
+        app.MapGet("/panel/app.css", () => Asset(Resource("Panel.app.css"), "text/css; charset=utf-8"));
+        app.MapGet("/panel/app.js", () => Asset(Resource("Panel.app.js"), "text/javascript; charset=utf-8"));
+        app.MapGet("/panel/i18n.js", () => Asset(Resource("Panel.i18n.js"), "text/javascript; charset=utf-8"));
 
         // The OBS overlay and the host status page it had from the start.
         app.MapGet("/status", () => Results.Content(Resource("Overlay.index.html"), "text/html; charset=utf-8"));
@@ -159,6 +168,19 @@ public static class HostApp
     }
 
     private static readonly JsonSerializerOptions SseJson = new(CoreJson.Options) { WriteIndented = false };
+
+    /// <summary>An embedded asset with <c>Cache-Control: no-cache</c>: revalidated on every load, which loopback makes free.</summary>
+    private static NoCacheResult Asset(string content, string contentType) => new(Results.Content(content, contentType));
+
+    private sealed class NoCacheResult(IResult inner) : IResult
+    {
+        public Task ExecuteAsync(HttpContext httpContext)
+        {
+            ArgumentNullException.ThrowIfNull(httpContext);
+            httpContext.Response.Headers.CacheControl = "no-cache";
+            return inner.ExecuteAsync(httpContext);
+        }
+    }
 
     private static string Resource(string name)
     {

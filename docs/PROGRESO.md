@@ -23,9 +23,10 @@ Stages follow `docs/PROPUESTA.md` §9 with the adjustments in §10.
 | K2 | Chat texts: `DustPlanner.Kick` / `ChatResponder`, `GET /api/chat/{cmd}`, `chat` block in prefs + Settings, Streamer.bot guide | done | **K3** — `!deck`, `!rank`, `!wr` answered in a live stream via Streamer.bot |
 | K3 | Kick relay: Cloudflare Worker (`cloud/kick-worker`), OAuth + PKCE, channel Durable Objects, signed webhooks, `worker.yml` | done | **K1** (app + secrets) then **K4** — first deploy and a real message reaching the service |
 | K4 | Host connector: pairing, DPAPI device token, WebSocket with backoff, `/api/kick/*`, Settings → Kick, `kick` events | done | K5 ✔ 2026-10-18 (connected, command seen, reconnect, disconnect) |
-| K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, still build 1.1.0 (unreleased) | done | **K6** — `!deck` answered by the bot with Streamer.bot closed; which account posts |
+| K5 | Native answers: `KickChatBridge` (`chat.command` → `ChatResponder` → `chat.send`), outcome on the card, Streamer.bot duplicate warning, relay reports its subscriptions, `service.log`; relay 0.2.0, still build 1.1.0 (unreleased) | done | K6 ✔ 2026-10-18: answers as **@DustPlanner** (the app's bot, badge), replies, cooldown |
+| K6 | Public deck page: `KickDeckPublisher` (`deck.publish` on deck change / connect / page switched on), `{deck_link}` before the code in `!deck`, relay `/d/<slug>` + `/api/d/<slug>/deck` + browser decoder, panel link + cache-busting, Kick's reason on refused sends; relay 0.3.0 | done | **K7** — open your page from a phone, change deck, untick → 404 |
 
-198 .NET tests + 34 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
+198 .NET tests + 67 Worker tests (vitest), all green in the container (Linux, .NET 10 SDK, Node 22); the Windows run is the maintainer's. The maintainer
 merges and tags.
 
 ---
@@ -594,4 +595,38 @@ recorded in its §11.
 - `chat.send` is fire-and-forget on the service side: the relay reports `send_dropped`/`kick_rate_limited` as `error`
   frames, which land in `LastError`, not in the command's outcome.
 - The Streamer.bot notice relies on `/api/chat` being called; a bot that caches texts would not be detected.
+
+## Kick — K6 — The public deck page
+
+**Done**
+
+- `!deck` text: `{deck_name}{deck_link} · {deckstring}` in both languages — the code last, no trailing phrase; the link
+  (` · lista: <url>` / ` · list: <url>`) goes before it. `ChatContextFactory.From(state, deckUrl)` gets the address from
+  `KickDeckPublisher.PublicDeckUrl(connector, kickPrefs)`: only while connected and the page is on.
+- `KickDeckPublisher` (host, hosted service): `deck.publish` when the active deck changes, when the connection comes up
+  and after a prefs save (`PUT /api/prefs` → config, then republish). Dedupes by name + code + format; sends nothing
+  while the page is off. The connector now sends the config **before** publishing *Connected*, so anything reacting to
+  the state sends after it and the relay applies `public_page` first.
+- Relay 0.3.0: `GET /d/<slug>` (HTML, es/en by `Accept-Language` or `?lang=`, the deck embedded as JSON, `noindex`,
+  styled like the site), `GET /api/d/<slug>/deck` (JSON, 15 s cache, CORS), `GET /d/_/deck-page.js`. The browser
+  script (`client/deck-page.ts` + `client/deckstring.ts`) decodes the code with the same rules as `DeckstringCodec`
+  and asks HearthstoneJSON (`cards.collectible.json`, `esES`/`enUS`) for names and costs; sideboards (E.T.C.,
+  Zilliax) hang under their owner. Bundled by `scripts/build-client.mjs` (esbuild, which wrangler already brings) into
+  `src/generated/deck-page.js.txt`, imported as text; CI rebuilds and fails on a diff. `deck.publish` is stored only
+  while the DO's config says `public_page: true`. `tools/gen_deckstring_vectors.py` now writes the fixture for both
+  consumers.
+- Relay: a refused `chat.send` carries Kick's `message` (`send_dropped: Kick refused the message (404: …)`), which is
+  what would have named the missing bot user on the first try.
+- Panel: the *Public deck page* row shows the real link once connected (and keeps it current over SSE); assets are
+  served with `?v=<version>` and `Cache-Control: no-cache`, so an updated service never shows a stale panel.
+- Tests: host flow extended (active deck from the inbox → nothing while off → `deck.publish` after switching on →
+  `/api/chat/deck` with the link), worker: 4 page tests, 29 decoder cases (23 vectors, 5 invalid, whitespace), the
+  refusal reason. 198 .NET + 67 vitest.
+
+**Pending / caveats**
+
+- The page shows card names only (no art): HearthstoneJSON's `cards.collectible.json` is ~2–3 MB, cached by the
+  browser; a first open on mobile data takes a moment. Art would mean a second CDN; left out on purpose.
+- Deck changes reach the page within the service's poll (~2 s) plus the 15 s cache.
+- The relay cannot know the deck's validity: a 20-card deck under construction is published as-is.
 

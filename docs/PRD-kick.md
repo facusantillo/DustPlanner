@@ -618,3 +618,16 @@ Comprobado con `HdtApiCheck` contra los binarios 1.55.6 y con el código fuente 
    `https://live.dustplanner.app/webhooks/kick`; anotar `client_id` y el `user_id` de la cuenta bot (el
    `client_secret` solo en `wrangler secret`); activar Workers, KV y Durable Objects en Cloudflare; comprobar que no
    exista el registro DNS `live`. Nada de esto bloquea K1–K2.
+6. **Resultado de la prueba humana de K5 (18/10/2026).** Con `type: bot` y el token del canal, el mensaje aparece en el
+   chat como **`@DustPlanner` con insignia de bot** — el *bot de la app*, que lleva el nombre de la app, no la cuenta
+   `dustplannerbot` que la creó — y como respuesta encadenada al mensaje del viewer. Dos requisitos de la app que no
+   estaban escritos y costaron una tarde: *Webhooks* activados (si no, Kick acepta el OAuth pero rechaza todas las
+   suscripciones y nada llega) y **el bot de la app creado** desde *Edit* en la página de la app (si no, `POST
+   /public/v1/chat` responde `404`). Ambos están ahora en `VERIFICACION.md` K1 y en el README del relay, y el relay
+   avisa de los dos: la tarjeta muestra qué suscripciones aceptó Kick y el motivo que da Kick al rechazar un mensaje.
+7. **Página pública (K6).** El texto de `!deck` cambia a `{deck_name}{deck_link} · {deckstring}`: el código va
+   siempre al final, sin la coletilla "copialo y pegalo" (quien lo pide sabe qué hacer con él). La página vive en
+   `live.dustplanner.app/d/<slug>` con el slug como lo escribe Kick (`tsukuru-tv`; el guion bajo también resuelve),
+   decodifica en el navegador con el mismo algoritmo que `DeckstringCodec` (verificado con los mismos vectores) y pide
+   nombres y costos a HearthstoneJSON en el idioma del navegador. Sin cookies ni analítica; `noindex` mientras dure la
+   beta. El Worker guarda el `deck.publish` solo mientras la configuración diga `public_page: true`.

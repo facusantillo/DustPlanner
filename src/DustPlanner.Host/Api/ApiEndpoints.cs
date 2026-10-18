@@ -101,7 +101,7 @@ internal static class ApiEndpoints
 
         api.MapGet("/prefs", (AppServices services) => Guard(() => Task.FromResult<object>(new { path = services.PrefsPath, exists = File.Exists(services.PrefsPath), prefs = services.ReadPrefs() })));
 
-        api.MapPut("/prefs", async (HttpContext http, AppServices services, DustPlanner.Kick.KickConnector connector, DustPlanner.Kick.ChatResponder responder, CancellationToken ct) =>
+        api.MapPut("/prefs", async (HttpContext http, AppServices services, DustPlanner.Kick.KickConnector connector, DustPlanner.Kick.ChatResponder responder, KickDeckPublisher publisher, CancellationToken ct) =>
             await Guard(async () =>
             {
                 using var reader = new StreamReader(http.Request.Body);
@@ -110,6 +110,7 @@ internal static class ApiEndpoints
                 // New prefix, aliases or forwarding flags must reach the relay's filter; cooldowns start afresh too.
                 responder.ResetCooldowns();
                 await connector.RefreshConfigAsync(ct).ConfigureAwait(false);
+                await publisher.RepublishAsync(ct).ConfigureAwait(false);
                 return (object)new { path = services.PrefsPath, exists = true, prefs };
             }).ConfigureAwait(false));
 

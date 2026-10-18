@@ -21,7 +21,8 @@ internal static class ChatEndpoints
         {
             // Lets the Kick card warn when a second bot is answering next to the native connection (PRD §5.4).
             connector.NoteLocalChatRequest();
-            var reply = responder.Respond(ReadChatPrefs(services), command, user, lang, ChatContextFactory.From(state.Current), clock.GetUtcNow());
+            var prefs = ReadPrefs(services);
+            var reply = responder.Respond(prefs.Chat, command, user, lang, ChatContextFactory.From(state.Current, KickDeckPublisher.PublicDeckUrl(connector, prefs.Kick)), clock.GetUtcNow());
             return reply.Status switch
             {
                 ChatReplyStatus.Ok => Results.Text(reply.Text!, "text/plain; charset=utf-8"),
@@ -31,19 +32,22 @@ internal static class ChatEndpoints
         });
     }
 
-    /// <summary>The saved chat settings, validated; a broken <c>prefs.json</c> must not silence the chat, so it falls back to the defaults.</summary>
-    public static ChatPrefs ReadChatPrefs(AppServices services)
+    /// <summary>The saved chat and Kick settings, validated; a broken <c>prefs.json</c> must not silence the chat, so it falls back to the defaults.</summary>
+    public static (ChatPrefs Chat, KickPrefs Kick) ReadPrefs(AppServices services)
     {
         ArgumentNullException.ThrowIfNull(services);
         try
         {
-            var prefs = services.ReadPrefs().Chat ?? new ChatPrefs();
-            prefs.Validate();
-            return prefs;
+            var prefs = services.ReadPrefs();
+            var chat = prefs.Chat ?? new ChatPrefs();
+            var kick = prefs.Kick ?? new KickPrefs();
+            chat.Validate();
+            kick.Validate();
+            return (chat, kick);
         }
         catch (Exception ex) when (ex is System.Text.Json.JsonException || ex is IOException)
         {
-            return new ChatPrefs();
+            return (new ChatPrefs(), new KickPrefs());
         }
     }
 }
@@ -51,13 +55,13 @@ internal static class ChatEndpoints
 /// <summary>Maps the overlay state onto what the texts need. The only place the chat learns about the host.</summary>
 internal static class ChatContextFactory
 {
-    public static ChatContext From(OverlayState state)
+    public static ChatContext From(OverlayState state, string? deckUrl)
     {
         ArgumentNullException.ThrowIfNull(state);
         return new ChatContext
         {
             Deck = state.ActiveDeck is { } deck ? new ChatDeck(deck.Name, deck.Deckstring, deck.CardClass, deck.Format) : null,
-            DeckUrl = null, // stage K6: the public page's address arrives with the relay's hello
+            DeckUrl = deckUrl,
             Rank = state.Rank is { } rank ? new ChatRank(rank.LeagueId, rank.StarLevel, rank.Stars, rank.LegendRank, rank.Format) : null,
             Today = new ChatRecord(state.Today.Wins, state.Today.Losses, state.Today.Ties),
             Session = new ChatRecord(state.Session.Wins, state.Session.Losses, state.Session.Ties),

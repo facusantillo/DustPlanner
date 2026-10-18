@@ -23,11 +23,25 @@ export function isConfigured(env: Env): boolean {
   return Boolean(env.KICK_CLIENT_ID) && env.KICK_CLIENT_ID !== "REPLACE_ME" && Boolean(env.KICK_CLIENT_SECRET) && Boolean(env.TOKEN_ENCRYPTION_KEY);
 }
 
+/**
+ * Kick derives a channel's slug from the username by lower-casing it and turning `_` into `-` (`tsukuru_tv` →
+ * `tsukuru-tv`). Compare and store slugs in that shape so the list can be written either way.
+ */
+export function normalizeSlug(slug: string): string {
+  return slug.trim().toLowerCase().replace(/_/g, "-");
+}
+
 export function allowedSlugs(env: Env): string[] {
   return (env.ALLOWED_SLUGS ?? "")
     .split(",")
-    .map((s) => s.trim().toLowerCase())
+    .map(normalizeSlug)
     .filter((s) => s.length > 0);
+}
+
+/** Empty list = open to everyone; otherwise the channel's slug must be on it. */
+export function isAllowedChannel(env: Env, slug: string): boolean {
+  const allowed = allowedSlugs(env);
+  return allowed.length === 0 || allowed.includes(normalizeSlug(slug));
 }
 
 /** Loopback ports the local service may listen on (8765 and the fallbacks); anything else is refused. */

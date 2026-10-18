@@ -56,7 +56,8 @@ channel is deleted 24 hours later unless it reconnects. A daily alarm re-subscri
    - `TOKEN_ENCRYPTION_KEY` — `openssl rand -base64 32` (PowerShell: `[Convert]::ToBase64String((1..32 | % { Get-Random -Max 256 }) -as [byte[]])`). Losing it means every channel must reconnect; changing it has the same effect.
 3. **`wrangler.toml`** — fill `KICK_CLIENT_ID` and `BOT_USER_ID` (both public) once the Kick app exists. The KV namespace
    `dustplanner-kick-relay-CONFIG` already exists in the account (id in the file). `ALLOWED_SLUGS` keeps the beta private
-   (PRD Q7); empty it to open up (K8).
+   (PRD Q7); empty it to open up (K8). Kick spells slugs with hyphens (`tsukuru_tv` → `tsukuru-tv`); the list accepts
+   either spelling.
 4. **DNS** — nothing to create: `custom_domain = true` makes Cloudflare add the record for `live.dustplanner.app`. The
    apex keeps serving GitHub Pages. Make sure no `live` record exists beforehand.
 5. **Kick app** — redirect `https://live.dustplanner.app/oauth/callback`; *Enable Webhooks* with

@@ -171,6 +171,6 @@ describe("webhooks", () => {
     await socket.closed;
     const renamed = chatMessage("!deck", { broadcaster: { user_id: Number(CHANNEL.userId), username: CHANNEL.username, channel_slug: "tsukuru_renamed" } });
     expect((await post(await signedWebhook(signer, "chat.message.sent", renamed))).action).toBe("no_device");
-    expect(await env.CONFIG.get("slug:tsukuru_renamed")).toBe(CHANNEL.userId);
+    expect(await env.CONFIG.get("slug:tsukuru-renamed")).toBe(CHANNEL.userId);
   });
 });

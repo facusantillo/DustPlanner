@@ -260,7 +260,7 @@ mazo activo"). Otros casos:
 
 | Comando | Alias por defecto | Ejemplo (es) |
 |---|---|---|
-| `deck` | `mazo` | `Priest Control · AAECAa0G… · copialo y pegalo en Hearthstone` (+ ` · lista: https://live.dustplanner.app/d/tsukuru_tv` si la página está activa; el slug lo conoce el host por el `hello` del Worker) |
+| `deck` | `mazo` | `Priest Control · AAECAa0G… · copialo y pegalo en Hearthstone` (+ ` · lista: https://live.dustplanner.app/d/tsukuru-tv` si la página está activa; el slug lo conoce el host por el `hello` del Worker) |
 | `rank` | `rango` | `Diamante 3 · Standard` / `Leyenda #1.234` |
 | `wr` | `winrate` | `Hoy 7-3 (70 %) · sesión 4-1 · racha de 3 victorias` |
 | `last` | `ultima` | `Última: victoria contra Mage en 9 turnos` |
@@ -535,7 +535,7 @@ puede hacer el mantenedor; va en `VERIFICACION.md`, sección K.
 | Q4 | `!deck`/`!mazo`, `!rank`/`!rango`, `!wr`/`!winrate`, `!last`/`!ultima` activos; `!dust`/`!polvo` apagado. |
 | Q5 | Página pública opt-in, apagada por defecto. |
 | Q6 | Se implementan `off`, `panel` y `panel+chat`; el default es `panel`. |
-| Q7 | Beta privada por `ALLOWED_SLUGS` (`tsukuru_tv`) hasta el *go live*, que decide el mantenedor. |
+| Q7 | Beta privada por `ALLOWED_SLUGS` (`tsukuru-tv`: Kick escribe los slugs con guion; el relay acepta también `tsukuru_tv`) hasta el *go live*, que decide el mantenedor. |
 | Q8 | Twitch fuera de alcance. La neutralidad del §4.8 queda como está; no se invierte en más abstracciones. |
 
 ### 11.2 Verificado contra la OpenAPI de Kick

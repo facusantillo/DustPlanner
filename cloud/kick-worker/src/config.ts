@@ -1,3 +1,4 @@
+import { normalizeSlug } from "./env";
 /**
  * Per-channel configuration replicated in Workers KV so the webhook route can drop irrelevant chat messages before
  * touching the channel's Durable Object (PRD §4, decision 2). Keys: `config:<broadcaster_user_id>`, `slug:<slug>`.
@@ -18,7 +19,7 @@ export function configKey(userId: string): string {
 }
 
 export function slugKey(slug: string): string {
-  return `slug:${slug.toLowerCase()}`;
+  return `slug:${normalizeSlug(slug)}`;
 }
 
 export async function loadConfig(env: Env, userId: string): Promise<ChannelConfig | null> {

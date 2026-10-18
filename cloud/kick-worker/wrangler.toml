@@ -16,9 +16,9 @@ KICK_CLIENT_ID = "01M576EATT3TQ1P5TM37APJCJS"
 # user_id of the dedicated bot account that owns the Kick app: its own chat messages are ignored.
 BOT_USER_ID = "1000417936"
 # Comma-separated channel slugs allowed to connect while the beta is private. Empty = everyone (K8).
-ALLOWED_SLUGS = "tsukuru_tv"
+ALLOWED_SLUGS = "tsukuru-tv"
 PUBLIC_BASE_URL = "https://live.dustplanner.app"
-RELAY_VERSION = "0.1.0"
+RELAY_VERSION = "0.1.1"
 
 # Secrets (wrangler secret put / GitHub Secrets, never in this file):
 #   KICK_CLIENT_SECRET    — the Kick app's client secret

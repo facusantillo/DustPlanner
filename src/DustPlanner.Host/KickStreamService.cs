@@ -132,7 +132,9 @@ internal sealed partial class KickStreamService : BackgroundService
         using (var store = DustStore.Open(_services.Paths.Database))
         {
             var sessions = new StreamSessionRepository(store);
-            var open = sessions.LatestOpen(account);
+            // The overlay may follow another account by now (a change of region mid-stream): the session that is open
+            // is the one to close, whichever account opened it.
+            var open = sessions.LatestOpen(account) ?? sessions.LatestOpen(null);
             if (open is null)
             {
                 return;
@@ -144,7 +146,7 @@ internal sealed partial class KickStreamService : BackgroundService
                 endedAt = _clock.GetUtcNow();
             }
 
-            sessions.Close(open.Id, endedAt, CurrentRank(store, account));
+            sessions.Close(open.Id, endedAt, CurrentRank(store, open.AccountKey));
             closed = sessions.Get(open.Id);
             prefs = Api.ChatEndpoints.ReadPrefs(_services);
             Log.SessionClosed(_log, open.Id, closed?.Record.Wins ?? 0, closed?.Record.Losses ?? 0);

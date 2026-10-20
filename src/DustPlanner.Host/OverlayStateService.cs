@@ -26,6 +26,9 @@ public sealed class OverlayStateService : BackgroundService
     private readonly List<Channel<OverlayState>> _subscribers = new();
     private readonly TimeProvider _clock;
 
+    /// <summary>The exporter's files whose write time says which account HDT is looking at right now.</summary>
+    private static readonly string[] ExporterFiles = { ExportSchema.CollectionFileName, ExportSchema.DecksFileName, ExportSchema.RankFileName, ExportSchema.ActiveDeckFileName };
+
     private DustStore? _store;
     private GameRepository? _games;
     private PowerLogFollower? _follower;
@@ -40,6 +43,8 @@ public sealed class OverlayStateService : BackgroundService
     private RecordState _session = new();
     private LastGameState? _lastGame;
     private readonly DateTimeOffset _sessionStart;
+    private readonly List<GameRecord> _completed = new();
+    private (string Key, DateTime At)? _gameEvidence;
 
     public OverlayStateService(OverlayHostOptions options, AppServices app, ILogger<OverlayStateService> log, TimeProvider? clock = null)
     {
@@ -127,6 +132,11 @@ public sealed class OverlayStateService : BackgroundService
         Directory.CreateDirectory(_app.Paths.Root);
         _store = DustStore.Open(_app.Paths.Database);
         _games = new GameRepository(_store);
+        if (_games.Latest() is { } latest)
+        {
+            _gameEvidence = (latest.AccountKey, latest.At.UtcDateTime);
+        }
+
         _logsDirectory = _options.LogsDirectory ?? LogLocator.FindLogsDirectory();
         if (_logsDirectory is not null)
         {
@@ -150,7 +160,10 @@ public sealed class OverlayStateService : BackgroundService
         Tick();
     }
 
-    /// <summary>One poll: inbox files, Power.log, derived state. Publishes only when something changed.</summary>
+    /// <summary>
+    /// One poll: Power.log first (a finished game says which account is playing), then the account, its inbox files
+    /// and the derived state. Publishes only when something changed.
+    /// </summary>
     internal void Tick()
     {
         var warnings = new List<string>();
@@ -158,9 +171,10 @@ public sealed class OverlayStateService : BackgroundService
 
         try
         {
+            PollGames(warnings);
             state = RefreshAccount(state, warnings);
             state = RefreshInbox(state, warnings);
-            state = RefreshGames(state, warnings);
+            state = RefreshRecord(state);
         }
 #pragma warning disable CA1031 // same: one bad poll must not kill the host
         catch (Exception ex)
@@ -184,28 +198,125 @@ public sealed class OverlayStateService : BackgroundService
     internal static bool SameContent(OverlayState a, OverlayState b) =>
         JsonSerializer.Serialize(a with { UpdatedAt = default }, CoreJson.Options) == JsonSerializer.Serialize(b with { UpdatedAt = default }, CoreJson.Options);
 
+    /// <summary>
+    /// Which account the overlay follows. <c>--account</c> pins one; otherwise it is the account with the newest evidence
+    /// of play — the exporter's files (HDT writes them for the account it is looking at) or the last game that finished
+    /// in Power.log — re-evaluated on every poll. So a change of region or account moves the overlay, the chat answers
+    /// and the public deck page along instead of leaving them on the deck of the account seen at start-up
+    /// (VERIFICACION K8 found the public page stuck on the old region's deck).
+    /// </summary>
     private OverlayState RefreshAccount(OverlayState state, List<string> warnings)
     {
-        if (state.AccountKey is not null)
+        if (_options.Account is not null)
         {
+            return state.AccountKey is not null ? state : PinnedAccount(state, warnings);
+        }
+
+        var evidence = NewestEvidence();
+        if (evidence is null)
+        {
+            if (state.AccountKey is null)
+            {
+                warnings.Add("No account yet: install the HDT exporter plugin (collection, rank, dust) or play a game with Power.log enabled.");
+            }
+
             return state;
         }
 
-        var accounts = InboxLocator.ListAccounts(_app.Paths.Inbox);
-        var (selected, _) = InboxLocator.Select(accounts, _options.Account);
+        return string.Equals(evidence.Value.Key, state.AccountKey, StringComparison.Ordinal) ? state : SwitchTo(state, evidence.Value.Key);
+    }
+
+    private OverlayState PinnedAccount(OverlayState state, List<string> warnings)
+    {
+        var (selected, reason) = InboxLocator.Select(InboxLocator.ListAccounts(_app.Paths.Inbox), _options.Account);
         if (selected is not null)
         {
             return state with { AccountKey = selected.AccountKey, BattleTag = selected.BattleTag };
         }
 
-        var fromGames = _options.Account ?? _games?.LatestAccount();
-        if (fromGames is not null)
+        if (AccountKeys.TryParse(_options.Account, out _, out _))
         {
-            return state with { AccountKey = fromGames };
+            return state with { AccountKey = _options.Account };   // a key without exports yet: Power.log games still count
         }
 
-        warnings.Add("No account yet: install the HDT exporter plugin (collection, rank, dust) or play a game with Power.log enabled.");
+        warnings.Add(reason ?? "Account not found.");
         return state;
+    }
+
+    /// <summary>The account with the most recent exporter file or finished game; null when there is neither.</summary>
+    private (string Key, DateTime At)? NewestEvidence()
+    {
+        var best = _gameEvidence;
+        if (Directory.Exists(_app.Paths.Inbox))
+        {
+            foreach (var dir in Directory.GetDirectories(_app.Paths.Inbox))
+            {
+                var key = Path.GetFileName(dir);
+                if (!AccountKeys.TryParse(key, out _, out _))
+                {
+                    continue;
+                }
+
+                foreach (var name in ExporterFiles)
+                {
+                    var file = Path.Combine(dir, name);
+                    if (File.Exists(file))
+                    {
+                        var at = File.GetLastWriteTimeUtc(file);
+                        if (best is null || at > best.Value.At)
+                        {
+                            best = (key, at);
+                        }
+                    }
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Forgets everything that belonged to the previous account; the inbox files are re-read in the same poll.</summary>
+    private OverlayState SwitchTo(OverlayState state, string key)
+    {
+        _collectionStamp = default;
+        _rankStamp = default;
+        _activeDeckStamp = default;
+        _syncPending = false;
+        if (state.AccountKey is not null)
+        {
+            Log.AccountSwitched(_log, state.AccountKey, key);
+        }
+
+        return state with { AccountKey = key, BattleTag = ReadBattleTag(Path.Combine(_app.Paths.Inbox, key)), Dust = null, Rank = null, ActiveDeck = null, LastSync = null, Today = new RecordState() };
+    }
+
+    /// <summary>The BattleTag from any export's <c>meta.account</c>; null when the folder has none yet (Power.log-only accounts).</summary>
+    private static string? ReadBattleTag(string accountDirectory)
+    {
+        foreach (var name in ExporterFiles)
+        {
+            var file = Path.Combine(accountDirectory, name);
+            if (!File.Exists(file))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                if (doc.RootElement.TryGetProperty("meta", out var meta) && meta.TryGetProperty("account", out var account)
+                    && account.TryGetProperty("battle_tag", out var tag) && tag.ValueKind == JsonValueKind.String)
+                {
+                    return tag.GetString();
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is JsonException)
+            {
+                // A half-written export: the next poll reads it again through the stamps.
+            }
+        }
+
+        return null;
     }
 
     private OverlayState RefreshInbox(OverlayState state, List<string> warnings)
@@ -368,12 +479,13 @@ public sealed class OverlayStateService : BackgroundService
         return null;
     }
 
-    private OverlayState RefreshGames(OverlayState state, List<string> warnings)
+    /// <summary>Reads what Power.log appended; completed games are stored at once and counted in <see cref="RefreshRecord"/>.</summary>
+    private void PollGames(List<string> warnings)
     {
         if (_follower is null)
         {
             warnings.Add("Hearthstone's Logs folder was not found; pass --logs <path-to-Hearthstone\\Logs>. Run 'dustplanner games log-config' to check that Power.log is enabled.");
-            return state with { Session = _session };
+            return;
         }
 
         _follower.Poll();
@@ -381,11 +493,31 @@ public sealed class OverlayStateService : BackgroundService
         {
             warnings.Add("No Power.log in " + _logsDirectory + " yet; start Hearthstone (and check 'dustplanner games log-config').");
         }
+    }
 
+    /// <summary>Session, today, current and last game for the account the state now follows.</summary>
+    private OverlayState RefreshRecord(OverlayState state)
+    {
         var catalog = _catalogTask is { IsCompletedSuccessfully: true } t ? t.Result : null;
-        var current = _follower.CurrentGame;
+        foreach (var game in _completed)
+        {
+            var friendly = game.Friendly!;
+            if (string.Equals(friendly.AccountKey, state.AccountKey, StringComparison.Ordinal))
+            {
+                _session = _session.Add(game.Result);
+                _lastGame = new LastGameState(game.EndedAt ?? game.StartedAt, game.Result, HeroClasses.ClassOf(friendly.HeroCardId, catalog),
+                    HeroClasses.ClassOf(game.Opponent?.HeroCardId, catalog), game.Opponent?.Name, game.Turns);
+            }
+            else
+            {
+                Log.OtherAccount(_log, friendly.AccountKey);
+            }
+        }
+
+        _completed.Clear();
+
         CurrentGameState? currentState = null;
-        if (current is not null)
+        if (_follower?.CurrentGame is { } current)
         {
             var friendly = current.Friendly;
             var opponent = current.Opponent;
@@ -397,6 +529,10 @@ public sealed class OverlayStateService : BackgroundService
         return state with { Session = _session, Today = today, CurrentGame = currentState, LastGame = _lastGame ?? state.LastGame };
     }
 
+    /// <summary>
+    /// Stores the game and notes its account as the latest evidence of play; which account the state follows is decided
+    /// afterwards, in the same poll, by <see cref="RefreshAccount"/>.
+    /// </summary>
     private void OnGameCompleted(GameRecord game)
     {
         var friendly = game.Friendly;
@@ -406,25 +542,15 @@ public sealed class OverlayStateService : BackgroundService
             return;
         }
 
-        var accountKey = friendly.AccountKey;
-        if (_state.AccountKey is null)
-        {
-            _state = _state with { AccountKey = accountKey };
-        }
-        else if (!string.Equals(accountKey, _state.AccountKey, StringComparison.Ordinal))
-        {
-            Log.OtherAccount(_log, accountKey);
-        }
-
         var catalog = _catalogTask is { IsCompletedSuccessfully: true } t ? t.Result : null;
         _games?.Insert(game, catalog);
-
-        if (string.Equals(accountKey, _state.AccountKey, StringComparison.Ordinal))
+        var at = (game.EndedAt ?? game.StartedAt).UtcDateTime;
+        if (_gameEvidence is null || at >= _gameEvidence.Value.At)
         {
-            _session = _session.Add(game.Result);
-            _lastGame = new LastGameState(game.EndedAt ?? game.StartedAt, game.Result, HeroClasses.ClassOf(friendly.HeroCardId, catalog),
-                HeroClasses.ClassOf(game.Opponent?.HeroCardId, catalog), game.Opponent?.Name, game.Turns);
+            _gameEvidence = (friendly.AccountKey, at);
         }
+
+        _completed.Add(game);
     }
 
     private RecordState TodayRecord(string accountKey)
@@ -472,6 +598,9 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Game of another account ({Account}) stored but not counted in the session")]
     public static partial void OtherAccount(ILogger logger, string account);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Now following account {Account} (newer exports or games than {Previous})")]
+    public static partial void AccountSwitched(ILogger logger, string account, string previous);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Synced {Account}: new snapshot {NewSnapshot}, {Events} change(s)")]
     public static partial void Synced(ILogger logger, string account, bool newSnapshot, int events);

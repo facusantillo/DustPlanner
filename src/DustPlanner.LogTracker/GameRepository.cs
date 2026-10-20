@@ -76,6 +76,14 @@ public sealed class GameRepository
         return cmd.ExecuteScalar() as string;
     }
 
+    /// <summary>The account of the most recent stored game and when that game ended (started, when the end is unknown).</summary>
+    public (string AccountKey, DateTimeOffset At)? Latest()
+    {
+        using var cmd = _store.Command("SELECT account_key, COALESCE(ended_at, started_at) FROM game ORDER BY started_at DESC, id DESC LIMIT 1");
+        using var reader = cmd.ExecuteReader();
+        return reader.Read() ? (reader.GetString(0), DustStore.ParseIso(reader.GetString(1))) : null;
+    }
+
     public IReadOnlyList<string> Accounts()
     {
         using var cmd = _store.Command("SELECT DISTINCT account_key FROM game ORDER BY account_key");

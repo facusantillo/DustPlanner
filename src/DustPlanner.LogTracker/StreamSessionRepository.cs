@@ -101,8 +101,9 @@ public sealed class StreamSessionRepository
         cmd.ExecuteNonQuery();
     }
 
-    public StreamSession? LatestOpen(string accountKey, string platform = "kick") =>
-        Query("WHERE account_key = $k AND platform = $p AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1", ("$k", accountKey), ("$p", platform)).FirstOrDefault();
+    /// <summary>The open session of an account, or of any account when <paramref name="accountKey"/> is null.</summary>
+    public StreamSession? LatestOpen(string? accountKey, string platform = "kick") =>
+        Query("WHERE ($k IS NULL OR account_key = $k) AND platform = $p AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1", ("$k", accountKey), ("$p", platform)).FirstOrDefault();
 
     public StreamSession? Get(long id) => Query("WHERE id = $id", ("$id", id)).FirstOrDefault();
 

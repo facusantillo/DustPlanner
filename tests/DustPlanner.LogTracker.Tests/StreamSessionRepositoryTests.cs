@@ -30,6 +30,8 @@ public sealed class StreamSessionRepositoryTests
         var closed = sessions.Get(first)!;
         Assert.Equal(T0.AddHours(5), closed.EndedAt);
         Assert.Equal(second, sessions.LatestOpen(Account)!.Id);
+        Assert.Equal(second, sessions.LatestOpen(null)!.Id);          // whichever account opened it (the overlay may have moved on)
+        Assert.Null(sessions.LatestOpen("4294967296-7"));
 
         Assert.True(sessions.Close(second, T0.AddHours(7), new SessionRank("Diamond 2", "standard", 5, 9, 0)));
         Assert.False(sessions.Close(second, T0.AddHours(8), null)); // already closed: the repeat is ignored

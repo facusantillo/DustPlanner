@@ -236,6 +236,15 @@ loading and the status line says which feature is off.
       5. Set the reminder to *Panel and chat message*, save, go live again, finish a game: the toast and the chat line.
       Anything that differs → the `Kick:` lines of `service.log` for that stretch and the relay's Logs tab
       (`relay: webhook livestream.status.updated delivered`, `channel.reward.redemption.updated delivered`).
+      - Found on 2026-10-20 (a change of region, which is another account): the public page and `!deck` kept the
+        old region's deck, `Updated 1 h ago`, while HDT showed the new one. The host chose its account once at
+        start-up and never looked again, so the exporter's files for the new account were ignored. Fixed: the host
+        follows the account with the newest export or finished game (`service.log`: `Now following account …`);
+        **K8.6** switch region (or account), pick a deck → the panel header, `!deck` and the public page show the new
+        account's deck within a few seconds and *Streams* goes on with that account's games.
+      - Same stretch: the public page listed two `Card #…` rows for a deck with a Fabled card (its two companions are
+        not collectible). The page now completes them from the full card list; **K8.7** open `/d/<slug>` with such a
+        deck → the companions appear by name under their cost. Needs relay ≥ 0.3.1 (tag `worker-v0.3.1`).
 - [ ] K9. **Release 1.1.0 and the beta** (K8): with K8 done, tag `v1.1.0` on `main`; the *Release HDT plugin* workflow
       publishes `DustPlanner-v1.1.0.zip` (+ `.sha256`) and the site's download link serves it. Check
       `https://dustplanner.app/privacy.html` and `/es/privacidad.html` render after the Pages deploy. The beta stays

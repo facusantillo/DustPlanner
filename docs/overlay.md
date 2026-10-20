@@ -19,8 +19,13 @@ dotnet run --project src\DustPlanner.Host -c Release -- --open
 ```
 
 Options: `--port 8765` (the next free port of ten is used when it is busy), `--home <folder>` (same data folder as the
-CLI), `--logs <Hearthstone\Logs>` when the folder is not found through HDT's config, `--account <key|BattleTag>` when
-several accounts were exported, `--poll-seconds 2`, `--open` (open the panel in the browser).
+CLI), `--logs <Hearthstone\Logs>` when the folder is not found through HDT's config, `--account <key|BattleTag>` to pin
+one account, `--poll-seconds 2`, `--open` (open the panel in the browser).
+
+Without `--account` the host follows the account being played: the one whose exporter files (`collection.json`,
+`decks.json`, `rank.json`, `active-deck.json`) or last finished game are the newest, checked on every poll. Switching
+region or account in Hearthstone moves the overlay, the chat answers and the public deck page to that account within a
+few seconds; dust, rank and deck of the previous one are dropped until its own exports are newer again.
 
 `http://127.0.0.1:8765/` is the panel ([`panel.md`](panel.md)); `http://127.0.0.1:8765/status` is the host status page:
 what was found (warnings when the logs folder or an export is missing), the live state as JSON and a preview of the

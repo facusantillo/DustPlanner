@@ -92,13 +92,8 @@ function main(): void {
   const total = decoded.cards.reduce((n, c) => n + c.count, 0);
   status.textContent = t.loading;
   const locale = data.lang === "es" ? "esES" : "enUS";
-  fetch(`${HEARTHSTONEJSON}/${locale}/cards.collectible.json`, { headers: { accept: "application/json" } })
-    .then((r) => (r.ok ? (r.json() as Promise<CardInfo[]>) : Promise.reject(new Error(String(r.status)))))
-    .then((cards) => {
-      const byId = new Map<number, CardInfo>();
-      for (const card of cards) {
-        byId.set(card.dbfId, card);
-      }
+  loadCards(locale, decoded)
+    .then((byId) => {
       render(list, decoded, byId, t);
       status.textContent = `${total} ${t.cards}`;
     })
@@ -106,6 +101,43 @@ function main(): void {
       render(list, decoded, new Map(), t);
       status.textContent = `${total} ${t.cards} · ${t.noCards}`;
     });
+}
+
+/**
+ * The collectible list covers almost every deck. Fabled cards (Across the Timeways) bring two non-collectible
+ * companions that sit in the deck code's main list, so when something stays unresolved the full list is fetched too —
+ * three times the size, hence only then.
+ */
+async function loadCards(locale: string, deck: DecodedDeck): Promise<Map<number, CardInfo>> {
+  const byId = await fetchCards(`${HEARTHSTONEJSON}/${locale}/cards.collectible.json`);
+  const wanted = [...deck.cards.map((c) => c.dbfId), ...deck.sideboards.map((s) => s.dbfId)];
+  if (wanted.some((id) => !byId.has(id))) {
+    try {
+      const all = await fetchCards(`${HEARTHSTONEJSON}/${locale}/cards.json`);
+      for (const id of wanted) {
+        const card = all.get(id);
+        if (card && !byId.has(id)) {
+          byId.set(id, card);
+        }
+      }
+    } catch {
+      // The collectible names are still worth showing; the rest stay as "Card #id".
+    }
+  }
+  return byId;
+}
+
+async function fetchCards(url: string): Promise<Map<number, CardInfo>> {
+  const response = await fetch(url, { headers: { accept: "application/json" } });
+  if (!response.ok) {
+    throw new Error(String(response.status));
+  }
+  const cards = (await response.json()) as CardInfo[];
+  const byId = new Map<number, CardInfo>();
+  for (const card of cards) {
+    byId.set(card.dbfId, card);
+  }
+  return byId;
 }
 
 function render(list: HTMLElement, deck: DecodedDeck, byId: Map<number, CardInfo>, t: (typeof TEXT)[keyof typeof TEXT]): void {

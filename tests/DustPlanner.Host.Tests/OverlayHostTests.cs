@@ -54,10 +54,10 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
         _http = new HttpClient { BaseAddress = new Uri(address) };
     }
 
-    private static ActiveDeckExport ActiveDeck(DateTimeOffset at, string trigger) => new()
+    private static ActiveDeckExport ActiveDeck(DateTimeOffset at, string trigger, string name = "Synthetic Priest", AccountRef? account = null) => new()
     {
-        Meta = new ExportMeta { Kind = ExportSchema.ActiveDeckKind, ExportedAt = at, Trigger = trigger, Account = new AccountRef { Hi = 8589934592, Lo = 42, BattleTag = "Synthetic#0001", Region = "EU" } },
-        Deck = new Contracts.ActiveDeck { Name = "Synthetic Priest", Deckstring = "AAECAa0GAA==", HdtDeckId = "6f0c2a1e-5b7d-4e3a-9c21-0f8d6a4b2c11", CardClass = "PRIEST", Format = "standard" },
+        Meta = new ExportMeta { Kind = ExportSchema.ActiveDeckKind, ExportedAt = at, Trigger = trigger, Account = account ?? new AccountRef { Hi = 8589934592, Lo = 42, BattleTag = "Synthetic#0001", Region = "EU" } },
+        Deck = new Contracts.ActiveDeck { Name = name, Deckstring = "AAECAa0GAA==", HdtDeckId = "6f0c2a1e-5b7d-4e3a-9c21-0f8d6a4b2c11", CardClass = "PRIEST", Format = "standard" },
     };
 
     public async Task DisposeAsync()
@@ -168,6 +168,57 @@ public sealed class OverlayHostTests : IAsyncLifetime, IDisposable
             Assert.Equal("Synthetic Priest", store.Scalar("SELECT name FROM deck WHERE id = $d", ("$d", linked.DeckId)));
             Assert.Single(new ActiveDeckRepository(store).List("8589934592-42"), s => s.Reason == "game_start");
         }
+    }
+
+    /// <summary>
+    /// VERIFICACION K8: after a change of region the exporter writes for the new account while the overlay stayed on the
+    /// account it saw at start-up, so the public page kept the old deck. The newest export wins, in both directions.
+    /// </summary>
+    [Fact]
+    public async Task The_overlay_follows_the_account_whose_exports_are_newer()
+    {
+        Assert.Equal("8589934592-42", (await State()).GetProperty("account_key").GetString());
+
+        // A US account appears with only an active deck (its collection was never exported), written after the EU files.
+        var us = new AccountRef { Hi = 4294967296, Lo = 7, BattleTag = "Synthetic#0002", Region = "US" };
+        var usInbox = Path.Combine(_home, "inbox", "4294967296-7");
+        Directory.CreateDirectory(usInbox);
+        var usDeck = Path.Combine(usInbox, ExportSchema.ActiveDeckFileName);
+        await File.WriteAllTextAsync(usDeck, JsonSerializer.Serialize(ActiveDeck(DateTimeOffset.UtcNow, "deck_selected", "Quest Priest", us), CoreJson.Options));
+        File.SetLastWriteTimeUtc(usDeck, DateTime.UtcNow.AddMinutes(1));
+
+        var state = await StateWhen(s => s.GetProperty("account_key").GetString() == "4294967296-7", "the overlay did not move to the US account");
+        Assert.Equal("Synthetic#0002", state.GetProperty("battle_tag").GetString());
+        Assert.Equal("Quest Priest", state.GetProperty("active_deck").GetProperty("name").GetString());
+        Assert.Equal(JsonValueKind.Null, state.GetProperty("dust").ValueKind);   // nothing of the EU account survives
+        Assert.Equal(JsonValueKind.Null, state.GetProperty("rank").ValueKind);
+        Assert.Contains(state.GetProperty("warnings").EnumerateArray(), w => w.GetString()!.StartsWith("No collection export yet", StringComparison.Ordinal));
+        Assert.Equal("Quest Priest · AAECAa0GAA==", await _http!.GetStringAsync("/api/chat/deck?lang=es&user=ana"));
+
+        // Back on EU: HDT exports the deck chosen there, and the EU collection, rank and dust are read again.
+        var euDeck = Path.Combine(_home, "inbox", "8589934592-42", ExportSchema.ActiveDeckFileName);
+        await File.WriteAllTextAsync(euDeck, JsonSerializer.Serialize(ActiveDeck(DateTimeOffset.UtcNow, "deck_selected", "Synthetic Priest v2"), CoreJson.Options));
+        File.SetLastWriteTimeUtc(euDeck, DateTime.UtcNow.AddMinutes(2));
+
+        state = await StateWhen(s => s.GetProperty("account_key").GetString() == "8589934592-42" && s.GetProperty("dust").ValueKind != JsonValueKind.Null, "the overlay did not come back to the EU account");
+        Assert.Equal("Synthetic#0001", state.GetProperty("battle_tag").GetString());
+        Assert.Equal("Synthetic Priest v2", state.GetProperty("active_deck").GetProperty("name").GetString());
+        Assert.Equal(640, state.GetProperty("dust").GetProperty("value").GetInt32());
+        Assert.Equal("Diamond 5 (3 stars)", state.GetProperty("rank").GetProperty("label").GetString());
+    }
+
+    private async Task<JsonElement> StateWhen(Func<JsonElement, bool> condition, string failure)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        var state = await State();
+        while (!condition(state))
+        {
+            Assert.True(DateTime.UtcNow < deadline, failure + "; last state: " + state);
+            await Task.Delay(100);
+            state = await State();
+        }
+
+        return state;
     }
 
     [Fact]

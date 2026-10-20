@@ -686,3 +686,15 @@ recorded in its §11.
 - The PRD's exit criterion for K8 (another streamer installs from the site and streams without help) is a human check
   that only the go-live can run.
 
+**Fixes from VERIFICACION K8 (2026-10-20)**
+
+- The host picked its account once (the newest `collection.json` at start-up) and kept it. A change of region is a new
+  account: the exporter wrote the new deck into the new account's folder and the overlay, `!deck` and the public page
+  stayed on the old one. `OverlayStateService` now re-evaluates the account on every poll — the one with the newest
+  exporter file or finished game wins, `--account` still pins — and forgets dust, rank, deck and sync of the previous
+  one when it switches (`Now following account …` in `service.log`). `KickStreamService` closes the session that is
+  open even when the overlay follows another account by then. Host test: `The_overlay_follows_the_account_whose_exports_are_newer`.
+- The public deck page read `cards.collectible.json` only, so the two non-collectible companions of a Fabled card
+  showed as `Card #120064` / `Card #120068` (the same F11 the panel had on 2026-10-15). The page now fetches the full
+  `cards.json` only when something stays unresolved. Relay bundle rebuilt (`deck-page.js.txt`); no protocol change.
+
